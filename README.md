@@ -27,7 +27,7 @@ Prerequisites: Strong background in deep learning (PyTorch/TensorFlow), probabil
 - Deep dive: CA1 (Variational Autoencoders)
 - Deep dive: CA2 (GANs & Normalizing Flows)
 - Deep dive: CA3 (Diffusion and Score-based Models)
-- Deep dive: CA4 (Advanced Topics)
+- Deep dive: CA4 (Fine-Tuning Vision-Language Models)
 - Data, storage and artifact management
 - Reproducibility checklist and recommended configuration
 - Testing and lightweight smoke checks
@@ -247,24 +247,39 @@ High-level suggested execution order:
 
 ---
 
-## Deep dive: CA4 (Advanced Topics)
+## Deep dive: CA4 (Fine-Tuning Vision-Language Models)
 
-CA4 covers advanced or emerging topics in deep generative models, potentially including Transformer-based models, Energy-based Models, or other specialized techniques.
+CA4 explores advanced applications of deep generative models in vision-language tasks, specifically fine-tuning Google's Paligemma Vision-Language Model (VLM) on the CLEVR dataset using Parameter-Efficient Fine-Tuning (PEFT) techniques like Low-Rank Adaptation (LoRA).
 
 Key components in `CAs/CA4/code/CA4.ipynb`:
 
-- Depending on the specific assignment, may include autoregressive models, flow-based models with attention, or hybrid approaches.
-- Evaluation metrics: likelihood, sample quality, diversity.
+1. **Vision-Language Model**: Paligemma-3B, a state-of-the-art VLM for understanding images and answering questions.
+2. **Dataset**: CLEVR (Compositional Language and Elementary Visual Reasoning), featuring synthetic scenes with multiple objects and complex questions.
+3. **PEFT with LoRA**: Efficient fine-tuning by adapting only low-rank matrices, reducing computational requirements.
+4. **Quantization**: 8-bit quantization for memory efficiency during training.
+5. **Evaluation**: ROUGE metrics to assess answer quality and model performance.
 
 Why run CA4?
 
-- Gain exposure to the latest developments in generative modeling.
-- Understand scalability and computational trade-offs in large-scale generative models.
+- Learn to adapt large pre-trained models for specific tasks without full fine-tuning.
+- Understand vision-language integration and multi-modal generative modeling.
+- Experience real-world application of generative techniques in AI assistants and chatbots.
+- Compare PEFT approaches with traditional full fine-tuning in terms of efficiency and performance.
 
 Files of interest in `CAs/CA4`:
 
-- `code/CA4.ipynb` — Main notebook for CA4 experiments.
-- `report/DGM CA4.pdf` — Report with analysis and results.
+- `code/CA4.ipynb` — Complete implementation of Paligemma fine-tuning on CLEVR with LoRA.
+- `description/DGM_HW4.pdf` — Assignment description and requirements.
+- `report/[report files]` — Student analysis and experimental results.
+
+High-level suggested execution order:
+
+1. Set up environment and install dependencies (transformers, PEFT, etc.).
+2. Configure model and LoRA parameters.
+3. Load and preprocess CLEVR dataset subset.
+4. Fine-tune Paligemma with LoRA on visual question answering.
+5. Evaluate using ROUGE metrics and qualitative sample analysis.
+6. Save the fine-tuned model for inference and deployment.
 
 ---
 
