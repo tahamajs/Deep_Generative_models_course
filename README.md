@@ -153,6 +153,18 @@ Other folders (Slides, papers, Extra, Exams) contain lecture materials, relevant
 
 CA1 introduces Variational Autoencoders (VAEs), a cornerstone of generative modeling that combines variational inference with autoencoder architectures.
 
+### Key Concepts Explained
+
+**Variational Autoencoders (VAEs)** are generative models that learn to encode input data into a low-dimensional latent space and decode it back to reconstruct the original data. Unlike traditional autoencoders, VAEs learn a probabilistic latent representation, allowing them to generate new samples by sampling from the learned distribution.
+
+- **Encoder (Inference Network)**: Maps input data (e.g., images) to parameters of a latent distribution, typically a Gaussian with mean μ and variance σ².
+- **Reparameterization Trick**: Enables gradient flow through stochastic sampling by expressing z = μ + σ \* ε, where ε ~ N(0,1).
+- **Decoder (Generative Network)**: Takes latent samples and reconstructs the original data distribution.
+- **Evidence Lower Bound (ELBO)**: The loss function combines reconstruction loss (how well the decoder reconstructs inputs) and KL divergence (regularization term that encourages the latent distribution to be close to a standard normal).
+- **Latent Space Properties**: VAEs can learn disentangled representations where different dimensions correspond to interpretable factors of variation.
+
+VAEs balance reconstruction fidelity with latent space regularization, making them useful for tasks like image generation, anomaly detection, and representation learning.
+
 Key components in `CAs/CA1/code/code.ipynb`:
 
 1. **VAE Architecture**: Encoder (inference network) that maps images to latent distributions, decoder (generative network) that reconstructs images from latent samples.
@@ -185,6 +197,25 @@ High-level suggested execution order:
 ## Deep dive: CA2 (GANs & Normalizing Flows)
 
 CA2 is both pedagogical and experimental. It demonstrates two complementary approaches to deep generative modeling:
+
+### Key Concepts Explained
+
+**Normalizing Flows** are generative models that learn invertible transformations to map a simple base distribution (like a standard normal) to a complex data distribution. They provide exact likelihood computation and can be trained via maximum likelihood.
+
+- **RealNVP (Real-valued Non-Volume Preserving)**: Uses coupling layers that split input dimensions and transform one half conditioned on the other using scale and shift functions.
+- **Invertibility**: The transformation must be invertible to compute both forward (data to latent) and inverse (latent to data) mappings.
+- **Log-Determinant of Jacobian**: Tracks volume changes during transformation for exact density estimation.
+- **Advantages**: Exact density evaluation enables likelihood-based evaluation and out-of-distribution detection.
+
+**Generative Adversarial Networks (GANs)** consist of two neural networks trained simultaneously: a generator that creates fake data and a discriminator that distinguishes real from fake. They learn through adversarial training without requiring explicit density estimation.
+
+- **Generator**: Learns to map random noise to realistic data samples.
+- **Discriminator**: Learns to classify real vs. generated samples.
+- **Adversarial Loss**: Generator minimizes the probability of discriminator correctly identifying fakes, while discriminator maximizes classification accuracy.
+- **DCGAN**: Uses convolutional architectures with batch normalization and specific activation functions for stable training.
+- **Evaluation Challenges**: Lack of explicit likelihood makes evaluation tricky; metrics like FID (Fréchet Inception Distance) compare distributions in feature space.
+
+These approaches complement each other: flows provide mathematical rigor and exact evaluation, while GANs excel at generating high-quality samples.
 
 1. RealNVP (normalizing flows): an explicit density model trained by maximum likelihood. The notebook contains:
 
@@ -224,6 +255,26 @@ High-level suggested execution order (no code is run by the editor):
 
 CA3 explores cutting-edge generative modeling techniques: Denoising Diffusion Probabilistic Models (DDPM) and Score-based Generative Models.
 
+### Key Concepts Explained
+
+**Denoising Diffusion Probabilistic Models (DDPM)** are generative models that learn to reverse a gradual noising process. They consist of two processes:
+
+- **Forward Process (Diffusion)**: Gradually adds Gaussian noise to data over T timesteps, following a variance schedule β₁ to β_T.
+- **Reverse Process (Denoising)**: Learns to remove noise step-by-step using a neural network (typically a U-Net) that predicts noise at each timestep.
+- **Training Objective**: Simplified loss that predicts the added noise, enabling stable training.
+- **Sampling**: Iterative denoising starting from pure noise to generate new samples.
+- **DDIM**: Denoising Diffusion Implicit Models provide faster sampling by taking larger steps while maintaining quality.
+
+**Score-based Generative Models** learn the score function (gradient of the log-density) of the data distribution. They can generate samples using stochastic processes:
+
+- **Score Function**: ∇_x log p(x), the gradient pointing toward higher probability regions.
+- **Score Matching**: Objective to learn the score function by matching it to the true score.
+- **Langevin Dynamics**: MCMC sampling using ∇_x log p(x) to move toward data distribution.
+- **Annealed Langevin Dynamics**: Multi-scale sampling with different noise levels for efficiency.
+- **Connection to Diffusion**: Score-based models are related to diffusion through the concept of time-reversal.
+
+These models represent the current state-of-the-art in generative modeling, offering superior sample quality compared to earlier approaches like VAEs and GANs.
+
 Key components in `CAs/CA3/codes/`:
 
 1. **Diffusion Models**: Forward process (adding noise) and reverse process (denoising) for generating high-quality images.
@@ -254,6 +305,34 @@ High-level suggested execution order:
 ## Deep dive: CA4 (Fine-Tuning Vision-Language Models)
 
 CA4 explores advanced applications of deep generative models in vision-language tasks, specifically fine-tuning Google's Paligemma Vision-Language Model (VLM) on the CLEVR dataset using Parameter-Efficient Fine-Tuning (PEFT) techniques like Low-Rank Adaptation (LoRA).
+
+### Key Concepts Explained
+
+**Vision-Language Models (VLMs)** are multi-modal models that can process both visual and textual information simultaneously. They typically consist of:
+
+- **Vision Encoder**: Processes images into visual features (e.g., using Vision Transformers or CNNs).
+- **Text Encoder/Decoder**: Handles text input/output, often based on large language models.
+- **Cross-Modal Fusion**: Mechanisms to combine visual and textual representations for joint understanding.
+
+**Parameter-Efficient Fine-Tuning (PEFT)** addresses the challenge of adapting large pre-trained models without updating all parameters:
+
+- **Low-Rank Adaptation (LoRA)**: Adds trainable low-rank matrices to frozen pre-trained weights, significantly reducing trainable parameters.
+- **Benefits**: Faster training, lower memory usage, prevention of catastrophic forgetting, easier deployment.
+- **How it Works**: For a weight matrix W, LoRA adds W + ΔW where ΔW = A×B, with A and B being low-rank matrices.
+
+**Fine-Tuning VLMs** involves adapting general-purpose models to specific tasks:
+
+- **Task-Specific Adaptation**: Training on domain-specific data to improve performance on targeted applications.
+- **Instruction Tuning**: Teaching models to follow natural language instructions for vision-language tasks.
+- **Evaluation**: Using metrics like ROUGE for text generation quality and task-specific accuracy.
+
+**CLEVR Dataset** is designed for evaluating visual reasoning:
+
+- **Synthetic Scenes**: Rendered images with multiple objects having various attributes (color, shape, size, position).
+- **Complex Questions**: Require counting, comparison, spatial reasoning, and logical operations.
+- **Ground Truth Answers**: Enables precise evaluation of reasoning capabilities.
+
+This assignment bridges traditional generative modeling with modern multi-modal AI, showing how generative techniques extend beyond image synthesis to language and reasoning tasks.
 
 Key components in `CAs/CA4/code/CA4.ipynb`:
 
