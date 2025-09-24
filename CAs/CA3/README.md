@@ -44,6 +44,7 @@ This README documents the notebook structure, configuration, how to run experime
 1. Ensure you have the environment set up as described in the main project README (venv/conda with PyTorch, torchvision, etc.).
 
 2. For Diffusion Models:
+
    - Download the Sprites dataset (automatically handled in notebook).
    - Review hyperparameters: `timesteps=1000`, `n_feat=64`, `batch_size=100`, `n_epoch=40`.
    - Run training cells to train the U-Net on diffusion.
@@ -73,12 +74,14 @@ This README documents the notebook structure, configuration, how to run experime
 ## Key Concepts Covered
 
 ### Diffusion Models
+
 - Forward process: Progressive noise addition
 - Reverse process: Learned denoising
 - DDPM vs DDIM: Trade-offs between quality and speed
 - Conditional generation with context embeddings
 
 ### Score-based Models
+
 - Score matching objective
 - Noise-conditioned score prediction
 - Langevin dynamics for sampling
