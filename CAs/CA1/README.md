@@ -384,67 +384,80 @@ The model serves as a solid foundation for further generative modeling research 
 The implementation is organized in a single Jupyter notebook (`code.ipynb`) with the following cell structure:
 
 ### 1. Setup and Dependencies
+
 - Import statements for PyTorch, torchvision, matplotlib, scikit-learn, and numpy
 - Device configuration (CPU/GPU)
 - Random seed setting for reproducibility
 
 ### 2. Configuration and Hyperparameters
+
 - Model architecture parameters (latent_dim, hidden_dim)
 - Training hyperparameters (learning_rate, num_epochs, batch_size)
 - Data preprocessing settings
 
 ### 3. Data Acquisition and Loading
+
 - Dataset download/unzipping
 - ImageFolder dataset creation
 - Train/validation split (80/20)
 - DataLoader configuration with transformations
 
 ### 4. Data Preprocessing and Visualization
+
 - Image transformations (resize, normalize)
 - Sample data visualization
 - Data statistics computation
 
 ### 5. Model Architecture Definition
+
 - VariationalAutoencoder class implementation
 - Encoder network (convolutional layers + FC for latent parameters)
 - Decoder network (transposed convolutions)
 - Reparameterization trick implementation
 
 ### 6. Loss Function
+
 - VAE loss combining reconstruction (MSE) and KL divergence
 - Loss computation function
 
 ### 7. Training Configuration
+
 - Optimizer initialization (Adam)
 - Loss tracking setup
 - Training loop preparation
 
 ### 8. Training Loop
+
 - Epoch iteration with training and validation phases
 - Loss computation and backpropagation
 - Progress monitoring and logging
 
 ### 9. Evaluation and Results
+
 - Model evaluation on validation set
 - Loss curve plotting
 - Reconstruction quality assessment
 
 ### 10. Image Generation
+
 - Random latent sampling
 - Generated image visualization
 - Sample grid creation
 
 ### 11. Latent Space Analysis
+
 - Latent vector extraction for validation set
 - Dimensionality reduction (PCA/t-SNE)
 - Class-wise latent distribution plotting
 
 ### 12. Latent Dimension Analysis
+
 - Per-dimension standard deviation computation
 - Statistical analysis of latent space utilization
 - Visualization of dimension-wise variance
 
 ### 13. Conclusion and Future Work
+
 - Summary of results
 - Discussion of limitations
 - Potential improvements and extensions
@@ -452,21 +465,25 @@ The implementation is organized in a single Jupyter notebook (`code.ipynb`) with
 ## Reproducibility
 
 ### Environment Setup
+
 - **Python Version**: 3.8+
 - **PyTorch Version**: 1.12+ (with CUDA support recommended)
 - **CUDA Version**: 11.0+ (if using GPU)
 - **Memory Requirements**: 8GB RAM minimum, 16GB recommended
 
 ### Random Seed
+
 - Set `torch.manual_seed(42)` and `np.random.seed(42)` for reproducible results
 - Note: CUDA operations may introduce minor non-determinism
 
 ### Data Preparation
+
 - Ensure consistent dataset structure
 - Verify image formats and sizes
 - Document any data preprocessing steps
 
 ### Hyperparameter Logging
+
 - Save configuration parameters with results
 - Track random seeds and environment details
 - Version control for code and dependencies
@@ -476,26 +493,32 @@ The implementation is organized in a single Jupyter notebook (`code.ipynb`) with
 ### Common Issues
 
 #### Training Instability
+
 - **Symptom**: Loss oscillating or NaN values
 - **Solution**: Reduce learning rate (try 0.0001), increase batch size, or add gradient clipping
 
 #### Poor Reconstruction Quality
+
 - **Symptom**: Blurry or distorted reconstructions
 - **Solution**: Increase latent dimension, add more convolutional layers, or reduce KL weight
 
 #### Mode Collapse
+
 - **Symptom**: Generated images lack diversity
 - **Solution**: Increase KL divergence weight, use β-VAE with β > 1, or add dropout
 
 #### Memory Issues
+
 - **Symptom**: CUDA out of memory errors
 - **Solution**: Reduce batch size, use gradient accumulation, or decrease model complexity
 
 #### Slow Training
+
 - **Symptom**: Training takes excessively long
 - **Solution**: Use GPU acceleration, reduce model depth, or optimize data loading
 
 ### Debugging Tips
+
 - Monitor loss components separately (reconstruction vs KL)
 - Visualize latent space distributions regularly
 - Check for data preprocessing issues
@@ -504,16 +527,19 @@ The implementation is organized in a single Jupyter notebook (`code.ipynb`) with
 ## References
 
 ### Academic Papers
+
 1. Kingma, D. P., & Welling, M. (2013). Auto-encoding variational bayes. arXiv preprint arXiv:1312.6114.
 2. Rezende, D. J., Mohamed, S., & Wierstra, D. (2014). Stochastic backpropagation and approximate inference in deep generative models. arXiv preprint arXiv:1401.4082.
 3. Higgins, I., et al. (2017). β-VAE: Learning basic visual concepts with a constrained variational framework. ICLR 2017.
 
 ### Books and Tutorials
+
 - "Deep Learning" by Ian Goodfellow, Yoshua Bengio, and Aaron Courville (Chapter 20)
 - PyTorch VAE tutorials and documentation
 - Stanford CS236: Deep Generative Models course materials
 
 ### Related Work
+
 - Variational Inference and Deep Generative Models
 - Generative Adversarial Networks (GANs) for comparison
 - Normalizing Flows and other generative model families
