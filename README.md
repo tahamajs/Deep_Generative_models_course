@@ -123,18 +123,21 @@ This section summarizes the primary assignments and their current status in the 
   - Key files: `code/code.ipynb`, `report/report.pdf`.
   - Datasets: CelebA dataset (smiling/non-smiling classification task).
   - Status: Notebook reorganized (imports consolidated, configuration cell added), and a `README.md` was produced describing the experiments. The accompanying PDF report could not be reliably extracted verbatim in the editing environment; a synthesized summary was added to the CA1 README with a note about the limitation.
+
 - CA2 (folder: `CAs/CA2`)
 
   - Focus: Normalizing flows (RealNVP) and GANs (DCGAN-style) applied to FashionMNIST. Includes OOD detection experiments (MNIST, KMNIST) and FID evaluation for GANs.
   - Key files: `code/CA2_DGM.ipynb`, `README.md` (created to document run instructions and reproducibility).
   - Datasets: FashionMNIST, MNIST, KMNIST.
   - Status: Imports consolidated, configuration cell inserted, duplicate imports removed, explanatory Markdown blocks added. Notebook was not executed as part of the editorial pass.
+
 - CA3 (folder: `CAs/CA3`)
 
   - Focus: Diffusion Models and Score-based Generative Models.
   - Key files: `codes/Diffusion_Models (1).ipynb`, `codes/score_based_models.ipynb`, `report/DGM_CA3.pdf`.
   - Datasets: Likely image datasets such as CIFAR-10 or custom datasets for diffusion processes.
   - Status: Notebooks present but not yet reorganized for publication quality. Editorial pass pending.
+
 - CA4 (folder: `CAs/CA4`)
 
   - Focus: Advanced topics in deep generative models (possibly Transformers, Energy-based Models, or other modern techniques).
@@ -189,6 +192,7 @@ CA2 is both pedagogical and experimental. It demonstrates two complementary appr
    - Training using negative log-likelihood (NLL).
    - Computation of log-likelihoods for in-distribution and out-of-distribution (OOD) datasets (MNIST, KMNIST).
    - Visualization of generated samples via the inverse mapping.
+
 2. GAN (DCGAN-style): an adversarial generator trained to produce realistic fashion images. The notebook contains:
 
    - DCGAN-style `Generator` and `Discriminator` classes implemented in PyTorch.
@@ -369,6 +373,7 @@ Reproducibility is essential in machine learning research. Follow these steps fo
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
     ```
+
 - **Deterministic Operations**: For PyTorch, set `torch.backends.cudnn.deterministic = True` to ensure reproducible convolutions.
 
 ### Version Control
@@ -430,16 +435,19 @@ Before committing to long training runs (which can take hours or days), perform 
   - Assert encoder outputs mean/logvar with correct shapes: `assert mu.shape == (batch_size, latent_dim)`
   - Assert decoder reconstructs to original image shape.
   - Test reparameterization: sample z and verify gradients flow.
+
 - **RealNVP (CA2)**:
 
   - Assert forward pass returns `(z, log_det_jacobian)` with correct shapes.
   - Assert inverse maps z back to x: `torch.allclose(x, inverse(z), atol=1e-5)`
   - Check log_det_jacobian is finite and reasonable.
+
 - **GAN (CA2)**:
 
   - Assert generator output shape: `(batch_size, channels, height, width)`
   - Assert discriminator output: scalar per image.
   - Test with fixed noise: verify consistent outputs.
+
 - **Diffusion/Score-based (CA3)**:
 
   - Assert noise addition/removal preserves shapes.
@@ -461,9 +469,11 @@ Before committing to long training runs (which can take hours or days), perform 
   - Compute on small sets (200 real vs 200 generated).
   - Expect noisy values but end-to-end pipeline works.
   - Verify preprocessing: images resized to 299x299, normalized to [-1,1] then [0,1] for Inception.
+
 - **Log-Likelihood (CA2)**:
 
   - Compute on small batch; check values are negative and finite.
+
 - **Reconstruction/Generation Quality**:
 
   - Visual inspection: save and view sample grids.
@@ -546,16 +556,19 @@ This section lists key papers, books, and resources related to the course topics
 
   - Kingma, D.P. and Welling, M. "Auto-Encoding Variational Bayes." ICLR 2014.
   - Rezende, D.J., Mohamed, S. and Wierstra, D. "Stochastic Backpropagation and Approximate Inference in Deep Generative Models." ICML 2014.
+
 - **Normalizing Flows**:
 
   - Dinh, L., Sohl-Dickstein, J. and Bengio, S. "Density estimation using Real NVP." ICLR 2017.
   - Kingma, D.P. and Dhariwal, P. "Glow: Generative Flow with Invertible 1x1 Convolutions." NeurIPS 2018.
   - Papamakarios, G., et al. "Normalizing Flows for Probabilistic Modeling and Inference." JMLR 2021.
+
 - **GANs**:
 
   - Goodfellow, I., et al. "Generative Adversarial Nets." NeurIPS 2014.
   - Radford, A., Metz, L. and Chintala, S. "Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks." ICLR 2016.
   - Gulrajani, I., et al. "Improved Training of Wasserstein GANs." NeurIPS 2017.
+
 - **Diffusion Models**:
 
   - Sohl-Dickstein, J., et al. "Deep Unsupervised Learning using Nonequilibrium Thermodynamics." ICML 2015.

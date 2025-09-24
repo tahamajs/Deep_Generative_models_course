@@ -29,6 +29,7 @@ pip install transformers datasets peft evaluate bitsandbytes rouge_score
 ## Data Preparation
 
 The notebook uses a 1% subset of the CLEVR dataset for demonstration purposes. The full dataset contains:
+
 - Training: ~70,000 images with questions
 - Validation: ~15,000 images
 - Test: ~15,000 images
