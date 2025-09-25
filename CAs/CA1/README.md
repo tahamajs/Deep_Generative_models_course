@@ -1,12 +1,446 @@
-# Variational Autoencoders for Image Generation
+# Course Assignment 1: Variational Autoencoders for Image Generation
 
-## Project Overview
+## Prerequisites
 
-This project implements a Variational Autoencoder (VAE) to learn compressed latent representations of images, enabling high-quality reconstruction and generative capabilities. The VAE balances reconstruction fidelity with a regularized latent space for smooth interpolation and feature manipulation.
+Before starting this assignment, ensure you have a solid understanding of the following concepts:
 
-### Introduction
+### Mathematical Foundations
 
-Variational Autoencoders (VAEs) are a class of generative models that enable efficient encoding and decoding of data by learning a latent representation. Unlike traditional autoencoders, VAEs impose a probabilistic structure on the latent space, allowing for meaningful generation and interpolation of new data samples. They are particularly effective in tasks like image generation, anomaly detection, and dimensionality reduction.
+- **Probability Theory**: Random variables, probability distributions (Gaussian, Bernoulli), expectation, variance
+- **Information Theory**: Entropy, Kullback-Leibler divergence, mutual information
+- **Linear Algebra**: Matrix operations, eigenvectors/eigenvalues, singular value decomposition
+- **Calculus**: Partial derivatives, chain rule, gradient descent optimization
+
+### Machine Learning Basics
+
+- **Neural Networks**: Feedforward networks, convolutional layers, activation functions, backpropagation
+- **Optimization**: Gradient descent variants (Adam, SGD), learning rate scheduling, loss functions
+- **Regularization**: Dropout, batch normalization, weight decay
+- **Computer Vision**: Image representations, convolutional operations, spatial hierarchies
+
+### Programming Skills
+
+- **Python**: Object-oriented programming, list comprehensions, decorators
+- **PyTorch**: Tensors, autograd, nn.Module, DataLoader, CUDA operations
+- **Jupyter Notebooks**: Cell execution, markdown formatting, visualization
+
+## Key Concepts
+
+### Variational Autoencoders (VAEs)
+
+VAEs are generative models that learn a probabilistic mapping between high-dimensional data (like images) and a lower-dimensional latent space. Unlike traditional autoencoders, VAEs impose a probabilistic structure on both the encoder and decoder, enabling them to generate new data samples.
+
+#### Core Components
+
+1. **Encoder Network (Recognition Model)**: $q_\phi(\mathbf{z}|\mathbf{x})$
+
+   - Maps input data $\mathbf{x}$ to parameters of a latent distribution
+   - Typically outputs mean $\boldsymbol{\mu}$ and log-variance $\log\boldsymbol{\sigma}^2$ for a Gaussian distribution
+   - Uses convolutional layers to capture spatial features in images
+
+2. **Latent Space**: $\mathbf{z} \sim \mathcal{N}(\boldsymbol{\mu}, \boldsymbol{\sigma}^2)$
+
+   - Continuous, smooth manifold representing compressed data features
+   - Regularized to follow a standard normal prior $\mathcal{N}(0, I)$
+   - Enables interpolation and arithmetic operations between data points
+
+3. **Decoder Network (Generative Model)**: $p_\theta(\mathbf{x}|\mathbf{z})$
+   - Reconstructs data from latent vectors
+   - Symmetric to encoder with transposed convolutions
+   - Outputs parameters of a likelihood distribution (e.g., Bernoulli for binary data, Gaussian for continuous)
+
+#### Reparameterization Trick
+
+The key innovation enabling end-to-end training:
+
+$$
+\mathbf{z} = \boldsymbol{\mu} + \boldsymbol{\sigma} \odot \epsilon, \quad \epsilon \sim \mathcal{N}(0, I)
+$$
+
+This separates stochastic sampling from deterministic parameters, allowing gradients to flow through the latent variables.
+
+#### Evidence Lower Bound (ELBO)
+
+The VAE objective maximizes the log-likelihood of data while regularizing the latent space:
+
+$$
+\mathcal{L}(\theta, \phi; \mathbf{x}) = \mathbb{E}_{q_\phi(\mathbf{z}|\mathbf{x})} [\log p_\theta(\mathbf{x}|\mathbf{z})] - \text{KL}(q_\phi(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
+$$
+
+- **Reconstruction Term**: $\mathbb{E}_{q_\phi(\mathbf{z}|\mathbf{x})} [\log p_\theta(\mathbf{x}|\mathbf{z})]$ - Ensures faithful reconstruction
+- **KL Regularization**: $\text{KL}(q_\phi(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))$ - Prevents overfitting and enables generation
+
+### Convolutional Architectures
+
+#### Encoder Design
+
+- **Hierarchical Feature Extraction**: Multiple conv layers with increasing channels (32→64→128→256)
+- **Spatial Reduction**: Strided convolutions or pooling to compress spatial dimensions
+- **Non-linearity**: ReLU activations for feature learning
+- **Regularization**: Batch normalization and dropout to prevent overfitting
+
+#### Decoder Design
+
+- **Symmetric Upsampling**: Transposed convolutions mirroring encoder structure
+- **Spatial Expansion**: Progressive increase in spatial resolution
+- **Output Normalization**: Tanh activation for pixel values in [-1, 1] range
+
+### Loss Functions
+
+#### Reconstruction Loss
+
+For continuous data (images):
+
+$$
+\mathcal{L}_{\text{recon}} = \frac{1}{N} \sum_{i=1}^N ||\mathbf{x}_i - \hat{\mathbf{x}}_i||^2
+$$
+
+For binary data:
+
+$$
+\mathcal{L}_{\text{recon}} = -\frac{1}{N} \sum_{i=1}^N \sum_{j=1}^D \mathbf{x}_{i,j} \log \hat{\mathbf{x}}_{i,j} + (1-\mathbf{x}_{i,j}) \log (1-\hat{\mathbf{x}}_{i,j})
+$$
+
+#### KL Divergence Loss
+
+$$
+\mathcal{L}_{\text{KL}} = -\frac{1}{2} \sum_{j=1}^J (1 + \log \sigma_j^2 - \mu_j^2 - \sigma_j^2)
+$$
+
+#### Total Loss
+
+$$
+\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{recon}} + \beta \cdot \mathcal{L}_{\text{KL}}
+$$
+
+Where $\beta$ controls the regularization strength (standard VAE uses $\beta=1$).
+
+## Data Preparation
+
+### Dataset Structure
+
+- **Format**: ImageFolder with class subdirectories
+- **Resolution**: 128×128 pixels for computational efficiency
+- **Channels**: RGB (3 channels)
+- **Normalization**: Pixel values scaled to [-1, 1] using mean=0.5, std=0.5 per channel
+
+### Preprocessing Pipeline
+
+```python
+transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+```
+
+### Train/Validation Split
+
+- **Training Set**: 80% of data for model learning
+- **Validation Set**: 20% for hyperparameter tuning and overfitting detection
+- **Batch Size**: 32 samples for stable gradient estimates
+
+## Model Architecture
+
+### Hyperparameters
+
+- **Latent Dimension**: 32 (balance between compression and expressiveness)
+- **Hidden Dimension**: 4096 (intermediate representation size)
+- **Learning Rate**: 0.0005 (Adam optimizer)
+- **Training Epochs**: 1000 (convergence monitoring)
+
+### Encoder Implementation
+
+```python
+self.encoder = nn.Sequential(
+    nn.Conv2d(3, 32, 4, 2, 1),    # 128 → 64
+    nn.LeakyReLU(0.2),
+    nn.Conv2d(32, 64, 4, 2, 1),   # 64 → 32
+    nn.BatchNorm2d(64),
+    nn.LeakyReLU(0.2),
+    nn.Dropout(0.2),
+    nn.Conv2d(64, 128, 4, 2, 1),  # 32 → 16
+    nn.BatchNorm2d(128),
+    nn.LeakyReLU(0.2),
+    nn.Dropout(0.3),
+    nn.Conv2d(128, 256, 4, 2, 1), # 16 → 8
+    nn.LeakyReLU(0.2),
+    nn.Flatten(),
+    nn.Linear(256 * 8 * 8, hidden_dim),
+    nn.LeakyReLU(0.2)
+)
+```
+
+### Decoder Implementation
+
+```python
+self.decoder = nn.Sequential(
+    nn.Linear(latent_dim, hidden_dim),
+    nn.LeakyReLU(0.2),
+    nn.Linear(hidden_dim, 256 * 8 * 8),
+    nn.LeakyReLU(0.2),
+    nn.Unflatten(1, (256, 8, 8)),
+    nn.ConvTranspose2d(256, 128, 4, 2, 1),  # 8 → 16
+    nn.BatchNorm2d(128),
+    nn.LeakyReLU(0.2),
+    nn.Dropout(0.3),
+    nn.ConvTranspose2d(128, 64, 4, 2, 1),   # 16 → 32
+    nn.BatchNorm2d(64),
+    nn.LeakyReLU(0.2),
+    nn.Dropout(0.2),
+    nn.ConvTranspose2d(64, 32, 4, 2, 1),    # 32 → 64
+    nn.LeakyReLU(0.2),
+    nn.ConvTranspose2d(32, 3, 4, 2, 1),     # 64 → 128
+    nn.Tanh()
+)
+```
+
+## Training Process
+
+### Optimization Setup
+
+- **Optimizer**: Adam with β₁=0.9, β₂=0.999
+- **Learning Rate**: 0.0005 (stable convergence)
+- **Gradient Clipping**: Prevents exploding gradients
+- **Device**: CUDA GPU for acceleration
+
+### Training Loop
+
+```python
+for epoch in range(num_epochs):
+    model.train()
+    for batch in train_loader:
+        # Forward pass
+        recon, mu, logvar = model(batch)
+        loss = vae_loss(recon, batch, mu, logvar)
+
+        # Backward pass
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    # Validation
+    model.eval()
+    with torch.no_grad():
+        val_loss = compute_validation_loss(model, val_loader)
+```
+
+### Convergence Monitoring
+
+- **Loss Components**: Track reconstruction vs KL divergence separately
+- **Early Stopping**: Prevent overfitting on validation set
+- **Learning Curves**: Plot losses over epochs for diagnosis
+
+## Evaluation Metrics
+
+### Reconstruction Quality
+
+- **Visual Inspection**: Side-by-side original vs reconstructed images
+- **Quantitative**: Mean Squared Error (MSE) between originals and reconstructions
+- **Perceptual Metrics**: Structural Similarity Index (SSIM)
+
+### Generative Capability
+
+- **Sample Quality**: Visual assessment of randomly generated images
+- **Diversity**: Ensure generated samples cover data distribution
+- **Fidelity**: How closely generated samples match training data
+
+### Latent Space Analysis
+
+- **Interpolation**: Smooth transitions between latent points
+- **Disentanglement**: Independent control of semantic attributes
+- **Dimensionality Reduction**: PCA/t-SNE visualization of latent structure
+- **Per-Dimension Variance**: Analyze which latent dimensions are most active
+
+## Troubleshooting
+
+### Common Issues
+
+#### Training Instability
+
+- **Symptoms**: NaN losses, oscillating gradients
+- **Solutions**:
+  - Reduce learning rate (try 0.0001)
+  - Increase batch size
+  - Add gradient clipping: `torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)`
+  - Use LeakyReLU instead of ReLU
+
+#### Poor Reconstructions
+
+- **Symptoms**: Blurry or distorted outputs
+- **Solutions**:
+  - Increase latent dimension
+  - Add more convolutional layers
+  - Reduce KL weight (β < 1)
+  - Check data normalization
+
+#### Mode Collapse
+
+- **Symptoms**: Generated images lack diversity
+- **Solutions**:
+  - Increase KL regularization (β > 1)
+  - Add noise to latent space
+  - Use β-VAE variant
+
+#### Memory Issues
+
+- **Symptoms**: CUDA out of memory
+- **Solutions**:
+  - Reduce batch size
+  - Use gradient accumulation
+  - Decrease model complexity
+  - Enable mixed precision training
+
+### Debugging Tips
+
+- Monitor loss components separately
+- Visualize latent distributions regularly
+- Check data preprocessing pipeline
+- Validate model architecture with simple datasets
+- Use tensorboard for comprehensive monitoring
+
+## Code Structure
+
+### Notebook Organization
+
+1. **Setup**: Import libraries, set device, configure hyperparameters
+2. **Data**: Download, preprocess, and visualize dataset
+3. **Model**: Define VAE architecture with encoder/decoder
+4. **Training**: Implement loss function and optimization loop
+5. **Evaluation**: Assess reconstruction and generative quality
+6. **Analysis**: Explore latent space properties
+
+### Key Functions
+
+- `VAE.forward()`: Encode → reparameterize → decode
+- `reparameterize()`: Sample latent vectors with gradients
+- `vae_loss()`: Compute reconstruction + KL divergence
+- `plot_latent_space()`: Visualize learned representations
+
+## Results and Analysis
+
+### Expected Performance
+
+- **Reconstruction MSE**: < 0.02 on normalized images
+- **KL Divergence**: ~0.1-0.5 per dimension
+- **Training Time**: 2-4 hours on modern GPU
+- **Memory Usage**: 2-4 GB GPU memory
+
+### Visual Results
+
+- **Reconstructions**: High fidelity with minor smoothing
+- **Generations**: Diverse samples capturing data distribution
+- **Interpolations**: Smooth semantic transitions
+- **Latent Projections**: Structured manifolds with class separation
+
+### Ablation Studies
+
+- **Latent Dimension**: 16 (fast but blurry) vs 64 (detailed but slow)
+- **Architecture Depth**: Shallow (quick training) vs deep (better quality)
+- **KL Weight**: β=0.1 (overfitting) vs β=10 (regularized but blurry)
+
+## Future Work
+
+### Model Extensions
+
+- **β-VAE**: Learn disentangled representations with adjustable β
+- **Conditional VAE**: Generate images conditioned on labels
+- **Hierarchical VAE**: Multi-level latent structures
+- **VAE-GAN**: Combine variational and adversarial training
+
+### Advanced Techniques
+
+- **Flow-based VAEs**: Exact likelihood computation
+- **Discrete VAEs**: Categorical latent variables
+- **VQ-VAE**: Vector quantized latent spaces
+- **Diffusion VAEs**: Integration with denoising diffusion
+
+### Applications
+
+- **Image Synthesis**: High-resolution generation
+- **Anomaly Detection**: Reconstruction error as anomaly score
+- **Representation Learning**: Feature extraction for downstream tasks
+- **Data Augmentation**: Generate synthetic training samples
+
+## Technologies Used
+
+- **PyTorch**: Deep learning framework for model implementation
+- **Torchvision**: Computer vision utilities and datasets
+- **Matplotlib**: Plotting and visualization
+- **Scikit-learn**: Dimensionality reduction and analysis
+- **NumPy**: Numerical computations
+- **Jupyter**: Interactive development environment
+
+## Installation and Setup
+
+### Requirements
+
+```bash
+pip install torch torchvision matplotlib scikit-learn numpy
+```
+
+### Environment
+
+- Python 3.8+
+- CUDA 11.0+ (recommended)
+- 8GB RAM minimum
+
+### Data Preparation
+
+1. Download dataset archive
+2. Extract to project directory
+3. Ensure ImageFolder structure
+
+## How to Run
+
+1. **Open Notebook**: Launch `code.ipynb` in Jupyter
+2. **Execute Sequentially**: Run cells in order
+3. **Monitor Training**: Watch loss curves for convergence
+4. **Evaluate Results**: Check reconstructions and generations
+5. **Analyze Latents**: Explore learned representations
+
+## Reproducibility
+
+### Random Seeds
+
+```python
+torch.manual_seed(42)
+np.random.seed(42)
+```
+
+### Version Control
+
+- Pin dependency versions
+- Save model checkpoints
+- Document hyperparameters
+
+## References
+
+### Foundational Papers
+
+1. Kingma, D. P., & Welling, M. (2013). Auto-encoding variational bayes. arXiv:1312.6114
+2. Rezende, D. J., et al. (2014). Stochastic backpropagation and approximate inference in deep generative models. arXiv:1401.4082
+
+### Advanced Reading
+
+3. Higgins, I., et al. (2017). β-VAE: Learning basic visual concepts with a constrained variational framework. ICLR
+4. Burgess, C. P., et al. (2018). Understanding disentangling in β-VAE. arXiv:1804.03599
+
+### Textbooks
+
+- "Deep Learning" by Goodfellow et al. (Chapter 20)
+- "Probabilistic Deep Learning" by Murphy
+
+## Acknowledgments
+
+- Course instructor: Dr. Tavassoli Pour, University of Tehran
+- PyTorch community for excellent documentation
+- Original VAE researchers for groundbreaking work
+
+## Contact
+
+Mohammad Taha Majlesi - 8100101504
+Deep Generative Models Course - University of Tehran
 
 ### Theoretical Background
 

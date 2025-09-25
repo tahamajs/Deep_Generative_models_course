@@ -1,86 +1,297 @@
-# CA2 - GANs and Normalizing Flows (FashionMNIST)
+# CA2 - GANs and Normalizing Flows
 
-This folder contains an educational project for the "Deep Generative Models" course. The notebook `CA2_DGM.ipynb` implements two main families of generative models on the FashionMNIST dataset:
+## Overview
 
-- RealNVP (normalizing flows) trained on raw images and later on learned latent representations.
-- GAN (DCGAN-style) trained to generate 64x64 versions of FashionMNIST images, with FID evaluation.
+This assignment implements two powerful generative modeling approaches: **Generative Adversarial Networks (GANs)** and **Normalizing Flows**. The focus is on the FashionMNIST dataset, demonstrating both pixel-level and latent-space generative modeling with quantitative evaluation using Fréchet Inception Distance (FID).
 
-This README documents the notebook structure, configuration, how to run experiments (without running code here), reproducibility notes, and troubleshooting tips.
+### Assignment Objectives
 
-## Repository layout
+- Implement DCGAN-style GANs for high-quality image generation
+- Develop RealNVP normalizing flows for density estimation and sampling
+- Compare performance in pixel space vs. learned latent representations
+- Evaluate generative quality using FID scores
+- Understand adversarial training and invertible transformations
 
-- `code/CA2_DGM.ipynb` — The main notebook (annotated). Edits were made to consolidate imports and add a configuration cell. Each code block should be preceded by explanatory Markdown cells.
-- `data/` — (created at runtime) where datasets are downloaded by torchvision.
-- `real_images/` — directory used to store a fixed set of real images for FID computation.
-- `generated_images/` — directory where per-epoch generated images are saved for FID computation and visualization.
+## Prerequisites
 
-## Notebook Overview
+### Required Knowledge
 
-1. Setup and Configuration
-   - Consolidated imports and a single configuration cell (`device`, hyperparameters, paths, image size).
-2. Data Preparation
-   - FashionMNIST is downloaded and preprocessed. For GAN training images are resized to `64x64` and normalized to `[-1, 1]`.
-3. RealNVP (Normalizing Flow)
-   - RealNVP is implemented with coupling layers and trained by maximizing log-likelihood (minimizing negative log-likelihood).
-   - The notebook includes functions to compute log-likelihoods and visualize generated samples.
-   - Out-of-distribution detection is evaluated using MNIST and KMNIST datasets.
-4. Encoder-Decoder (Latent Space)
-   - A small encoder-decoder (MLP) is trained to produce 50-dimensional latent representations of images.
-   - RealNVP is also trained in this latent space to improve efficiency.
-5. GAN (DCGAN-style)
-   - A DCGAN-style generator and discriminator are implemented.
-   - Training loop alternates between generator and discriminator updates.
-   - Fixed noise is used to generate consistent grids for visualization.
-   - FID scores are computed per epoch using `pytorch-fid`.
+- **Deep Learning**: CNN architectures, adversarial training, invertible functions
+- **Probability Theory**: Change of variables, log-likelihood maximization
+- **Optimization**: Min-max games, gradient-based optimization
+- **Computer Vision**: Image generation, evaluation metrics
 
-## How to run (local environment instructions)
+### Technical Requirements
 
-1. Create a Python environment and install dependencies (suggested):
+- Python 3.8+
+- PyTorch 1.12+
+- CUDA-compatible GPU (recommended)
+- Libraries: `torchvision`, `numpy`, `matplotlib`, `scipy`, `pytorch-fid`
+
+### Environment Setup
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install torch torchvision matplotlib numpy scipy pytorch-fid
+# Create virtual environment
+python -m venv dgm_env
+source dgm_env/bin/activate  # On Windows: dgm_env\Scripts\activate
+
+# Install dependencies
+pip install torch torchvision torchaudio
+pip install numpy matplotlib scipy
+pip install pytorch-fid
 ```
 
-2. Open the notebook in Jupyter or VS Code and review the top `Setup and Configuration` cell before executing any cells. The editorial pass performed by the instructor/assistant did not run code; it only reorganized the notebook.
+## Core Concepts Explained
 
-3. To run the GAN training (example):
-   - Ensure you have a CUDA-capable GPU for reasonable training times.
-   - Execute the configuration cell and then the GAN training cell blocks in order.
-   - Generated images and FID scores will be saved in `./generated_images/`.
+### Generative Adversarial Networks (GANs)
 
-## Reproducibility Notes
+GANs consist of two neural networks competing in a zero-sum game:
 
-- Random seeds are not set in the notebook by default. For reproducible runs, set seeds for `numpy`, `torch`, and Python's `random` at the top of the configuration cell:
+#### Adversarial Framework
+
+- **Generator (G)**: Maps random noise z to data distribution: \( G: \mathcal{Z} \rightarrow \mathcal{X} \)
+- **Discriminator (D)**: Binary classifier distinguishing real vs. fake: \( D: \mathcal{X} \rightarrow [0,1] \)
+- **Objective**: \( \min*G \max_D \mathbb{E}*{x \sim p*{data}} [\log D(x)] + \mathbb{E}*{z \sim p_z} [\log (1 - D(G(z)))] \)
+
+#### DCGAN Architecture
+
+- **Generator**: Transposed convolutions with batch normalization and ReLU
+- **Discriminator**: Convolutions with LeakyReLU and sigmoid output
+- **Training**: Alternate updates, non-saturating loss for G, standard BCE for D
+
+#### Training Dynamics
+
+- **Mode Collapse**: Generator produces limited variety
+- **Convergence Issues**: Gradient vanishing, oscillation
+- **Stabilization**: Batch normalization, learning rate scheduling, noise injection
+
+### Normalizing Flows
+
+Normalizing flows transform simple distributions into complex ones via invertible transformations.
+
+#### Change of Variables
+
+For invertible function \( f: \mathcal{X} \rightarrow \mathcal{Z} \):
+
+- \( p_X(x) = p_Z(f(x)) |\det \frac{\partial f}{\partial x}| \)
+- Log-likelihood: \( \log p_X(x) = \log p_Z(z) + \log |\det J_f(x)| \)
+
+#### RealNVP (Real-valued Non-Volume Preserving)
+
+- **Affine Coupling**: \( y*{1:d} = x*{1:d} \), \( y*{d+1:D} = x*{d+1:D} \odot \exp(s(x*{1:d})) + t(x*{1:d}) \)
+- **Scale and Translation**: Neural networks predict s and t
+- **Invertibility**: Easy forward and inverse passes
+- **Volume Preservation**: Jacobian determinant is 1 for coupling layers
+
+#### Multi-Scale Architecture
+
+- **Squeeze Operation**: Rearranges spatial dimensions
+- **Checkerboard Masking**: Alternating coupling layers
+- **Channel-wise Masking**: Split along feature dimension
+
+### Fréchet Inception Distance (FID)
+
+FID measures distribution similarity using Inception features:
+
+#### Mathematical Foundation
+
+- **Inception Features**: Pre-trained Inception network extracts features
+- **Statistics**: Mean μ and covariance Σ for real and generated distributions
+- **Distance**: \( d^2((\mu_r, \Sigma_r), (\mu_g, \Sigma_g)) = ||\mu_r - \mu_g||^2 + \Tr(\Sigma_r + \Sigma_g - 2(\Sigma_r \Sigma_g)^{1/2}) \)
+
+#### Interpretation
+
+- Lower FID indicates better generative quality
+- Sensitive to mode collapse and diversity
+- Computationally expensive but reliable
+
+## Data Preparation
+
+### FashionMNIST Dataset
+
+- **Resolution**: 28x28 grayscale images
+- **Classes**: 10 fashion categories (T-shirt, trouser, etc.)
+- **Preprocessing**: Resize to 64x64 for GANs, normalize to [-1, 1]
+- **Latent Encoding**: Autoencoder compresses to 50D for flows
+
+### Autoencoder for Latent Space
+
+- **Encoder**: CNN compressing 28x28 → 50D
+- **Decoder**: Transposed CNN reconstructing images
+- **Training**: MSE reconstruction loss
+- **Purpose**: Enable efficient normalizing flows in latent space
+
+## Model Architecture
+
+### GAN Components
 
 ```python
-import random
-seed = 42
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
-if torch.cuda.is_available():
-    torch.cuda.manual_seed_all(seed)
+# Generator Architecture
+- Input: 100D noise vector
+- Layers: 5 transposed conv blocks
+- Output: 64x64 grayscale image
+- Activations: ReLU + Tanh
+
+# Discriminator Architecture
+- Input: 64x64 grayscale image
+- Layers: 5 conv blocks
+- Output: Scalar probability
+- Activations: LeakyReLU + Sigmoid
 ```
 
-- Batch size and learning rates are defined in the configuration cell and should be adjusted according to available compute.
+### Normalizing Flow Components
 
-## Editorial changes made
+```python
+# RealNVP Block
+- Coupling layers with affine transformations
+- Scale/translation networks: MLPs
+- Masking patterns: Checkerboard/channel-wise
+- Squeeze operations for multi-scale
+```
 
-- Consolidated imports into a single top cell.
-- Inserted a `Setup and Configuration` code cell with hyperparameters and paths.
-- Removed duplicate import statements found later in the notebook.
-- Added explanatory Markdown cells and ensured major code blocks are documented. Code comments inside code cells were left for the user to remove if required; the editorial pass prioritized not executing the notebook and organizing cells.
+## Training
+
+### GAN Training
+
+1. **Data Loading**: Batched FashionMNIST images
+2. **Discriminator Update**: Real/fake classification
+3. **Generator Update**: Fool discriminator with fake samples
+4. **Monitoring**: Loss curves, sample generation
+5. **Evaluation**: FID computation per epoch
+
+### Flow Training
+
+1. **Maximum Likelihood**: Minimize negative log-likelihood
+2. **Latent Space**: Train on autoencoder representations
+3. **Pixel Space**: Direct training on images (challenging)
+4. **Regularization**: Weight decay, early stopping
+
+## Evaluation
+
+### Quantitative Metrics
+
+- **FID Score**: Distribution similarity (lower is better)
+- **Log-Likelihood**: For normalizing flows (higher is better)
+- **Out-of-Distribution**: Detection using MNIST/KMNIST
+
+### Qualitative Analysis
+
+- **Sample Quality**: Visual inspection of generated images
+- **Diversity**: Coverage of fashion categories
+- **Mode Collapse**: Check for repetitive patterns
+
+## Results and Analysis
+
+### Expected Outcomes
+
+- **GANs**: FID < 50 after training, diverse fashion images
+- **Flows**: Better likelihood in latent space vs. pixel space
+- **Comparison**: GANs excel at quality, flows at density estimation
+
+### Hyperparameter Sensitivity
+
+- **Learning Rate**: Critical for stable training (0.0002 typical)
+- **Batch Size**: Larger batches improve stability
+- **Architecture Depth**: Deeper models capture more complexity
 
 ## Troubleshooting
 
-- If `pytorch-fid` fails during FID calculation, ensure `torchvision` and `pytorch-fid` versions are compatible with your PyTorch installation.
-- FID calculation may require a reasonable number of real images (suggest 1000+). Use `real_images/` to store a fixed set of samples.
+### Common Issues
 
-## License & Acknowledgments
+- **GAN Training Instability**: Adjust learning rates, add noise
+- **Mode Collapse**: Use experience replay, different architectures
+- **Flow Training**: Gradient explosion in pixel space
+- **FID Computation**: Ensure sufficient sample size (1000+ images)
 
-This work is an academic project for a course (Deep Generative Models). The code uses standard PyTorch patterns and public datasets (FashionMNIST, MNIST, KMNIST).
+### Performance Optimization
 
-For issues or suggestions, open an issue in the repository or contact the notebook owner.
+- Use mixed precision training (FP16)
+- Implement gradient penalties (WGAN-GP)
+- Utilize progressive growing for high resolution
+
+## Reproducibility
+
+### Random Seeds
+
+```python
+seed = 42
+torch.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
+np.random.seed(seed)
+```
+
+### Hyperparameters
+
+- GAN: `latent_dim=100`, `lr=0.0002`, `batch_size=64`, `epochs=10`
+- Flow: `hidden_dim=512`, `num_layers=8`, `batch_size=128`
+
+### Environment
+
+- PyTorch version: 1.12+
+- CUDA version: 11.6+
+- Hardware: GPU with 4GB+ VRAM
+
+## Dependencies
+
+```
+torch>=1.12.0
+torchvision>=0.13.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+scipy>=1.7.0
+pytorch-fid>=0.10.0
+```
+
+## References
+
+1. **GANs**:
+
+   - Goodfellow, I., et al. "Generative Adversarial Nets." NIPS 2014.
+   - Radford, A., et al. "Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks." ICLR 2016.
+   - Heusel, M., et al. "GANs Trained by a Two Time-Scale Update Rule Converge to a Local Nash Equilibrium." NIPS 2017.
+
+2. **Normalizing Flows**:
+
+   - Dinh, L., et al. "Density estimation using Real NVP." ICLR 2017.
+   - Kingma, D. P. and Dhariwal, P. "Glow: Generative Flow with Invertible 1x1 Convolutions." NeurIPS 2018.
+
+3. **Evaluation**:
+   - Salimans, T., et al. "Improved Techniques for Training GANs." NIPS 2016.
+
+## File Structure
+
+```
+CA2/
+├── code/
+│   ├── CA2_DGM.ipynb          # Main implementation notebook
+│   └── Q2_final_res.ipynb     # GAN training with FID evaluation
+├── description/
+│   └── [Assignment PDF]       # Original problem statement
+└── report/
+    └── [Report PDF]          # Implementation details and results
+```
+
+## Usage Instructions
+
+### Running GAN Training
+
+1. Open `Q2_final_res.ipynb` in Jupyter/Colab
+2. Execute cells sequentially (imports → config → data → model → training)
+3. Monitor FID scores and generated samples
+4. Adjust hyperparameters for better performance
+
+### Running Normalizing Flows
+
+1. Open `CA2_DGM.ipynb` sections on RealNVP
+2. Train autoencoder first for latent representations
+3. Train flows in pixel or latent space
+4. Evaluate log-likelihood and sample quality
+
+### Colab Execution
+
+- Upload notebooks to Google Colab
+- Enable GPU runtime for faster training
+- Install dependencies: `!pip install pytorch-fid`
+- Monitor training with generated image grids
+
+This comprehensive implementation explores the trade-offs between adversarial and flow-based generative modeling approaches.
