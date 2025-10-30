@@ -1,4 +1,4 @@
-\documentclass[journal,conference,12pt,onecolumn]{IEEEtran}
+\documentclass[conference,12pt]{IEEEtran}
 
 % IEEE packages
 \IEEEoverridecommandlockouts
@@ -1528,39 +1528,43 @@ Based on FID analysis:
     \item \textbf{Hyperparameter Tuning}: Experiment with learning rates, batch sizes, and architecture
 \end{enumerate}
 
-\newpage
-
 \section{Conclusion}
 
-This assignment successfully implemented and analyzed both Normalizing Flows (RealNVP) and Generative Adversarial Networks (DCGAN) on the FashionMNIST dataset. Key achievements include:
+This work presents comprehensive implementations and analysis of two prominent deep generative modeling approaches: Normalizing Flows (RealNVP) and Generative Adversarial Networks (DCGAN) on the FashionMNIST dataset. Our experiments demonstrate the complementary strengths of these approaches.
 
-\begin{enumerate}
-    \item \textbf{RealNVP Implementation}: Successfully implemented normalizing flows with coupling layers, achieving good density estimation and generation quality. Latent space experiments showed improved OOD detection performance.
-    
-    \item \textbf{DCGAN Implementation}: Implemented stable DCGAN architecture following best practices, achieving FID score of 171.67 at best epoch.
-    
-    \item \textbf{Comprehensive Evaluation}: Used multiple evaluation metrics (FID, log-likelihood, visual inspection) to assess model performance quantitatively and qualitatively.
-    
-    \item \textbf{Comparative Analysis}: Demonstrated advantages of working in learned latent spaces for normalizing flows, showing improved computational efficiency and OOD detection.
-\end{enumerate}
+The RealNVP implementation achieves effective density estimation with log-likelihood values of 1706.93 on training data, successfully learning the FashionMNIST distribution. The latent space experiments reveal that working in learned 32-dimensional representations significantly improves computational efficiency and OOD detection performance, achieving log-likelihoods of 151.64 for in-distribution data compared to 2.39 and -66.17 for MNIST and KMNIST respectively.
 
-The results demonstrate the complementary nature of these generative modeling approaches: normalizing flows provide exact likelihood computation and OOD detection capabilities, while GANs excel at generating high-quality, diverse samples through adversarial training.
+The DCGAN implementation achieves a Fréchet Inception Distance of 171.67 at the optimal training epoch (epoch 8), representing a 36.5\% improvement from initial training. Comprehensive analysis of training dynamics reveals characteristic adversarial behavior with oscillations in loss curves, demonstrating the delicate balance required between generator and discriminator.
 
-\section*{References}
+Key findings include: (1) normalizing flows excel in density estimation and OOD detection, providing interpretable likelihood scores, (2) GANs produce higher-quality visual samples through adversarial training but lack explicit density estimation, (3) learned latent representations significantly enhance normalizing flow performance, and (4) training stability is critical for GAN convergence, with best results achieved when generator and discriminator maintain balanced losses.
 
-\begin{enumerate}
-    \item Goodfellow, I., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair, S., ... \& Bengio, Y. (2014). Generative adversarial nets. \textit{Advances in neural information processing systems}, 27.
-    
-    \item Radford, A., Metz, L., \& Chintala, S. (2016). Unsupervised representation learning with deep convolutional generative adversarial networks. \textit{ICLR}.
-    
-    \item Dinh, L., Sohl-Dickstein, J., \& Bengio, S. (2017). Density estimation using real nvp. \textit{ICLR}.
-    
-    \item Heusel, M., Ramsauer, H., Unterthiner, T., Nessler, B., \& Hochreiter, S. (2017). Gans trained by a two time-scale update rule converge to a local nash equilibrium. \textit{Advances in neural information processing systems}, 30.
-    
-    \item Arjovsky, M., Chintala, S., \& Bottou, L. (2017). Wasserstein generative adversarial networks. \textit{ICML}.
-    
-    \item Gulrajani, I., Ahmed, F., Arjovsky, M., Dumoulin, V., \& Courville, A. C. (2017). Improved training of wasserstein gans. \textit{Advances in neural information processing systems}, 30.
-\end{enumerate}
+Future work could explore extending training to more epochs, implementing advanced techniques like spectral normalization and gradient penalties, and comparing performance on higher-resolution datasets. The complementary nature of these approaches suggests hybrid models could leverage advantages from both paradigms.
+
+\begin{thebibliography}{1}
+
+\bibitem{goodfellow2014generative}
+I. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu, D. Warde-Farley, S. Ozair, A. Courville, and Y. Bengio, ``Generative adversarial nets,'' in \textit{Proc. Advances in Neural Information Processing Systems (NeurIPS)}, vol. 27, 2014, pp. 2672--2680.
+
+\bibitem{radford2016unsupervised}
+A. Radford, L. Metz, and S. Chintala, ``Unsupervised representation learning with deep convolutional generative adversarial networks,'' in \textit{Proc. Int. Conf. Learning Representations (ICLR)}, 2016.
+
+\bibitem{dinh2017density}
+L. Dinh, J. Sohl-Dickstein, and S. Bengio, ``Density estimation using real NVP,'' in \textit{Proc. Int. Conf. Learning Representations (ICLR)}, 2017.
+
+\bibitem{heusel2017gans}
+M. Heusel, H. Ramsauer, T. Unterthiner, B. Nessler, and S. Hochreiter, ``GANs trained by a two time-scale update rule converge to a local Nash equilibrium,'' in \textit{Proc. Advances in Neural Information Processing Systems (NeurIPS)}, vol. 30, 2017, pp. 6626--6637.
+
+\bibitem{arjovsky2017wasserstein}
+M. Arjovsky, S. Chintala, and L. Bottou, ``Wasserstein generative adversarial networks,'' in \textit{Proc. Int. Conf. Machine Learning (ICML)}, 2017, pp. 214--223.
+
+\bibitem{gulrajani2017improved}
+I. Gulrajani, F. Ahmed, M. Arjovsky, V. Dumoulin, and A. C. Courville, ``Improved training of Wasserstein GANs,'' in \textit{Proc. Advances in Neural Information Processing Systems (NeurIPS)}, vol. 30, 2017, pp. 5767--5777.
+
+\bibitem{xiao2017fashion}
+H. Xiao, K. Rasul, and R. Vollgraf, ``Fashion-MNIST: a novel image dataset for benchmarking machine learning algorithms,'' \textit{arXiv preprint arXiv:1708.07747}, 2017.
+
+\end{thebibliography}
+
 
 \end{document}
 
