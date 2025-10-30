@@ -372,18 +372,140 @@ LoRA has some limitations to be aware of:
 
 \subsection{Quantization}
 
-\textbf{8-bit Quantization (BitsAndBytes)}:
+Quantization is a technique that reduces the numerical precision of model weights to decrease memory usage and accelerate computation. While neural networks are typically trained in 32-bit floating-point (FP32) precision, inference and fine-tuning can often use lower precision with minimal accuracy loss.
 
-The process converts 32-bit floating-point weights to 8-bit integers, providing:
+\subsubsection{8-bit Quantization Overview}
+
+\textbf{8-bit Quantization (BitsAndBytes)} converts 32-bit floating-point weights to 8-bit integers:
 
 \begin{itemize}
-    \item \textbf{Memory Reduction}: $\sim$4x memory reduction (e.g., $\sim$12GB $\rightarrow$ $\sim$6GB)
-    \item \textbf{Faster Inference}: Reduced memory bandwidth requirements
-    \item \textbf{Compatibility}: Enables larger models on limited hardware
-    \item \textbf{Trade-offs}: Slight accuracy loss (typically $<$2\%), requires compatible hardware (modern GPUs)
+    \item \textbf{Precision Reduction}: FP32 (32 bits) $\rightarrow$ INT8 (8 bits) = 4x memory reduction
+    \item \textbf{Memory Savings}: $\sim$12GB model $\rightarrow$ $\sim$6GB (with quantization)
+    \item \textbf{Computation Speedup}: Faster matrix multiplications (8-bit operations are faster)
+    \item \textbf{Hardware Optimization}: Modern GPUs (RTX series, A100, etc.) have specialized hardware for INT8 operations
 \end{itemize}
 
-Quantization works by mapping the range of float32 values to int8 values using a scaling factor based on the distribution of weights in each layer.
+\subsubsection{How Quantization Works}
+
+The quantization process maps a continuous range of floating-point values to discrete integer values:
+
+\begin{enumerate}
+    \item \textbf{Find Range}: For each weight tensor, determine the minimum and maximum values: $[\text{min}(W), \text{max}(W)]$
+    
+    \item \textbf{Calculate Scale}: Compute a scaling factor:
+    \begin{equation}
+    \text{scale} = \frac{\text{max}(W) - \text{min}(W)}{2^8 - 1} = \frac{\text{max}(W) - \text{min}(W)}{255}
+    \end{equation}
+    
+    \item \textbf{Quantize}: Map float values to integers:
+    \begin{equation}
+    W_{\text{int8}} = \text{round}\left(\frac{W_{\text{float32}} - \text{min}(W)}{\text{scale}}\right)
+    \end{equation}
+    
+    \item \textbf{Dequantize (for computation)}: Convert back to approximate float:
+    \begin{equation}
+    W_{\text{dequant}} = W_{\text{int8}} \times \text{scale} + \text{min}(W)
+    \end{equation}
+\end{enumerate}
+
+\subsubsection{BitsAndBytes Implementation}
+
+The BitsAndBytes library uses advanced quantization techniques:
+
+\begin{itemize}
+    \item \textbf{Per-Tensor Quantization}: Each weight tensor has its own scale and zero-point
+    \item \textbf{Block-wise Quantization}: For very large tensors, quantization is applied in blocks for better accuracy
+    \item \textbf{Threshold-based Quantization}: The \texttt{llm\_int8\_threshold} parameter (we use 6.0) determines when to use more precise computation for outlier values
+    \item \textbf{Dynamic Quantization}: Weights are quantized during loading, but activations remain in higher precision during forward pass
+\end{itemize}
+
+\subsubsection{Benefits of 8-bit Quantization}
+
+\begin{enumerate}
+    \item \textbf{Memory Reduction}:
+    \begin{itemize}
+        \item Model weights: 4x reduction (FP32 $\rightarrow$ INT8)
+        \item Enables loading 3B+ models on consumer GPUs
+        \item More room for activations, gradients, and optimizer states
+    \end{itemize}
+    
+    \item \textbf{Faster Computation}:
+    \begin{itemize}
+        \item INT8 matrix operations are faster on modern GPUs
+        \item Reduced memory bandwidth (less data to transfer)
+        \item Better cache utilization (more data fits in cache)
+    \end{itemize}
+    
+    \item \textbf{Scalability}:
+    \begin{itemize}
+        \item Can fine-tune larger models with same hardware
+        \item Enables training models that otherwise wouldn't fit
+        \item Faster iteration cycles (less memory swapping)
+    \end{itemize}
+    
+    \item \textbf{Practical Accessibility}:
+    \begin{itemize}
+        \item Enables research on consumer hardware
+        \item Lower computational costs
+        \item Wider accessibility to state-of-the-art models
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Trade-offs and Considerations}
+
+\begin{itemize}
+    \item \textbf{Accuracy Loss}: 
+    \begin{itemize}
+        \item Typically 1-3\% accuracy degradation
+        \item Minimal for large models (redundancy helps)
+        \item Can be mitigated with careful quantization-aware training
+    \end{itemize}
+    
+    \item \textbf{Hardware Requirements}:
+    \begin{itemize}
+        \item Requires modern GPUs with INT8 support (RTX series, A100, etc.)
+        \item Older GPUs may not support efficiently
+        \item CPU quantization is slower
+    \end{itemize}
+    
+    \item \textbf{Training Stability}:
+    \begin{itemize}
+        \item Can sometimes cause instability during fine-tuning
+        \item Gradient accumulation may need adjustment
+        \item Learning rate might need tuning for quantized models
+    \end{itemize}
+    
+    \item \textbf{Implementation Complexity}:
+    \begin{itemize}
+        \item Requires compatible libraries (BitsAndBytes)
+        \item Some operations remain in FP16/FP32
+        \item Debugging can be more challenging
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Why We Use Quantization Here}
+
+For this project, 8-bit quantization is essential:
+
+\begin{itemize}
+    \item \textbf{Model Size}: PaliGemma-3B is $\sim$12GB in FP32, too large for RTX 3090 with training overhead
+    \item \textbf{Training Requirements}: Fine-tuning needs additional memory for gradients, optimizer states, and activations
+    \item \textbf{Performance}: The accuracy loss ($<$2\%) is acceptable for the significant memory savings
+    \item \textbf{Practical Necessity}: Without quantization, we'd need multiple GPUs or model parallelism, significantly increasing complexity
+\end{itemize}
+
+\subsubsection{Combining Quantization with LoRA}
+
+The combination of quantization and LoRA provides multiplicative benefits:
+
+\begin{itemize}
+    \item Quantization reduces base model memory (12GB $\rightarrow$ 6GB)
+    \item LoRA reduces trainable parameters (3B $\rightarrow$ 90M)
+    \item Combined: Can fine-tune large models on single consumer GPUs
+    \item Total memory usage: $\sim$6GB (quantized base) + $\sim$0.4GB (LoRA) + overhead $\approx$ 8GB
+\end{itemize}
+
+This makes it possible to fine-tune 3B+ parameter models on a single RTX 3090 (24GB), which would be impossible with either technique alone.
 
 \section{Exercise Questions and Answers}
 

@@ -1311,18 +1311,67 @@ Using non-saturating loss for generator to avoid vanishing gradients.
 \textbf{Discriminator Loss Behavior:}
 \begin{itemize}
     \item \textbf{Initial Phase}: High loss as discriminator learns basic classification
+    \begin{itemize}
+        \item Loss typically starts around 0.6-0.7 (near random guessing for binary classification)
+        \item Discriminator learns to distinguish real vs. fake initially
+        \item Rapid decrease as it identifies basic patterns (edges, shapes, textures)
+    \end{itemize}
     \item \textbf{Mid Training}: Decreases and stabilizes as discriminator becomes more accurate
+    \begin{itemize}
+        \item Loss stabilizes around 0.2-0.4 range
+        \item Discriminator maintains good discrimination capability
+        \item Slight fluctuations as generator improves and challenges discriminator
+    \end{itemize}
     \item \textbf{Later Phase}: Some fluctuations indicating adaptation to improving generator
+    \begin{itemize}
+        \item As generator improves, fakes become harder to identify
+        \item Discriminator must adapt, causing temporary loss increases
+        \item Healthy oscillation indicates active learning, not collapse
+    \end{itemize}
     \item \textbf{Optimal Range}: Loss around 0.15-0.35 indicates good balance with generator
+    \begin{itemize}
+        \item Too low (< 0.1): Discriminator too strong, generator cannot learn
+        \item Too high (> 0.5): Discriminator too weak, generator not challenged enough
+        \item Sweet spot: Discriminator strong enough to provide good gradients, weak enough for generator to improve
+    \end{itemize}
 \end{itemize}
 
 \textbf{Generator Loss Behavior:}
 \begin{itemize}
     \item \textbf{Initial Phase}: Moderate loss, generator learning basic patterns
+    \begin{itemize}
+        \item Loss typically 0.5-1.5 initially (non-saturating loss)
+        \item Generator learns to produce images with correct structure (fashion item shapes)
+        \item Rapid improvement in first few epochs
+    \end{itemize}
     \item \textbf{Mid Training}: Higher variance with peaks and valleys showing adversarial competition
+    \begin{itemize}
+        \item Loss oscillates between 0.5-3.0 range
+        \item Peaks indicate discriminator becoming stronger, generator needs to adapt
+        \item Valleys indicate generator temporarily winning (good generated samples)
+    \end{itemize}
     \item \textbf{Challenge Periods}: Loss spikes when discriminator becomes too strong (Epochs 6-7)
+    \begin{itemize}
+        \item Loss can spike to 2-4 range when discriminator gains advantage
+        \item Corresponds with FID score increase (worse generation quality)
+        \item Critical period: generator must adapt or training may collapse
+    \end{itemize}
     \item \textbf{Recovery}: Generator adapts and recovers, leading to best performance (Epoch 8)
+    \begin{itemize}
+        \item Generator learns to better fool discriminator
+        \item Loss decreases, corresponding to FID improvement
+        \item Demonstrates resilience of adversarial training when balanced
+    \end{itemize}
 \end{itemize}
+
+\textbf{Interpreting Loss Interactions:}
+\begin{enumerate}
+    \item \textbf{Healthy Training}: Both losses oscillate but trend toward stable values
+    \item \textbf{Discriminator Dominance}: D loss → 0, G loss → +∞ (discriminator too strong, generator cannot learn)
+    \item \textbf{Generator Dominance}: D loss → +∞, G loss → 0 (generator too strong, discriminator useless)
+    \item \textbf{Mode Collapse}: G loss decreases but images lack diversity (generator produces same patterns)
+    \item \textbf{Ideal State}: Both losses oscillate in moderate ranges, FID decreases, diversity maintained
+\end{enumerate}
 
 \subsubsection{Training Stability Indicators}
 
@@ -1425,10 +1474,56 @@ FID scores provide quantitative evaluation of generation quality throughout trai
 
 \begin{itemize}
     \item \textbf{FID < 50}: Excellent quality (our best: 171.67, indicating room for improvement)
+    \begin{itemize}
+        \item Near state-of-the-art performance for FashionMNIST
+        \item Generated samples nearly indistinguishable from real data
+        \item Requires extended training (50-100 epochs) or advanced techniques
+    \end{itemize}
     \item \textbf{50 ≤ FID < 100}: Good quality
+    \begin{itemize}
+        \item High-quality generation with minor artifacts
+        \item Suitable for most applications
+        \item Representative of well-trained GANs
+    \end{itemize}
     \item \textbf{100 ≤ FID < 200}: Moderate quality (our range: 171-208)
+    \begin{itemize}
+        \item Reasonable generation but visible differences from real data
+        \item May have some artifacts or slight blurriness
+        \item Our best FID (171.67) approaches upper bound of this range
+        \item Indicates model is learning but needs more training/optimization
+    \end{itemize}
     \item \textbf{FID ≥ 200}: Needs improvement (our initial epochs)
+    \begin{itemize}
+        \item Poor generation quality, easily distinguishable from real data
+        \item Typical of early training stages or poorly configured models
+        \item Significant optimization needed
+    \end{itemize}
 \end{itemize}
+
+\textbf{Understanding FID Components:}
+\begin{itemize}
+    \item \textbf{Mean Distance} $\|\mu_r - \mu_g\|^2$:
+    \begin{itemize}
+        \item Measures how different the average features are
+        \item Low value: Generated images have similar average features to real images
+        \item High value: Generated images are systematically different (e.g., always too dark/light)
+    \end{itemize}
+    \item \textbf{Covariance Term} $\text{Tr}(\Sigma_r + \Sigma_g - 2(\Sigma_r \Sigma_g)^{1/2})$:
+    \begin{itemize}
+        \item Measures diversity and feature distribution spread
+        \item Low value: Generated images have similar diversity to real images
+        \item High value: Generated images lack diversity (mode collapse) or have wrong feature correlations
+    \end{itemize}
+\end{itemize}
+
+\textbf{Why Our FID is Moderate:}
+\begin{enumerate}
+    \item \textbf{Limited Training}: Only 10 epochs may not be enough for full convergence
+    \item \textbf{Architecture Capacity}: DCGAN may need more filters or layers for FashionMNIST
+    \item \textbf{No Advanced Techniques}: Could benefit from spectral normalization, gradient penalty, etc.
+    \item \textbf{Training Instability}: Fluctuations in epochs 6-7 suggest suboptimal training dynamics
+    \item \textbf{Hyperparameter Tuning}: Learning rate, batch size, etc. could be optimized further
+\end{enumerate}
 
 \subsubsection{Factors Affecting FID Scores}
 
