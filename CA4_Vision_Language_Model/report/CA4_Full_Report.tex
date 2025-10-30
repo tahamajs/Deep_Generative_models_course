@@ -95,59 +95,280 @@ Hardware & NVIDIA GeForce RTX 3090 \\
 
 \subsection{Vision-Language Models (VLMs)}
 
-Vision-Language Models are AI systems that can process and understand both visual (images) and textual (language) inputs simultaneously. They bridge computer vision and natural language processing, enabling tasks like:
+Vision-Language Models are AI systems that can process and understand both visual (images) and textual (language) inputs simultaneously. They represent a fusion of computer vision and natural language processing capabilities, enabling sophisticated multi-modal understanding. Unlike traditional models that handle only images or only text, VLMs create unified representations that connect visual and linguistic information.
+
+\subsubsection{How VLMs Work}
+
+The fundamental architecture of VLMs consists of several key components:
+
+\begin{enumerate}
+    \item \textbf{Vision Encoder}: A convolutional or transformer-based network that processes input images and extracts visual features. These features capture objects, spatial relationships, colors, textures, and other visual properties.
+    
+    \item \textbf{Language Encoder/Decoder}: Processes text inputs (questions, prompts) and generates text outputs (answers, captions). This component understands semantic meaning and generates coherent responses.
+    
+    \item \textbf{Cross-Modal Fusion Layer}: This is the critical component that combines visual and textual features. It learns to align visual representations with linguistic concepts, enabling the model to answer questions about images or generate descriptions.
+    
+    \item \textbf{Multimodal Transformer}: Processes the fused representations using self-attention mechanisms to capture long-range dependencies and relationships between visual and textual elements.
+\end{enumerate}
+
+\subsubsection{Applications of VLMs}
+
+VLMs enable a wide range of applications:
 
 \begin{itemize}
-    \item \textbf{Image Captioning}: Generating descriptive text for images
-    \item \textbf{Visual Question Answering (VQA)}: Answering questions about image content
-    \item \textbf{Visual Reasoning}: Understanding relationships and logic in visual scenes
+    \item \textbf{Image Captioning}: Generating descriptive text for images, explaining what objects are present, their relationships, and scene composition.
+    
+    \item \textbf{Visual Question Answering (VQA)}: Answering questions about image content, requiring understanding of visual details, spatial relationships, and logical reasoning about the scene.
+    
+    \item \textbf{Visual Reasoning}: Understanding complex relationships and logic in visual scenes, such as counting objects, comparing attributes, or determining spatial configurations.
+    
+    \item \textbf{Image-to-Text Translation}: Converting visual information into structured text descriptions.
+    
+    \item \textbf{Multi-modal Search}: Finding images based on text queries or describing images based on visual content.
 \end{itemize}
 
-\textbf{PaliGemma} combines a vision encoder (SigLIP) with a language decoder (Gemma), processing images and generating coherent text responses. The architecture allows for:
+\subsubsection{PaliGemma Architecture}
+
+\textbf{PaliGemma} is Google's vision-language model that combines two powerful components:
+
 \begin{itemize}
-    \item Multi-modal understanding of visual and textual information
-    \item End-to-end training on vision-language tasks
-    \item Transfer learning from pre-trained models
+    \item \textbf{SigLIP Vision Encoder}: A vision transformer that processes images at 224×224 resolution. SigLIP uses a contrastive learning approach that creates robust visual representations. It extracts hierarchical features from images: low-level features (edges, textures) from early layers, and high-level semantic features (objects, scenes) from deeper layers.
+    
+    \item \textbf{Gemma Language Decoder}: A transformer-based language model that generates text responses. It uses autoregressive generation, predicting the next token based on previous tokens and the visual context provided by the encoder.
+\end{itemize}
+
+The architecture allows for:
+\begin{itemize}
+    \item \textbf{Multi-modal Understanding}: Seamlessly integrating visual and textual information at multiple levels of abstraction.
+    \item \textbf{End-to-End Training}: The entire model can be trained jointly, allowing the vision and language components to learn aligned representations.
+    \item \textbf{Transfer Learning}: Pre-trained on large-scale datasets, PaliGemma can be fine-tuned for specific tasks with minimal data, leveraging the rich representations learned during pre-training.
+    \item \textbf{Scalable Design}: The architecture scales from millions to billions of parameters, enabling increasingly sophisticated understanding.
+\end{itemize}
+
+\subsubsection{Why PaliGemma for This Task}
+
+PaliGemma is particularly suited for the CLEVR counting task because:
+
+\begin{itemize}
+    \item \textbf{High-resolution Processing}: The 224×224 resolution allows it to capture fine details necessary for accurate object counting.
+    \item \textbf{Robust Visual Features}: SigLIP encoder provides rich visual representations that can distinguish between objects even when they overlap or have similar appearances.
+    \item \textbf{Strong Language Understanding}: Gemma decoder can understand complex questions and generate precise numerical answers.
+    \item \textbf{Efficient Architecture}: The model can process images efficiently, making it suitable for real-world applications.
 \end{itemize}
 
 \subsection{CLEVR Dataset}
 
-CLEVR (Compositional Language and Elementary Visual Reasoning) is a synthetic dataset designed to test visual reasoning abilities:
+CLEVR (Compositional Language and Elementary Visual Reasoning) is a synthetic dataset designed to test visual reasoning abilities systematically. Created by researchers at Stanford, CLEVR addresses the limitations of natural image datasets by providing a controlled environment for evaluating reasoning capabilities.
+
+\subsubsection{Dataset Characteristics}
 
 \begin{itemize}
-    \item \textbf{Synthetic Scenes}: Computer-generated images with 3D objects (spheres, cubes, cylinders) in various colors, sizes, and materials
-    \item \textbf{Structured Questions}: Questions requiring understanding of object properties, spatial relationships, and logical operations
-    \item \textbf{Ground Truth Answers}: Deterministic answers based on scene composition
-    \item \textbf{Compositionality}: Questions test different reasoning skills (counting, comparison, spatial reasoning, logical operations)
+    \item \textbf{Synthetic Scenes}: Computer-generated 3D scenes containing geometric objects (spheres, cubes, cylinders) rendered with physics-based simulation. Each scene includes multiple objects with:
+    \begin{itemize}
+        \item \textbf{Shapes}: Three basic geometric forms (sphere, cube, cylinder)
+        \item \textbf{Colors}: Eight distinct colors (red, blue, green, yellow, brown, gray, purple, cyan)
+        \item \textbf{Materials}: Two material types (rubber, metal) affecting visual appearance
+        \item \textbf{Sizes}: Three size categories (small, large)
+        \item \textbf{Positions}: Objects placed in 3D space with realistic physics
+    \end{itemize}
+    
+    \item \textbf{Structured Questions}: Questions are programmatically generated to systematically test reasoning abilities:
+    \begin{itemize}
+        \item \textbf{Existence Questions}: "Is there a red cube?" - Tests basic object recognition
+        \item \textbf{Counting Questions}: "How many blue objects?" - Requires enumeration and attribute matching
+        \item \textbf{Comparison Questions}: "Are there more red spheres than blue cubes?" - Tests comparative reasoning
+        \item \textbf{Attribute Questions}: "What color is the large metal object?" - Tests property identification
+        \item \textbf{Spatial Questions}: "What is left of the green cube?" - Tests spatial relationship understanding
+        \item \textbf{Logical Questions}: "Are all red objects spheres?" - Tests logical operators (all, some, none)
+    \end{itemize}
+    
+    \item \textbf{Ground Truth Answers}: Answers are deterministically generated based on scene composition, enabling precise evaluation without human annotation errors or ambiguity.
+    
+    \item \textbf{Compositionality}: Questions can be composed to test increasingly complex reasoning:
+    \begin{itemize}
+        \item Simple: "How many objects?"
+        \item Moderate: "How many red cubes?"
+        \item Complex: "How many large metal spheres are there that are left of the blue cube?"
+    \end{itemize}
 \end{itemize}
 
-The CLEVR-COGEN-A variant used in this project focuses on counting tasks, where the model must identify the number of objects in a scene.
+\subsubsection{Why CLEVR for Evaluation}
+
+CLEVR serves as an ideal benchmark for several reasons:
+
+\begin{enumerate}
+    \item \textbf{Controlled Environment}: Synthetic data eliminates biases from natural image datasets (lighting, background, camera angles), focusing evaluation on reasoning capabilities.
+    
+    \item \textbf{Comprehensive Coverage}: The dataset systematically tests various reasoning skills, making it easy to identify specific weaknesses.
+    
+    \item \textbf{Unambiguous Evaluation}: Ground truth is precise, eliminating interpretation errors in evaluation.
+    
+    \item \textbf{Scalability}: Can generate unlimited questions and scenes programmatically.
+    
+    \item \textbf{Baseline Comparison}: Many models have been evaluated on CLEVR, providing reference points for performance comparison.
+\end{enumerate}
+
+\subsubsection{CLEVR-COGEN-A Variant}
+
+The CLEVR-COGEN-A variant used in this project specifically focuses on \textbf{counting tasks}. This choice is strategic because:
+
+\begin{itemize}
+    \item \textbf{Counting is Fundamental}: Counting objects requires recognizing individual entities, distinguishing between them, and accurately enumerating, testing core visual reasoning abilities.
+    
+    \item \textbf{Clear Success Criteria}: Counting has unambiguous ground truth (the number), making evaluation straightforward.
+    
+    \item \textbf{Progressive Difficulty}: Counting difficulty increases with:
+    \begin{itemize}
+        \item Number of objects (more objects = harder)
+        \item Occlusion (overlapping objects = harder)
+        \item Similar appearances (identical objects = harder to distinguish)
+        \item Scene complexity (cluttered scenes = harder)
+    \end{itemize}
+    
+    \item \textbf{Real-world Relevance}: Object counting has practical applications in inventory management, quality control, and surveillance.
+\end{itemize}
+
+\subsubsection{Dataset Statistics for This Project}
+
+\begin{itemize}
+    \item \textbf{Full Dataset Size}: Approximately 70,000 training images in the complete CLEVR-COGEN-A dataset
+    \item \textbf{Our Subset}: 20\% of full dataset = 14,000 samples
+    \begin{itemize}
+        \item Training: 12,600 samples (90\%)
+        \item Test: 1,400 samples (10\%)
+    \end{itemize}
+    \item \textbf{Question Format}: "How many items are there in the image?"
+    \item \textbf{Answer Format}: Numbers ranging typically from 3 to 10 objects per scene
+    \item \textbf{Image Resolution}: 320×240 pixels in original dataset, resized to 224×224 for model input
+\end{itemize}
 
 \subsection{Parameter-Efficient Fine-Tuning (PEFT)}
 
-\textbf{Low-Rank Adaptation (LoRA)}:
+Traditional fine-tuning requires updating all parameters of a large model, which is computationally expensive and memory-intensive. For a 3B parameter model, this could require:
+\begin{itemize}
+    \item Storing gradients for all parameters: $\sim$12GB+ GPU memory
+    \item Updating weights during optimization: Additional memory overhead
+    \item Multiple checkpoints: Full model weights saved repeatedly
+    \item Risk of overfitting: Too many parameters being trained
+\end{itemize}
 
-Instead of updating all model weights during fine-tuning, LoRA adds trainable low-rank matrices to frozen original weights. The mathematical formulation is:
+Parameter-Efficient Fine-Tuning (PEFT) addresses these challenges by training only a small subset of parameters while keeping the majority of the model frozen. LoRA is one of the most effective PEFT methods.
+
+\subsubsection{Low-Rank Adaptation (LoRA) - Deep Dive}
+
+\textbf{Mathematical Foundation}:
+
+LoRA is based on the observation that neural network weight updates during fine-tuning often have low intrinsic rank. This means the updates $\Delta W$ can be decomposed into smaller matrices. Instead of updating all $d \times k$ parameters in a weight matrix $W$, LoRA adds trainable low-rank matrices:
 
 \begin{equation}
-W' = W + BA
+W' = W + \frac{\alpha}{r} \cdot BA
 \end{equation}
 
 where:
 \begin{itemize}
-    \item $W \in \mathbb{R}^{d \times k}$: Original frozen weight matrix
-    \item $B \in \mathbb{R}^{d \times r}$: Trainable low-rank matrix B
-    \item $A \in \mathbb{R}^{r \times k}$: Trainable low-rank matrix A
-    \item $r << \min(d, k)$: Rank parameter (typically 8-64)
+    \item $W \in \mathbb{R}^{d \times k}$: Original frozen weight matrix (e.g., 4096×4096)
+    \item $B \in \mathbb{R}^{d \times r}$: Trainable low-rank matrix B (e.g., 4096×64)
+    \item $A \in \mathbb{R}^{r \times k}$: Trainable low-rank matrix A (e.g., 64×4096)
+    \item $r << \min(d, k)$: Rank parameter (typically 8-64, we use 64)
+    \item $\alpha$: Scaling factor (typically equals $r$, we use 64)
 \end{itemize}
 
-\textbf{Benefits of LoRA}:
+\textbf{Key Insight}: Instead of learning $d \times k$ parameters (16.7M for 4096×4096), we only learn $d \times r + r \times k$ parameters (524,288 for r=64), reducing parameters by $\sim$97\%.
+
+\subsubsection{Why LoRA Works}
+
 \begin{enumerate}
-    \item \textbf{Memory Efficiency}: Only train $\sim$1-2\% of parameters
-    \item \textbf{Faster Training}: Reduced gradient computation and memory usage
-    \item \textbf{Modular Adaptation}: Easy to switch between different tasks
-    \item \textbf{Maintained Performance}: Often achieves 95-100\% of full fine-tuning performance
+    \item \textbf{Low-Rank Assumption}: Recent research shows that weight updates during fine-tuning have low intrinsic dimensionality. The model's learned representations exist in a lower-dimensional subspace, so a low-rank approximation is often sufficient.
+    
+    \item \textbf{Preserves Pre-trained Knowledge}: By freezing the original weights $W$, we preserve all the valuable pre-trained knowledge. The LoRA matrices only learn task-specific adaptations, making fine-tuning more stable.
+    
+    \item \textbf{Gradient Efficiency}: During backpropagation:
+    \begin{itemize}
+        \item Gradients only flow through $B$ and $A$ (not $W$)
+        \item Much smaller gradient tensors reduce memory usage
+        \item Faster gradient computation
+        \item More stable gradients (smaller parameter space)
+    \end{itemize}
+    
+    \item \textbf{Modularity}: LoRA adapters are additive:
+    \begin{itemize}
+        \item Can add/remove adapters without changing base model
+        \item Can combine multiple adapters (e.g., one for counting, one for description)
+        \item Easy to switch between tasks by loading different adapters
+    \end{itemize}
 \end{enumerate}
+
+\subsubsection{LoRA Configuration Details}
+
+In our implementation, we configure LoRA with:
+
+\begin{itemize}
+    \item \textbf{Rank (r=64)}: Controls the learning capacity. Higher rank = more parameters = potentially better performance but more memory. We chose 64 as a balance.
+    
+    \item \textbf{Lora Alpha ($\alpha$=64)}: Scaling factor for the LoRA updates. Typically set equal to rank. Higher values amplify LoRA's effect relative to base weights.
+    
+    \item \textbf{Lora Dropout (0.05)}: Regularization to prevent overfitting. Dropout is applied to the LoRA updates during training.
+    
+    \item \textbf{Target Modules}: We apply LoRA to:
+    \begin{itemize}
+        \item \textbf{Attention Layers} (q\_proj, k\_proj, v\_proj, o\_proj): These are critical for understanding relationships between visual and textual features. The attention mechanism learns which parts of the image to focus on when answering questions.
+        
+        \item \textbf{Feed-Forward Layers} (gate\_proj, up\_proj, down\_proj): These transform representations and capture task-specific patterns. They're important for generating accurate answers.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Benefits of LoRA}
+
+\begin{enumerate}
+    \item \textbf{Memory Efficiency}: 
+    \begin{itemize}
+        \item Train only 3\% of parameters (90M instead of 3B)
+        \item Reduced gradient memory: $\sim$360MB for gradients vs. $\sim$12GB
+        \item Smaller optimizer states (Adam/AdamW store momentum for each parameter)
+    \end{itemize}
+    
+    \item \textbf{Faster Training}: 
+    \begin{itemize}
+        \item Fewer parameters to update = faster gradient computation
+        \item Can use larger effective batch sizes with same memory
+        \item Checkpoint saving is faster (smaller files)
+    \end{itemize}
+    
+    \item \textbf{Modular Adaptation}: 
+    \begin{itemize}
+        \item Save only LoRA weights: $\sim$360MB vs. $\sim$12GB for full model
+        \item Easy task switching: Load different adapters for different tasks
+        \item Can combine multiple adapters for multi-task learning
+    \end{itemize}
+    
+    \item \textbf{Maintained Performance}: 
+    \begin{itemize}
+        \item Research shows LoRA achieves 95-100\% of full fine-tuning performance
+        \item Often more stable (less prone to catastrophic forgetting)
+        \item Better generalization (smaller parameter space = less overfitting)
+    \end{itemize}
+    
+    \item \textbf{Computational Savings}:
+    \begin{itemize}
+        \item Training time reduced proportionally to trainable parameters
+        \item Lower energy consumption
+        \item Enables training on consumer GPUs
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Trade-offs and Limitations}
+
+LoRA has some limitations to be aware of:
+
+\begin{itemize}
+    \item \textbf{Rank Selection}: Choosing the right rank requires experimentation. Too low = insufficient capacity, too high = unnecessary parameters.
+    
+    \item \textbf{Task Complexity}: Very complex tasks might require higher ranks or full fine-tuning.
+    
+    \item \textbf{Target Module Selection}: Need to identify which modules benefit most from adaptation (domain knowledge helps).
+    
+    \item \textbf{Multi-Adapter Overhead}: Combining many adapters can still consume significant memory.
+\end{itemize}
 
 \subsection{Quantization}
 

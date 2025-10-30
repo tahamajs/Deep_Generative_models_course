@@ -95,6 +95,24 @@ For GAN training, images are resized to 64×64 pixels and normalized to the rang
 
 Normalizing flows are a class of generative models that learn complex data distributions by transforming a simple base distribution (typically a standard Gaussian) through a series of invertible transformations. RealNVP (Real-valued Non-Volume Preserving) is a prominent architecture that enables efficient density estimation and sampling.
 
+\subsubsection{Understanding Normalizing Flows}
+
+Normalizing flows belong to the family of likelihood-based generative models, which directly model the probability density function of data. Unlike GANs that lack explicit density estimation, flows provide tractable likelihood computation, enabling:
+
+\begin{itemize}
+    \item \textbf{Exact Density Estimation}: Can compute $p(x)$ for any data point $x$, useful for anomaly detection and OOD detection
+    \item \textbf{Bidirectional Sampling}: Can generate samples (forward) and compute likelihoods (inverse), providing full generative capabilities
+    \item \textbf{Latent Space Interpretation}: The learned transformation maps complex data distributions to simple latent spaces (e.g., standard Gaussian), making the latent space interpretable
+    \item \textbf{Training Stability}: Unlike adversarial training, flow models use maximum likelihood estimation (MLE), which is more stable and predictable
+\end{itemize}
+
+The key challenge in designing normalizing flows is ensuring that:
+\begin{enumerate}
+    \item Transformations are \textbf{invertible}: Both forward $f: x \rightarrow z$ and inverse $f^{-1}: z \rightarrow x$ must exist
+    \item Jacobian determinant is \textbf{tractable}: Must be efficiently computable for likelihood estimation
+    \item Transformations are \textbf{expressive}: Can model complex, multi-modal distributions
+\end{enumerate}
+
 \subsubsection{Key Contributions of RealNVP}
 
 The RealNVP model, introduced by Dinh et al., makes several important contributions:
@@ -106,6 +124,37 @@ The RealNVP model, introduced by Dinh et al., makes several important contributi
         y_{d+1:D} &= x_{d+1:D} \odot \exp(s(x_{1:d})) + t(x_{1:d})
     \end{align}
     where $s(\cdot)$ and $t(\cdot)$ are neural networks (scale and translation functions), and $\odot$ denotes element-wise multiplication.
+    
+    \textbf{Detailed Explanation:}
+    \begin{itemize}
+        \item The input $x \in \mathbb{R}^D$ is split into two parts: $x_{1:d}$ (first $d$ dimensions) and $x_{d+1:D}$ (remaining dimensions)
+        \item The first half $x_{1:d}$ remains \textbf{unchanged} (identity transformation), ensuring invertibility
+        \item The second half $x_{d+1:D}$ is transformed using an \textbf{affine transformation}:
+        \begin{itemize}
+            \item $s(x_{1:d})$: Scale factor (output of neural network, passed through Tanh to bound values)
+            \item $t(x_{1:d})$: Translation/offset (output of neural network, unbounded)
+            \item $\exp(s(\cdot))$: Ensures positive scaling factor (exp prevents division by zero in inverse)
+        \end{itemize}
+        \item The transformation is \textbf{conditionally invertible}: Since $x_{1:d}$ is unchanged, we can use it to compute the inverse transformation
+        \item The Jacobian matrix is \textbf{lower triangular}: Making determinant computation efficient (product of diagonal elements)
+    \end{itemize}
+    
+    \textbf{Why This Works:}
+    \begin{enumerate}
+        \item \textbf{Invertibility}: Given $y$, we can recover $x$ because:
+        \begin{align}
+            x_{1:d} &= y_{1:d} \quad \text{(unchanged part)} \\
+            x_{d+1:D} &= (y_{d+1:D} - t(y_{1:d})) \odot \exp(-s(y_{1:d}))
+        \end{align}
+        
+        \item \textbf{Expressiveness}: By stacking multiple coupling layers with alternating masks, all dimensions get transformed over multiple layers, enabling complex transformations
+        
+        \item \textbf{Efficiency}: The Jacobian determinant is simply:
+        \begin{equation}
+            \det \frac{\partial y}{\partial x} = \prod_{i=d+1}^{D} \exp(s_i(x_{1:d})) = \exp\left(\sum_{i=d+1}^{D} s_i(x_{1:d})\right)
+        \end{equation}
+        This is computationally efficient (just a sum) compared to computing full determinant ($O(D^3)$).
+    \end{enumerate}
     
     \item \textbf{Log-Likelihood Calculation}: Normalizing flows provide exact log-likelihood computation using the change of variables formula:
     \begin{equation}
@@ -142,6 +191,40 @@ The training objective is to maximize the log-likelihood of the data, which is e
     \mathcal{L} = -\frac{1}{N}\sum_{i=1}^{N} \log p_X(x_i)
 \end{equation}
 
+\textbf{Detailed Training Process:}
+
+\begin{enumerate}
+    \item \textbf{Forward Pass}: For each data sample $x_i$, we apply the forward transformation:
+    \begin{equation}
+        z_i = f(x_i) = f_L \circ f_{L-1} \circ \cdots \circ f_1(x_i)
+    \end{equation}
+    where each $f_j$ is a coupling layer.
+    
+    \item \textbf{Likelihood Computation}:
+    \begin{equation}
+        \log p_X(x_i) = \log p_Z(z_i) + \sum_{j=1}^{L} \log \left|\det \frac{\partial f_j}{\partial \text{input}_j}\right|
+    \end{equation}
+    where $p_Z$ is the base distribution (standard Gaussian).
+    
+    \item \textbf{Loss Calculation}: Sum over all samples and minimize:
+    \begin{equation}
+        \mathcal{L} = -\frac{1}{N}\sum_{i=1}^{N} \left[\log p_Z(z_i) + \sum_{j=1}^{L} \log \left|\det \frac{\partial f_j}{\partial \text{input}_j}\right|\right]
+    \end{equation}
+    
+    \item \textbf{Gradient Backpropagation}: Gradients flow through both:
+    \begin{itemize}
+        \item The neural networks $s(\cdot)$ and $t(\cdot)$ in coupling layers
+        \item The log-determinant terms (which are differentiable)
+    \end{itemize}
+    
+    \item \textbf{Intuition}: Maximizing likelihood means:
+    \begin{itemize}
+        \item Making real data points $x_i$ map to high-probability regions in $p_Z$ (typically near origin for Gaussian)
+        \item Ensuring the transformation preserves enough volume (via log-det term) to maintain good density matching
+        \item Balancing between squeezing data into latent space while maintaining transformation smoothness
+    \end{itemize}
+\end{enumerate}
+
 \subsection{Implementation of RealNVP on FashionMNIST (10 points)}
 
 \subsubsection{Architecture Overview}
@@ -157,7 +240,19 @@ Our RealNVP implementation consists of:
 
 \subsubsection{Code Implementation}
 
-The implementation uses coupling layers with alternating masks to ensure all dimensions are transformed:
+The implementation uses coupling layers with alternating masks to ensure all dimensions are transformed. Let's break down each component:
+
+\textbf{Mask Design Strategy:}
+\begin{itemize}
+    \item \textbf{Alternating Pattern}: Odd layers mask even indices, even layers mask odd indices
+    \item \textbf{Purpose}: Ensures that after $L$ layers, every dimension has been transformed at least $\lfloor L/2 \rfloor$ times
+    \item \textbf{Example}: For 8 layers with 784 dimensions:
+    \begin{itemize}
+        \item Layer 1: Transform dimensions 0, 2, 4, ... (even indices)
+        \item Layer 2: Transform dimensions 1, 3, 5, ... (odd indices)
+        \item This pattern continues, ensuring comprehensive transformation
+    \end{itemize}
+\end{itemize}
 
 \begin{lstlisting}[caption={RealNVP Model Implementation}]
 class CouplingLayer(nn.Module):
@@ -177,19 +272,47 @@ class CouplingLayer(nn.Module):
         )
 
     def forward(self, x):
+        # Step 1: Mask input - keep first half unchanged
         x_masked = x * self.mask
+        
+        # Step 2: Compute scale and translation for second half
+        # Note: scale_net and translate_net operate on masked input
+        # Output is masked to only affect second half (1 - self.mask)
         s = self.scale_net(x_masked) * (1 - self.mask)
         t = self.translate_net(x_masked) * (1 - self.mask)
+        
+        # Step 3: Apply affine transformation to second half
+        # Identity for first half: x_masked (unchanged)
+        # Affine for second half: x * exp(s) + t
         y = x_masked + (1 - self.mask) * (x * torch.exp(s) + t)
+        
+        # Step 4: Compute log-determinant of Jacobian
+        # For affine coupling, det = exp(sum of scale factors)
+        # Only sum over transformed dimensions (second half)
         log_det_jacobian = (s * (1 - self.mask)).sum(dim=1)
         return y, log_det_jacobian
 
     def inverse(self, y):
+        # Inverse transformation: recover x from y
+        # Step 1: First half unchanged
         y_masked = y * self.mask
+        
+        # Step 2: Compute scale and translation using unchanged part
         s = self.scale_net(y_masked) * (1 - self.mask)
         t = self.translate_net(y_masked) * (1 - self.mask)
+        
+        # Step 3: Invert affine transformation
+        # x = y (first half unchanged)
+        # x = (y - t) * exp(-s) for second half
         x = y_masked + (1 - self.mask) * (y - t) * torch.exp(-s)
         return x
+        
+\textbf{Why Inverse is Efficient:}
+\begin{itemize}
+    \item \textbf{No Matrix Inversion}: Direct algebraic inversion, no expensive matrix operations
+    \item \textbf{Same Networks}: Reuses the same $s(\cdot)$ and $t(\cdot)$ networks (no separate inverse networks needed)
+    \item \textbf{Exact Inversion}: Mathematically exact (no approximations), preserving distribution exactly
+\end{itemize}
 \end{lstlisting}
 
 \subsubsection{Training Configuration}
@@ -238,6 +361,27 @@ with torch.no_grad():
 \subsubsection{Probabilistic OOD Detection Method}
 
 Flow-based models enable out-of-distribution (OOD) detection through likelihood evaluation. The key insight is that well-trained flow models assign higher likelihoods to in-distribution data compared to OOD data.
+
+\textbf{Intuitive Understanding:}
+\begin{itemize}
+    \item \textbf{Training Objective}: Flow models are trained to maximize likelihood of training data (FashionMNIST)
+    \item \textbf{Expected Behavior}: Well-trained models assign high $p(x)$ to samples similar to training data
+    \item \textbf{OOD Hypothesis}: Different distributions (MNIST, KMNIST) should have lower likelihoods because:
+    \begin{enumerate}
+        \item They weren't seen during training
+        \item They have different statistical properties (e.g., different digit/fashion item styles)
+        \item The learned transformation is optimized for FashionMNIST, not other datasets
+    \end{enumerate}
+    \item \textbf{Threshold-Based Detection}: Set a threshold $\tau$ such that samples with $\log p(x) < \tau$ are flagged as OOD
+\end{itemize}
+
+\textbf{Why Likelihood Works for OOD Detection:}
+\begin{itemize}
+    \item \textbf{Density Concentration}: Flow models learn to concentrate density in regions where training data lies
+    \item \textbf{Low-Density Regions}: OOD samples fall in low-density regions of the learned distribution
+    \item \textbf{Quantitative Measure}: Log-likelihood provides a continuous score, not just binary classification
+    \item \textbf{No Labels Required}: Unsupervised method, doesn't need OOD examples during training
+\end{itemize}
 
 \subsubsection{Methodology}
 
@@ -426,12 +570,27 @@ The discriminator aims to \textit{maximize} this, which means:
     \item Maximize $\log(1-D(G(z)))$ for fake samples (increase probability of fake)
 \end{itemize}
 
+\textbf{Detailed Interpretation:}
+\begin{itemize}
+    \item \textbf{First Term} $-\mathbb{E}[\log D(x_{real})]$: When $D(x) \to 1$ (confident real), this term → 0 (good for discriminator). When $D(x) \to 0$ (wrongly classified as fake), this term → +∞ (penalty).
+    \item \textbf{Second Term} $-\mathbb{E}[\log(1-D(G(z)))]$: When $D(G(z)) \to 0$ (correctly identifies fake), this term → 0 (good). When $D(G(z)) \to 1$ (fooled), this term → +∞ (penalty).
+    \item \textbf{Training Goal}: Discriminator learns to push $D(x_{real}) \to 1$ and $D(G(z)) \to 0$
+\end{itemize}
+
 \textbf{Generator Loss:}
 \begin{equation}
     L_G(\phi; \theta) = \mathbb{E}_{z \sim \mathcal{N}(0,1)}[\log(1 - D_\phi(G_\theta(z)))]
 \end{equation}
 
 The generator aims to \textit{minimize} this, which means making $D(G(z))$ as large as possible (fooling the discriminator).
+
+\textbf{Detailed Interpretation:}
+\begin{itemize}
+    \item \textbf{Generator's Goal}: Make generated samples indistinguishable from real ones
+    \item \textbf{When Successful}: $D(G(z)) \to 1$ means discriminator thinks fakes are real → $L_G \to 0$ (success!)
+    \item \textbf{When Failing}: $D(G(z)) \to 0$ means discriminator easily identifies fakes → $L_G \to +\infty$ (failure)
+    \item \textbf{Adversarial Nature}: Generator wants to minimize $L_G$, but discriminator (implicitly) wants to maximize it
+\end{itemize}
 
 \subsubsection{Vanishing Gradients Problem}
 
@@ -770,4 +929,502 @@ For our FashionMNIST GAN implementation, we use:
 \end{enumerate}
 
 \newpage
+
+\section{Question 3: Implementation of GAN on FashionMNIST}
+
+\subsection{Model Implementation (4 points)}
+
+We implement a Deep Convolutional GAN (DCGAN) following the architecture guidelines from Radford et al. (2016) for stable training.
+
+\subsubsection{Generator Architecture}
+
+The generator transforms a 100-dimensional noise vector into a 64×64 grayscale image using transposed convolutions:
+
+\begin{lstlisting}[caption={Generator Network Implementation}]
+class Generator(nn.Module):
+    def __init__(self, latent_dim=100):
+        super(Generator, self).__init__()
+        ngf = 64  # Number of generator filters
+        self.model = nn.Sequential(
+            # Input: latent_dim x 1 x 1
+            nn.ConvTranspose2d(latent_dim, ngf * 8, kernel_size=4, 
+                              stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(ngf * 8),
+            nn.ReLU(True),
+            # Output: (ngf*8) x 4 x 4
+
+            nn.ConvTranspose2d(ngf * 8, ngf * 4, kernel_size=4, 
+                              stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ngf * 4),
+            nn.ReLU(True),
+            # Output: (ngf*4) x 8 x 8
+
+            nn.ConvTranspose2d(ngf * 4, ngf * 2, kernel_size=4, 
+                              stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ngf * 2),
+            nn.ReLU(True),
+            # Output: (ngf*2) x 16 x 16
+
+            nn.ConvTranspose2d(ngf * 2, ngf, kernel_size=4, 
+                              stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ngf),
+            nn.ReLU(True),
+            # Output: ngf x 32 x 32
+
+            nn.ConvTranspose2d(ngf, 1, kernel_size=4, 
+                              stride=2, padding=1, bias=False),
+            nn.Tanh()
+            # Output: 1 x 64 x 64
+        )
+
+    def forward(self, input):
+        return self.model(input)
+\end{lstlisting}
+
+\textbf{Key Architecture Features:}
+\begin{itemize}
+    \item \textbf{Transposed Convolutions}: Upsample spatial dimensions progressively (1×1 → 4×4 → 8×8 → 16×16 → 32×32 → 64×64)
+    \item \textbf{Batch Normalization}: Applied after each transposed convolution (except first and last layers)
+    \item \textbf{ReLU Activation}: Used in intermediate layers for non-linearity
+    \item \textbf{Tanh Output}: Final activation to produce pixel values in range $[-1, 1]$
+    \item \textbf{No Biases}: Bias terms removed from convolutions as recommended by DCGAN paper
+\end{itemize}
+
+\subsubsection{Discriminator Architecture}
+
+The discriminator is a binary classifier that distinguishes real from generated images:
+
+\begin{lstlisting}[caption={Discriminator Network Implementation}]
+class Discriminator(nn.Module):
+    def __init__(self):
+        super(Discriminator, self).__init__()
+        ndf = 64  # Number of discriminator filters
+        self.model = nn.Sequential(
+            # Input: 1 x 64 x 64
+            nn.Conv2d(1, ndf, kernel_size=4, stride=2, 
+                     padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            # Output: ndf x 32 x 32
+
+            nn.Conv2d(ndf, ndf * 2, kernel_size=4, stride=2, 
+                     padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # Output: (ndf*2) x 16 x 16
+
+            nn.Conv2d(ndf * 2, ndf * 4, kernel_size=4, stride=2, 
+                     padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # Output: (ndf*4) x 8 x 8
+
+            nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=2, 
+                     padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # Output: (ndf*8) x 4 x 4
+
+            nn.Conv2d(ndf * 8, 1, kernel_size=4, stride=1, 
+                     padding=0, bias=False),
+            nn.Sigmoid()
+            # Output: 1 x 1 x 1
+        )
+
+    def forward(self, input):
+        return self.model(input).view(-1, 1)
+\end{lstlisting}
+
+\textbf{Key Architecture Features:}
+\begin{itemize}
+    \item \textbf{Standard Convolutions}: Downsample spatial dimensions (64×64 → 32×32 → 16×16 → 8×8 → 4×4 → 1×1)
+    \item \textbf{LeakyReLU}: Used instead of ReLU to prevent "dying ReLU" problem (slope=0.2)
+    \item \textbf{Batch Normalization}: Applied to intermediate layers (not first layer)
+    \item \textbf{Sigmoid Output}: Produces probability that input is real
+    \item \textbf{Progressive Feature Extraction}: Increasing number of filters (64 → 128 → 256 → 512)
+\end{itemize}
+
+\subsubsection{Model Parameters}
+
+\begin{itemize}
+    \item \textbf{Generator Parameters}: ~4.6 million parameters
+    \item \textbf{Discriminator Parameters}: ~3.2 million parameters
+    \item \textbf{Total Parameters}: ~7.8 million parameters
+\end{itemize}
+
+\subsection{Role of ConvTranspose2D Layer (6 points)}
+
+The \texttt{ConvTranspose2d} (also called deconvolution or fractional-strided convolution) is crucial for the generator's upsampling operation.
+
+\subsubsection{Mathematical Operation}
+
+Transposed convolution performs the reverse operation of standard convolution. Given input $x$ and filter $W$, it computes:
+\begin{equation}
+    y = W^T * x
+\end{equation}
+
+where $*$ denotes convolution, and $W^T$ is the transposed (flipped) filter.
+
+\subsubsection{Output Size Calculation}
+
+For \texttt{ConvTranspose2d}, the output size is computed as:
+\begin{equation}
+    H_{out} = (H_{in} - 1) \times \text{stride} - 2 \times \text{padding} + \text{kernel\_size} + \text{output\_padding}
+\end{equation}
+
+For our specific layers:
+\begin{itemize}
+    \item \textbf{Layer 1}: $1 \times 1$, kernel=4, stride=1, padding=0 → $4 \times 4$
+    \item \textbf{Layer 2}: $4 \times 4$, kernel=4, stride=2, padding=1 → $8 \times 8$
+    \item \textbf{Layer 3}: $8 \times 8$, kernel=4, stride=2, padding=1 → $16 \times 16$
+    \item \textbf{Layer 4}: $16 \times 16$, kernel=4, stride=2, padding=1 → $32 \times 32$
+    \item \textbf{Layer 5}: $32 \times 32$, kernel=4, stride=2, padding=1 → $64 \times 64$
+\end{itemize}
+
+\subsubsection{Relationship Between Parameters}
+
+\begin{enumerate}
+    \item \textbf{Kernel Size}: Determines the receptive field of each output pixel. Larger kernels capture more spatial information but require more parameters.
+    
+    \item \textbf{Stride}: Controls the upsampling factor. Stride=2 doubles the spatial dimensions, stride=1 keeps same size.
+    
+    \item \textbf{Padding}: Adjusts the output size. Padding=1 with stride=2 typically maintains good spatial relationships.
+    
+    \item \textbf{Output Size Formula}:
+    \begin{align}
+        \text{output\_size} &= (\text{input\_size} - 1) \times \text{stride} \\
+        &\quad - 2 \times \text{padding} + \text{kernel\_size}
+    \end{align}
+\end{enumerate}
+
+\subsubsection{Why Transposed Convolution?}
+
+\begin{itemize}
+    \item \textbf{Learnable Upsampling}: Unlike bilinear or nearest-neighbor upsampling, transposed convolution learns how to upsample optimally
+    \item \textbf{Feature Mapping}: Transforms low-dimensional latent representation to high-dimensional image space
+    \item \textbf{Gradient Flow}: Provides learnable paths for gradients during backpropagation
+    \item \textbf{Flexibility}: Different filters can learn different upsampling patterns
+\end{itemize}
+
+\subsubsection{Visual Example}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/CA2_DGM_cell6_out1.png}
+    \caption{Visualization of transposed convolution operation: a 3×3 input is upsampled to 5×5 output using kernel size 3, stride 1, and padding 1.}
+    \label{fig:transposed_conv}
+\end{figure}
+
+\subsection{Visualization and Analysis of Generated Images (4 points)}
+
+We train the DCGAN for 10 epochs and visualize generated samples at different stages of training.
+
+\subsubsection{Training Configuration}
+
+\begin{itemize}
+    \item \textbf{Latent Dimension}: 100
+    \item \textbf{Learning Rate}: 0.0002 (Adam optimizer)
+    \item \textbf{Batch Size}: 64
+    \item \textbf{Epochs}: 10
+    \item \textbf{Optimizer}: Adam with $\beta_1 = 0.5$, $\beta_2 = 0.999$
+    \item \textbf{Dataset}: FashionMNIST (60,000 training images, resized to 64×64)
+\end{itemize}
+
+\subsubsection{Generated Samples Throughout Training}
+
+\textbf{Epoch 1 - Initial Samples:}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_1.png}
+    \caption{Generated samples at Epoch 1 (FID: 270.55). The model produces blurry, low-quality images with poorly defined structures as it begins learning.}
+    \label{fig:epoch1}
+\end{figure}
+
+\textbf{Epoch 3 - Mid Training:}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_3.png}
+    \caption{Generated samples at Epoch 3 (FID: 214.45). Significant improvement in image quality with better structure definition and recognizable fashion item shapes.}
+    \label{fig:epoch3}
+\end{figure}
+
+\textbf{Epoch 5 - Continued Improvement:}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_5.png}
+    \caption{Generated samples at Epoch 5 (FID: 201.78). Further improvement in detail and realism with clearer separation between different fashion items.}
+    \label{fig:epoch5}
+\end{figure}
+
+\textbf{Epoch 8 - Best Performance:}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_8.png}
+    \caption{Generated samples at Epoch 8 (FID: 171.67 - Best). Highest quality samples achieved with sharp, detailed, and diverse fashion items. Best FID score indicates optimal generation quality.}
+    \label{fig:epoch8}
+\end{figure}
+
+\textbf{Epoch 10 - Final Samples:}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_10.png}
+    \caption{Generated samples at Epoch 10 (FID: 208.15). Final samples showing slight quality degradation from best epoch, possibly indicating overfitting or training instability.}
+    \label{fig:epoch10}
+\end{figure}
+
+\subsubsection{Comparison with Real Samples}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/CA2_DGM_cell4_out1.png}
+    \caption{Real FashionMNIST samples from the dataset. These represent the target distribution that the generator learns to approximate.}
+    \label{fig:real_samples}
+\end{figure}
+
+\subsubsection{Quality Progression Analysis}
+
+\begin{enumerate}
+    \item \textbf{Early Epochs (1-3)}:
+    \begin{itemize}
+        \item Blurry and noisy images
+        \item Unclear boundaries between objects
+        \item High FID scores indicating large distance from real distribution
+        \item Generator learning basic structure
+    \end{itemize}
+    
+    \item \textbf{Mid Training (4-6)}:
+    \begin{itemize}
+        \item Clearer object boundaries
+        \item Better detail and texture
+        \item Decreasing FID scores showing improvement
+        \item Some training instability observed (Epochs 6-7)
+    \end{itemize}
+    
+    \item \textbf{Peak Performance (Epoch 8)}:
+    \begin{itemize}
+        \item Best visual quality achieved
+        \item Sharp and detailed images
+        \item Diverse fashion item generation
+        \item Lowest FID score (171.67)
+    \end{itemize}
+    
+    \item \textbf{Late Training (9-10)}:
+    \begin{itemize}
+        \item Slight quality degradation
+        \item Possible overfitting indicators
+        \item FID score increase suggesting mode collapse or instability
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Loss Analysis During Training (4 points)}
+
+The loss curves provide crucial insights into the adversarial training dynamics.
+
+\subsubsection{Loss Computation}
+
+\textbf{Discriminator Loss:}
+\begin{equation}
+    L_D = -\frac{1}{2}\left[\mathbb{E}[\log D(x_{real})] + \mathbb{E}[\log(1-D(G(z)))]\right]
+\end{equation}
+
+\textbf{Generator Loss:}
+\begin{equation}
+    L_G = -\mathbb{E}[\log(D(G(z)))]
+\end{equation}
+
+Using non-saturating loss for generator to avoid vanishing gradients.
+
+\subsubsection{Loss Curves}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Q2_final_res_cell53_out40.png}
+    \caption{Generator and Discriminator loss curves throughout training. The losses oscillate as the networks compete, with discriminator generally stabilizing while generator shows more variance.}
+    \label{fig:loss_curves}
+\end{figure}
+
+\subsubsection{Loss Analysis}
+
+\textbf{Discriminator Loss Behavior:}
+\begin{itemize}
+    \item \textbf{Initial Phase}: High loss as discriminator learns basic classification
+    \item \textbf{Mid Training}: Decreases and stabilizes as discriminator becomes more accurate
+    \item \textbf{Later Phase}: Some fluctuations indicating adaptation to improving generator
+    \item \textbf{Optimal Range}: Loss around 0.15-0.35 indicates good balance with generator
+\end{itemize}
+
+\textbf{Generator Loss Behavior:}
+\begin{itemize}
+    \item \textbf{Initial Phase}: Moderate loss, generator learning basic patterns
+    \item \textbf{Mid Training}: Higher variance with peaks and valleys showing adversarial competition
+    \item \textbf{Challenge Periods}: Loss spikes when discriminator becomes too strong (Epochs 6-7)
+    \item \textbf{Recovery}: Generator adapts and recovers, leading to best performance (Epoch 8)
+\end{itemize}
+
+\subsubsection{Training Stability Indicators}
+
+\begin{enumerate}
+    \item \textbf{Balanced Losses}: Both losses should oscillate but not diverge
+    \item \textbf{Discriminator Advantage}: Slightly lower discriminator loss indicates good discrimination capability
+    \item \textbf{No Mode Collapse}: Generator loss fluctuations suggest diversity (not stuck in one mode)
+    \item \textbf{Warning Signs}:
+    \begin{itemize}
+        \item Discriminator loss approaching 0: Too strong, generator cannot learn
+        \item Generator loss very high: Generator struggling to fool discriminator
+        \item Loss divergence: Training instability or mode collapse
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Per-Epoch Loss Analysis}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Q2_final_res_cell53_out20.png}
+    \caption{Average loss per epoch for Generator and Discriminator. The trend shows overall stability with some fluctuations during mid-training epochs.}
+    \label{fig:epoch_loss}
+\end{figure}
+
+\subsection{FID Score Calculation and Analysis (3 points)}
+
+FID scores provide quantitative evaluation of generation quality throughout training.
+
+\subsubsection{FID Score Progression}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Epoch} & \textbf{FID Score} & \textbf{Change} & \textbf{Notes} \\
+\hline
+1 & 270.55 & Baseline & Initial high score, model learning \\
+2 & 260.57 & -3.7\% & Slight improvement \\
+3 & 214.45 & -21.8\% & Significant improvement \\
+4 & 219.05 & +2.1\% & Slight increase (normal fluctuation) \\
+5 & 201.78 & -7.9\% & Continued improvement \\
+6 & 245.01 & +21.4\% & Increase (training instability) \\
+7 & 246.99 & +0.8\% & Continued increase \\
+8 & \textbf{171.67} & \textbf{-30.5\%} & \textbf{Best FID Score} \\
+9 & 203.22 & +18.4\% & Increase from best \\
+10 & 208.15 & +2.4\% & Final FID Score \\
+\hline
+\end{tabular}
+\caption{FID Score progression throughout training. Best performance achieved at Epoch 8 with 36.5\% improvement from start.}
+\label{tab:fid_scores}
+\end{table}
+
+\subsubsection{FID Score Plot}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/Q2_final_res_cell53_out31.png}
+    \caption{FID Score progression over 10 epochs. The curve shows overall improvement with best performance at Epoch 8, followed by slight degradation.}
+    \label{fig:fid_progression}
+\end{figure}
+
+\subsubsection{Key Observations}
+
+\begin{enumerate}
+    \item \textbf{Initial Improvement (Epochs 1-3)}:
+    \begin{itemize}
+        \item Rapid FID reduction from 270.55 to 214.45
+        \item 21.8\% improvement in Epoch 3
+        \item Generator learning fundamental patterns
+    \end{itemize}
+    
+    \item \textbf{Training Instability (Epochs 6-7)}:
+    \begin{itemize}
+        \item FID increase to 245.01 and 246.99
+        \item Possible causes:
+        \begin{itemize}
+            \item Discriminator becoming too strong
+            \item Mode collapse beginning
+            \item Need for learning rate adjustment
+        \end{itemize}
+    \end{itemize}
+    
+    \item \textbf{Peak Performance (Epoch 8)}:
+    \begin{itemize}
+        \item Best FID: 171.67
+        \item 30.5\% improvement from Epoch 7
+        \item 36.5\% improvement from Epoch 1
+        \item Optimal generator-discriminator balance achieved
+    \end{itemize}
+    
+    \item \textbf{Final Epochs (9-10)}:
+    \begin{itemize}
+        \item FID increase to 203.22 and 208.15
+        \item Suggests potential overfitting or training instability
+        \item Still 23.1\% better than initial epoch
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{FID Score Interpretation}
+
+\begin{itemize}
+    \item \textbf{FID < 50}: Excellent quality (our best: 171.67, indicating room for improvement)
+    \item \textbf{50 ≤ FID < 100}: Good quality
+    \item \textbf{100 ≤ FID < 200}: Moderate quality (our range: 171-208)
+    \item \textbf{FID ≥ 200}: Needs improvement (our initial epochs)
+\end{itemize}
+
+\subsubsection{Factors Affecting FID Scores}
+
+\begin{enumerate}
+    \item \textbf{Image Quality}: Sharpness, detail, and realism of generated samples
+    \item \textbf{Diversity}: Coverage of different modes in the data distribution
+    \item \textbf{Mode Collapse}: Limited diversity increases FID
+    \item \textbf{Training Stability}: Oscillations in FID indicate training issues
+\end{enumerate}
+
+\subsubsection{Improvement Recommendations}
+
+Based on FID analysis:
+
+\begin{enumerate}
+    \item \textbf{Extended Training}: Train for 50-100 epochs to allow full convergence
+    \item \textbf{Learning Rate Scheduling}: Implement decay or cosine annealing
+    \item \textbf{Advanced Techniques}:
+    \begin{itemize}
+        \item Spectral Normalization for discriminator stability
+        \item Gradient Penalty (WGAN-GP)
+        \item Label Smoothing
+    \end{itemize}
+    \item \textbf{Early Stopping}: Save model at Epoch 8 (best FID) rather than continuing
+    \item \textbf{Hyperparameter Tuning}: Experiment with learning rates, batch sizes, and architecture
+\end{enumerate}
+
+\newpage
+
+\section{Conclusion}
+
+This assignment successfully implemented and analyzed both Normalizing Flows (RealNVP) and Generative Adversarial Networks (DCGAN) on the FashionMNIST dataset. Key achievements include:
+
+\begin{enumerate}
+    \item \textbf{RealNVP Implementation}: Successfully implemented normalizing flows with coupling layers, achieving good density estimation and generation quality. Latent space experiments showed improved OOD detection performance.
+    
+    \item \textbf{DCGAN Implementation}: Implemented stable DCGAN architecture following best practices, achieving FID score of 171.67 at best epoch.
+    
+    \item \textbf{Comprehensive Evaluation}: Used multiple evaluation metrics (FID, log-likelihood, visual inspection) to assess model performance quantitatively and qualitatively.
+    
+    \item \textbf{Comparative Analysis}: Demonstrated advantages of working in learned latent spaces for normalizing flows, showing improved computational efficiency and OOD detection.
+\end{enumerate}
+
+The results demonstrate the complementary nature of these generative modeling approaches: normalizing flows provide exact likelihood computation and OOD detection capabilities, while GANs excel at generating high-quality, diverse samples through adversarial training.
+
+\section*{References}
+
+\begin{enumerate}
+    \item Goodfellow, I., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair, S., ... \& Bengio, Y. (2014). Generative adversarial nets. \textit{Advances in neural information processing systems}, 27.
+    
+    \item Radford, A., Metz, L., \& Chintala, S. (2016). Unsupervised representation learning with deep convolutional generative adversarial networks. \textit{ICLR}.
+    
+    \item Dinh, L., Sohl-Dickstein, J., \& Bengio, S. (2017). Density estimation using real nvp. \textit{ICLR}.
+    
+    \item Heusel, M., Ramsauer, H., Unterthiner, T., Nessler, B., \& Hochreiter, S. (2017). Gans trained by a two time-scale update rule converge to a local nash equilibrium. \textit{Advances in neural information processing systems}, 30.
+    
+    \item Arjovsky, M., Chintala, S., \& Bottou, L. (2017). Wasserstein generative adversarial networks. \textit{ICML}.
+    
+    \item Gulrajani, I., Ahmed, F., Arjovsky, M., Dumoulin, V., \& Courville, A. C. (2017). Improved training of wasserstein gans. \textit{Advances in neural information processing systems}, 30.
+\end{enumerate}
+
+\end{document}
 

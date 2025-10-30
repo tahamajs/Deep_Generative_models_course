@@ -54,69 +54,253 @@ The report is organized as follows:
 
 \section{Theoretical Background}
 
+This section provides comprehensive theoretical foundations for score-based generative models and diffusion models, explaining the mathematical principles, motivations, and connections between different approaches.
+
 \subsection{Score-based Generative Models}
 
-Score-based generative models learn to estimate the score function of a data distribution rather than the distribution itself. The score function is defined as the gradient of the log-probability density:
+\subsubsection{What is the Score Function?}
+
+Score-based generative models represent a paradigm shift from directly learning probability distributions to learning their gradients. Instead of estimating $p(x)$, which requires computing the intractable normalization constant $Z$ in many cases, we estimate the \textbf{score function}, which is defined as the gradient of the log-probability density:
 
 \begin{equation}
 s(x) = \nabla_x \log p(x) = \frac{\nabla_x p(x)}{p(x)}
 \end{equation}
 
+\textbf{Why use the score function?} The key insight is that the normalization constant cancels out when taking the gradient:
+\begin{equation}
+\nabla_x \log p(x) = \nabla_x \log \left(\frac{\tilde{p}(x)}{Z}\right) = \nabla_x \log \tilde{p}(x) - \nabla_x \log Z = \nabla_x \log \tilde{p}(x)
+\end{equation}
+where $\tilde{p}(x)$ is the unnormalized distribution. Since $Z$ is constant with respect to $x$, its gradient is zero, allowing us to work directly with unnormalized distributions.
+
+\textbf{Properties of the score function:}
+\begin{itemize}
+    \item Points in the direction of steepest ascent of $\log p(x)$
+    \item Has the same units as $x$ (unlike probabilities)
+    \item Can be learned without explicit normalization
+    \item Provides directional information about the data density
+\end{itemize}
+
 \subsubsection{Denoising Score Matching (DSM)}
 
-Instead of directly estimating $p(x)$, which requires computing the normalization constant, we use denoising score matching. The objective function is:
+The challenge in learning score functions is that we don't have direct access to $\nabla_x \log p_{data}(x)$ for real data. Denoising Score Matching (DSM) solves this by learning the score of a noise-corrupted version of the data, which can be analytically computed.
 
+\textbf{The Core Idea:} Instead of learning $s(x) = \nabla_x \log p(x)$, we learn $s_\sigma(x) = \nabla_x \log p_\sigma(x)$ where $p_\sigma(x) = \int p_{data}(y) \cdot \mathcal{N}(x; y, \sigma^2 I) dy$ is the data distribution convolved with Gaussian noise.
+
+\textbf{Why This Works:} When we add Gaussian noise $\epsilon \sim \mathcal{N}(0, \sigma^2 I)$ to clean data $x$, the score of the noisy distribution can be shown to be:
+\begin{equation}
+\nabla_x \log p_\sigma(x) = -\frac{\epsilon}{\sigma^2}
+\end{equation}
+where $\epsilon$ is the noise that was added. This gives us a tractable training signal!
+
+\textbf{The Training Objective:} The denoising score matching loss is:
 \begin{equation}
 L(\theta, \sigma) = \frac{1}{2}\mathbb{E}_{x \sim p_{data}, \epsilon \sim \mathcal{N}(0,\sigma^2I)} \left[\left\|s_\theta(x+\epsilon, \sigma) + \frac{\epsilon}{\sigma^2}\right\|^2\right]
 \end{equation}
 
-where $x + \epsilon$ is the noisy data and $s_\theta$ is the learned score network.
+\textbf{Explanation of the Components:}
+\begin{itemize}
+    \item $x + \epsilon$: Noisy data point (clean data plus Gaussian noise)
+    \item $s_\theta(x+\epsilon, \sigma)$: Neural network prediction of the score function
+    \item $\frac{\epsilon}{\sigma^2}$: Ground truth score (noise divided by variance)
+    \item The squared difference: Measures how well the network predicts the true score
+\end{itemize}
 
-\subsubsection{Langevin Dynamics}
+\textbf{Intuition:} The network learns to predict which direction the noise should be removed to recover the clean data. If noise was added in direction $\epsilon$, the score points in direction $-\epsilon/\sigma^2$ to "undo" the noise.
 
-Langevin dynamics is used for sampling from the learned distribution:
+\textbf{Noise Conditioning:} Notice that $s_\theta$ takes $\sigma$ as input. This is crucial because the score function depends on the noise level. At different noise scales, the same data point has different scores.
 
+\subsubsection{Langevin Dynamics for Sampling}
+
+Once we've learned the score function $s_\theta(x, \sigma) \approx \nabla_x \log p_\sigma(x)$, we can use it to generate samples via Langevin dynamics. This is a Markov Chain Monte Carlo (MCMC) method that uses the score function to move samples toward high-probability regions.
+
+\textbf{The Algorithm:} The Langevin dynamics update rule is:
 \begin{equation}
 x_{t+1} = x_t + \frac{\epsilon}{2}\nabla_x \log p(x_t) + \sqrt{\epsilon} z_t
 \end{equation}
 
-where $z_t \sim \mathcal{N}(0, I)$ is random noise and $\epsilon$ is the step size.
+\textbf{Breaking Down the Update:}
+\begin{itemize}
+    \item $\frac{\epsilon}{2}\nabla_x \log p(x_t)$: \textbf{Drift term} - moves the sample in the direction of increasing probability (following the score function). The factor $\epsilon/2$ ensures proper discretization of the continuous dynamics.
+    
+    \item $\sqrt{\epsilon} z_t$: \textbf{Diffusion term} - adds random noise $z_t \sim \mathcal{N}(0, I)$ to enable exploration. The $\sqrt{\epsilon}$ scaling ensures the noise magnitude matches the drift over time step $\epsilon$.
+    
+    \item $\epsilon$: \textbf{Step size} - controls the trade-off between speed and accuracy. Too large: samples may overshoot. Too small: slow convergence.
+\end{itemize}
+
+\textbf{Why This Works:} Under mild conditions, Langevin dynamics converges to samples from $p(x)$ as $\epsilon \to 0$ and $t \to \infty$. The drift term guides samples toward high-density regions, while the diffusion term provides the stochasticity needed for proper sampling.
+
+\textbf{Initialization:} Samples typically start from random noise: $x_0 \sim \mathcal{N}(0, I)$ or uniform distribution, and then follow the score function toward data regions.
+
+\textbf{Discretization Interpretation:} This is the Euler-Maruyama discretization of the stochastic differential equation (SDE):
+\begin{equation}
+dx_t = \frac{1}{2}\nabla_x \log p(x_t) dt + dW_t
+\end{equation}
+where $dW_t$ is Brownian motion.
 
 \subsubsection{Annealed Langevin Dynamics}
 
-Annealed sampling gradually reduces noise from high to low values:
+One major challenge with score-based models: in regions where $p(x)$ is very small, the score function is poorly estimated, leading to poor sampling. \textbf{Annealed Langevin Dynamics} solves this by using multiple noise scales in sequence.
 
+\textbf{The Annealing Schedule:} We define a decreasing sequence of noise levels:
 \begin{align}
 \sigma_1 > \sigma_2 > \ldots > \sigma_L
 \end{align}
+where typically $\sigma_1 \approx 20-50$ (high noise) and $\sigma_L \approx 1$ (low noise).
 
-This allows exploration at high noise levels and refinement at low noise levels.
+\textbf{The Algorithm:}
+\begin{enumerate}
+    \item Start from random initialization $x_0$
+    \item For each noise level $\sigma_i$ (from high to low):
+    \begin{itemize}
+        \item Run Langevin dynamics with score $s_\theta(x, \sigma_i)$ for $N$ steps
+        \item This moves samples toward regions where $p_{\sigma_i}(x)$ is high
+    \end{itemize}
+    \item The final sample $x_L$ approximates a sample from the low-noise distribution
+\end{enumerate}
+
+\textbf{Why Annealing Works:}
+\begin{itemize}
+    \item \textbf{High $\sigma$ (early stages)}: The noisy distribution $p_\sigma(x)$ is smoother, with broader basins. This allows the score function to guide samples from anywhere toward data regions (exploration).
+    
+    \item \textbf{Low $\sigma$ (late stages)}: The distribution is sharper, closer to $p_{data}(x)$. The score function refines the samples to high-quality regions (exploitation).
+    
+    \item \textbf{Gradual transition}: By gradually reducing noise, samples smoothly transition from exploration to refinement, avoiding getting trapped in low-probability regions.
+\end{itemize}
+
+\textbf{Mathematical Intuition:} At high noise, the convolution $p_\sigma(x) = p_{data} * \mathcal{N}(0, \sigma^2)$ fills in the "valleys" between modes, creating a smoother landscape that's easier to navigate.
+
+\textbf{Practical Implementation:} Typically uses 10-20 noise levels with 10-50 Langevin steps per level, resulting in 100-1000 total steps but much higher quality samples than single-scale Langevin.
 
 \subsection{Diffusion Models}
 
-Diffusion models are generative models that learn to reverse a diffusion process that gradually adds noise to data.
+Diffusion models represent one of the most successful approaches to generative modeling in recent years, achieving state-of-the-art results in image generation. They are closely related to score-based models but use a different formulation.
+
+\subsubsection{The Core Philosophy}
+
+The key insight: instead of learning a complex mapping from noise to data directly, we:
+\begin{enumerate}
+    \item Define a \textbf{forward process} that gradually corrupts data with noise (easy)
+    \item Learn a \textbf{reverse process} that removes noise step by step (what we train)
+    \item Generate by starting from pure noise and following the reverse process
+\end{enumerate}
+
+This "divide and conquer" approach breaks the hard problem of direct generation into many easier denoising steps.
 
 \subsubsection{Forward Diffusion Process}
 
-The forward process adds Gaussian noise over $T$ timesteps:
+The forward process is a fixed Markov chain that gradually adds Gaussian noise over $T$ timesteps. At each step:
 
 \begin{equation}
 q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{1-\beta_t}x_{t-1}, \beta_t I)
 \end{equation}
 
+\textbf{Components:}
+\begin{itemize}
+    \item $x_0$: Original data (clean image)
+    \item $x_T$: Pure noise after $T$ steps
+    \item $\beta_t$: Variance schedule (noise level at step $t$), typically increasing
+    \item $\sqrt{1-\beta_t}$: Ensures variance doesn't explode (keeps signal)
+    \item After $T$ steps: $x_T \approx \mathcal{N}(0, I)$ (pure noise, all data info lost)
+\end{itemize}
+
+\textbf{Properties:}
+\begin{itemize}
+    \item \textbf{Tractable}: $q(x_t | x_0)$ can be computed in closed form using the reparameterization trick
+    \item \textbf{No learning}: Forward process is fixed, not learned
+    \item \textbf{Irreversible}: Can't recover $x_0$ from $x_T$ directly
+\end{itemize}
+
+\textbf{Direct Sampling Formula:} Instead of sampling step-by-step, we can directly sample $x_t$ from $x_0$:
+\begin{equation}
+x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1-\bar{\alpha}_t} \epsilon
+\end{equation}
+where $\bar{\alpha}_t = \prod_{i=1}^t (1-\beta_i)$ and $\epsilon \sim \mathcal{N}(0, I)$. This is much more efficient for training!
+
 \subsubsection{Reverse Diffusion Process}
 
-The reverse process learns to denoise:
+The reverse process is what we learn. Given $x_t$ (a noisy image), we want to predict $x_{t-1}$ (less noisy):
 
 \begin{equation}
 p_\theta(x_{t-1} | x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t))
 \end{equation}
 
-\subsubsection{DDPM vs DDIM}
-
+\textbf{What the Neural Network Learns:}
 \begin{itemize}
-    \item \textbf{DDPM}: Stochastic sampling process, requires all $T$ steps for generation
-    \item \textbf{DDIM}: Deterministic sampling, can generate in fewer steps (faster)
+    \item $\mu_\theta(x_t, t)$: Predicted mean of $x_{t-1}$ given $x_t$ and timestep $t$
+    \item $\Sigma_\theta(x_t, t)$: Predicted variance (often fixed to $\beta_t$ or learned)
+    \item In practice: Network predicts the noise $\epsilon_\theta(x_t, t)$, and mean is derived
+\end{itemize}
+
+\textbf{Training Objective:} The network learns to predict the noise that was added:
+\begin{equation}
+\mathcal{L} = \mathbb{E}_{t, x_0, \epsilon} \left[ \|\epsilon - \epsilon_\theta(x_t, t)\|^2 \right]
+\end{equation}
+where $\epsilon$ is the noise used to create $x_t$ from $x_0$.
+
+\textbf{Intuition:} At each timestep, the network sees a noisy image and tries to predict: "What noise was added to get here?" Once we know the noise, we can remove it to get a cleaner image.
+
+\subsubsection{DDPM (Denoising Diffusion Probabilistic Models)}
+
+\textbf{DDPM} is the original formulation of diffusion models with stochastic sampling.
+
+\textbf{Sampling Process:}
+\begin{enumerate}
+    \item Start: $x_T \sim \mathcal{N}(0, I)$ (pure noise)
+    \item For $t = T, T-1, \ldots, 1$:
+    \begin{align}
+        \mu_\theta(x_t, t) &= \frac{1}{\sqrt{1-\beta_t}}\left(x_t - \frac{\beta_t}{\sqrt{1-\bar{\alpha}_t}} \epsilon_\theta(x_t, t)\right) \\
+        x_{t-1} &\sim \mathcal{N}(\mu_\theta(x_t, t), \beta_t I)
+    \end{align}
+    \item Final: $x_0$ is the generated sample
+\end{enumerate}
+
+\textbf{Characteristics:}
+\begin{itemize}
+    \item \textbf{Stochastic}: Uses random sampling at each step (the $\sim$ in the sampling)
+    \item \textbf{Slow}: Requires all $T$ steps (typically $T=1000$)
+    \item \textbf{High Quality}: Produces very realistic samples
+    \item \textbf{Not Deterministic}: Same noise seed can produce different outputs
+\end{itemize}
+
+\subsubsection{DDIM (Denoising Diffusion Implicit Models)}
+
+\textbf{DDIM} reformulates diffusion models to allow faster, deterministic sampling.
+
+\textbf{Key Innovation:} DDIM reinterprets the diffusion process as a non-Markovian process, allowing deterministic generation in fewer steps.
+
+\textbf{Sampling Process:}
+\begin{enumerate}
+    \item Start: $x_T \sim \mathcal{N}(0, I)$
+    \item Choose a subset of timesteps: $t_1 > t_2 > \ldots > t_K$ where $K < T$
+    \item For each selected timestep:
+    \begin{align}
+        x_{t-1} = \sqrt{\bar{\alpha}_{t-1}} \frac{x_t - \sqrt{1-\bar{\alpha}_t}\epsilon_\theta(x_t, t)}{\sqrt{\bar{\alpha}_t}} + \sqrt{1-\bar{\alpha}_{t-1}} \epsilon_\theta(x_t, t)
+    \end{align}
+    \item Note: This is \textbf{deterministic} - no random sampling!
+\end{enumerate}
+
+\textbf{Characteristics:}
+\begin{itemize}
+    \item \textbf{Deterministic}: Same input produces same output (useful for interpolation, inversion)
+    \item \textbf{Fast}: Can use 10-50 steps instead of 1000
+    \item \textbf{Consistent}: Uses same trained model as DDPM
+    \item \textbf{Trade-off}: Slightly lower quality than full DDPM, but much faster
+\end{itemize}
+
+\textbf{Use Cases:}
+\begin{itemize}
+    \item DDIM: Fast generation, deterministic editing, latent space interpolation
+    \item DDPM: Maximum quality, when speed is not critical
+\end{itemize}
+
+\subsubsection{Connection to Score-based Models}
+
+There is a deep mathematical connection between diffusion models and score-based models:
+\begin{itemize}
+    \item Both learn to reverse a noise-adding process
+    \item The noise prediction $\epsilon_\theta$ is related to the score function
+    \item Score-based models can be seen as continuous-time diffusion models
+    \item DDPM/DDIM are discrete-time formulations with similar objectives
 \end{itemize}
 
 \section{Score-based Generative Models Implementation}

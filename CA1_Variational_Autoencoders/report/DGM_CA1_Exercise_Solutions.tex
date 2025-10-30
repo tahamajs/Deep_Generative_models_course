@@ -79,6 +79,32 @@ The report is organized as follows:
 
 Variational Autoencoders are a class of generative models that learn probabilistic representations of data by combining the compression capabilities of traditional autoencoders with probabilistic inference.
 
+\paragraph{Motivation and Background:}
+Traditional autoencoders learn deterministic mappings from input space to a bottleneck latent representation and back to the input space. While effective for compression and denoising, deterministic latent spaces have several limitations:
+\begin{itemize}
+    \item \textbf{Hole Problem}: Gaps in latent space may not correspond to valid data samples, making generation unreliable
+    \item \textbf{Discontinuous Manifold}: Interpolation between latent vectors may produce unrealistic outputs
+    \item \textbf{No Probabilistic Interpretation}: Cannot model uncertainty or sample from learned distribution
+\end{itemize}
+
+VAEs address these limitations by introducing probabilistic latent variables. Instead of mapping each input to a single latent vector, VAEs map inputs to probability distributions over latent space. This probabilistic formulation enables:
+\begin{itemize}
+    \item Meaningful sampling from the latent space
+    \item Smooth interpolation between data points
+    \item Uncertainty quantification in the latent representation
+    \item Theoretical foundation connecting to variational inference and maximum likelihood estimation
+\end{itemize}
+
+\paragraph{Probabilistic Framework:}
+The VAE models the joint distribution $p_\theta(\mathbf{x}, \mathbf{z}) = p_\theta(\mathbf{x}|\mathbf{z})p(\mathbf{z})$ where:
+\begin{itemize}
+    \item $p(\mathbf{z}) = \mathcal{N}(0, I)$: Prior distribution on latent variables (typically standard normal)
+    \item $p_\theta(\mathbf{x}|\mathbf{z})$: Generative model (decoder) that maps latent vectors to data space
+    \item $q_\phi(\mathbf{z}|\mathbf{x})$: Approximate posterior (encoder) that infers latent variables from data
+\end{itemize}
+
+The encoder $q_\phi(\mathbf{z}|\mathbf{x})$ is introduced because the true posterior $p(\mathbf{z}|\mathbf{x})$ is intractable to compute directly. The encoder approximates this posterior using a neural network that outputs the parameters (mean and variance) of a Gaussian distribution.
+
 \subsection{Key Concepts}
 
 \subsubsection{Probabilistic Latent Space}
@@ -87,7 +113,24 @@ Unlike deterministic autoencoders, VAEs learn a probabilistic latent space where
 
 \subsubsection{Evidence Lower Bound (ELBO)}
 
-The training objective maximizes the Evidence Lower Bound:
+The training objective maximizes the Evidence Lower Bound (ELBO), which is a lower bound on the log-likelihood of the data.
+
+\paragraph{Derivation of ELBO:}
+We wish to maximize the log-likelihood of the data:
+\begin{equation}
+\log p_\theta(\mathbf{x}) = \log \int p_\theta(\mathbf{x}|\mathbf{z})p(\mathbf{z}) d\mathbf{z}
+\end{equation}
+
+However, this integral is intractable. Using Jensen's inequality and introducing the approximate posterior $q_\phi(\mathbf{z}|\mathbf{x})$:
+
+\begin{align}
+\log p_\theta(\mathbf{x}) &= \log \int p_\theta(\mathbf{x}|\mathbf{z})p(\mathbf{z}) d\mathbf{z} \\
+&= \log \int q_\phi(\mathbf{z}|\mathbf{x}) \frac{p_\theta(\mathbf{x}|\mathbf{z})p(\mathbf{z})}{q_\phi(\mathbf{z}|\mathbf{x})} d\mathbf{z} \\
+&\geq \int q_\phi(\mathbf{z}|\mathbf{x}) \log \frac{p_\theta(\mathbf{x}|\mathbf{z})p(\mathbf{z})}{q_\phi(\mathbf{z}|\mathbf{x})} d\mathbf{z} \quad \text{(Jensen's inequality)} \\
+&= \mathbb{E}_{q_\phi(\mathbf{z}|\mathbf{x})}[\log p_\theta(\mathbf{x}|\mathbf{z})] - \text{KL}(q_\phi(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
+\end{align}
+
+The training objective is:
 
 \begin{equation}
 \mathcal{L}(\theta, \phi; \mathbf{x}) = \mathbb{E}_{q_\phi(\mathbf{z}|\mathbf{x})} [\log p_\theta(\mathbf{x}|\mathbf{z})] - \text{KL}(q_\phi(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
@@ -95,20 +138,78 @@ The training objective maximizes the Evidence Lower Bound:
 
 where:
 \begin{itemize}
-    \item $p_\theta(\mathbf{x}|\mathbf{z})$: Decoder (generative model)
-    \item $q_\phi(\mathbf{z}|\mathbf{x})$: Encoder (recognition model)
+    \item $p_\theta(\mathbf{x}|\mathbf{z})$: Decoder (generative model) that reconstructs data from latent variables
+    \item $q_\phi(\mathbf{z}|\mathbf{x})$: Encoder (recognition model) that infers latent variables from data
     \item $p(\mathbf{z})$: Prior distribution (typically $\mathcal{N}(0, I)$)
+\end{itemize}
+
+\paragraph{Interpretation of ELBO Components:}
+
+The ELBO consists of two competing terms:
+
+\begin{enumerate}
+    \item \textbf{Reconstruction Term} $\mathbb{E}_{q_\phi(\mathbf{z}|\mathbf{x})} [\log p_\theta(\mathbf{x}|\mathbf{z})]$:
+    \begin{itemize}
+        \item Encourages the decoder to accurately reconstruct input data
+        \item Maximized when $p_\theta(\mathbf{x}|\mathbf{z})$ assigns high probability to the original input
+        \item Can be approximated by sampling $\mathbf{z} \sim q_\phi(\mathbf{z}|\mathbf{x})$ and computing $\log p_\theta(\mathbf{x}|\mathbf{z})$
+        \item In practice, often uses a single sample (or multiple samples for variance reduction)
+    \end{itemize}
+    
+    \item \textbf{Regularization Term} $-\text{KL}(q_\phi(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))$:
+    \begin{itemize}
+        \item Penalizes deviation of the approximate posterior from the prior
+        \item Ensures the latent space has structure compatible with the prior distribution
+        \item Prevents the encoder from collapsing to a point distribution (posterior collapse)
+        \item Enables meaningful sampling from the prior for generation
+    \end{itemize}
+\end{enumerate}
+
+\paragraph{Trade-off:}
+The two terms create a fundamental trade-off:
+\begin{itemize}
+    \item High reconstruction weight $\rightarrow$ Better image quality, but latent space may not be smooth or generative
+    \item High KL weight $\rightarrow$ Smoother latent space, but reconstructions may be blurrier
+    \item Optimal balance is task-dependent and learned during training
 \end{itemize}
 
 \subsubsection{Reparameterization Trick}
 
-To enable gradient flow through stochastic sampling, the reparameterization trick is used:
+The reparameterization trick is essential for enabling gradient-based optimization when the objective involves stochastic latent variables.
 
+\paragraph{Problem with Direct Sampling:}
+If we directly sample from the encoder distribution:
 \begin{equation}
-\mathbf{z} = \boldsymbol{\mu} + \boldsymbol{\sigma} \odot \epsilon, \quad \epsilon \sim \mathcal{N}(0, I), \quad \boldsymbol{\sigma} = \exp(0.5 \times \logvar)
+\mathbf{z} \sim q_\phi(\mathbf{z}|\mathbf{x}) = \mathcal{N}(\boldsymbol{\mu}_\phi(\mathbf{x}), \boldsymbol{\sigma}_\phi^2(\mathbf{x}))
 \end{equation}
 
-This separates the randomness ($\epsilon$) from the learnable parameters ($\boldsymbol{\mu}$, $\boldsymbol{\sigma}$).
+We cannot backpropagate gradients through the sampling operation because it involves random noise. The gradient $\nabla_\phi \mathbb{E}_{\mathbf{z} \sim q_\phi(\mathbf{z}|\mathbf{x})}[\log p_\theta(\mathbf{x}|\mathbf{z})]$ is undefined.
+
+\paragraph{Solution: Reparameterization:}
+We rewrite the sampling operation to separate the stochastic component from the learnable parameters:
+
+\begin{equation}
+\mathbf{z} = \boldsymbol{\mu}_\phi(\mathbf{x}) + \boldsymbol{\sigma}_\phi(\mathbf{x}) \odot \epsilon, \quad \epsilon \sim \mathcal{N}(0, I)
+\end{equation}
+
+where $\boldsymbol{\sigma}_\phi(\mathbf{x}) = \exp(0.5 \times \logvar_\phi(\mathbf{x}))$ to ensure positivity.
+
+\paragraph{Why This Works:}
+\begin{itemize}
+    \item \textbf{Deterministic Path}: $\boldsymbol{\mu}_\phi(\mathbf{x})$ and $\boldsymbol{\sigma}_\phi(\mathbf{x})$ are deterministic functions of $\mathbf{x}$ and $\phi$, so gradients can flow through them
+    \item \textbf{Stochastic Path}: $\epsilon$ is independent of $\phi$ and sampled from a fixed distribution, so it doesn't block gradients
+    \item \textbf{Gradient Estimator}: The gradient can now be estimated as:
+    \begin{equation}
+    \nabla_\phi \mathbb{E}_{\epsilon \sim \mathcal{N}(0,I)}[\log p_\theta(\mathbf{x}|\boldsymbol{\mu}_\phi(\mathbf{x}) + \boldsymbol{\sigma}_\phi(\mathbf{x}) \odot \epsilon)] = \mathbb{E}_{\epsilon \sim \mathcal{N}(0,I)}[\nabla_\phi \log p_\theta(\mathbf{x}|\mathbf{z})]
+    \end{equation}
+\end{itemize}
+
+\paragraph{Implementation Considerations:}
+\begin{itemize}
+    \item \textbf{Numerical Stability}: We use $\logvar$ instead of $\sigma^2$ to avoid numerical issues and ensure positivity
+    \item \textbf{Clamping}: In practice, we clamp $\logvar$ to reasonable bounds (e.g., [-10, 10]) to prevent extreme values
+    \item \textbf{Sampling}: For training, typically one sample per input is sufficient; for inference, can use multiple samples for better estimates
+\end{itemize}
 
 \subsubsection{Loss Function Components}
 
@@ -124,11 +225,44 @@ The total loss consists of two components:
 \end{equation}
 
 \paragraph{KL Divergence Loss:}
+The KL divergence term has a closed-form expression when both distributions are Gaussian. For $q_\phi(\mathbf{z}|\mathbf{x}) = \mathcal{N}(\boldsymbol{\mu}, \text{diag}(\boldsymbol{\sigma}^2))$ and $p(\mathbf{z}) = \mathcal{N}(0, I)$:
+
 \begin{equation}
-\mathcal{L}_{\text{KL}} = -\frac{1}{2} \sum_{j=1}^{d} (1 + \log(\sigma_j^2) - \mu_j^2 - \sigma_j^2)
+\text{KL}(q_\phi(\mathbf{z}|\mathbf{x}) || p(\mathbf{z})) = \sum_{j=1}^{d} \text{KL}(\mathcal{N}(\mu_j, \sigma_j^2) || \mathcal{N}(0, 1))
 \end{equation}
 
-The KL divergence regularizes the latent distribution to follow the prior, ensuring smooth interpolation.
+For univariate Gaussians:
+\begin{align}
+\text{KL}(\mathcal{N}(\mu, \sigma^2) || \mathcal{N}(0, 1)) &= \frac{1}{2}\left(\sigma^2 + \mu^2 - 1 - \log(\sigma^2)\right) \\
+&= \frac{1}{2}\left(\sigma^2 + \mu^2 - 1 - 2\log(\sigma)\right)
+\end{align}
+
+In terms of $\logvar = \log(\sigma^2)$:
+\begin{equation}
+\mathcal{L}_{\text{KL}} = -\frac{1}{2} \sum_{j=1}^{d} (1 + \logvar_j - \mu_j^2 - \exp(\logvar_j))
+\end{equation}
+
+\paragraph{Interpretation of KL Divergence:}
+\begin{itemize}
+    \item The KL term encourages the posterior $q_\phi(\mathbf{z}|\mathbf{x})$ to match the prior $p(\mathbf{z}) = \mathcal{N}(0, I)$
+    \item This ensures that:
+    \begin{enumerate}
+        \item Latent space is centered around zero (via the $\mu_j^2$ term)
+        \item Latent dimensions have unit variance on average (via the $-\exp(\logvar_j)$ term)
+        \item No dimensions collapse to zero variance (via the $\logvar_j$ term)
+    \end{enumerate}
+    \item The regularization prevents the encoder from learning arbitrary distributions and encourages a smooth, well-behaved latent space
+    \item This is crucial for generation: if we sample $\mathbf{z} \sim \mathcal{N}(0, I)$, we want the decoder to produce realistic images
+\end{itemize}
+
+\paragraph{Posterior Collapse:}
+If KL divergence becomes too small during training, the posterior collapses:
+\begin{itemize}
+    \item Encoder outputs $\mu = 0$ and $\sigma^2 = 1$ regardless of input
+    \item All inputs map to the same latent distribution
+    \item Model ignores input information (mode collapse)
+    \item Can be prevented by adjusting the weight of KL term or using techniques like KL annealing
+\end{itemize}
 
 \section{Implementation Details}
 
@@ -235,7 +369,30 @@ The data preprocessing pipeline includes:
 \end{itemize}
 
 \subsubsection{Code Analysis}
-The normalization formula is: $x_{\text{norm}} = \frac{x - 0.5}{0.5} = 2(x - 0.5)$, which maps pixel values from $[0, 1]$ to $[-1, 1]$. This is suitable for Tanh activation in the decoder output.
+The normalization formula is: $x_{\text{norm}} = \frac{x - 0.5}{0.5} = 2(x - 0.5)$, which maps pixel values from $[0, 1]$ to $[-1, 1]$.
+
+\paragraph{Why Normalize to $[-1, 1]$?}
+\begin{itemize}
+    \item \textbf{Tanh Activation}: The decoder's final layer uses Tanh activation, which outputs values in $[-1, 1]$. Normalizing inputs to the same range ensures consistency.
+    \item \textbf{Gradient Flow}: Normalized inputs help with gradient flow during backpropagation, reducing the risk of vanishing/exploding gradients.
+    \item \textbf{Training Stability}: Centered inputs (mean ≈ 0) help batch normalization and other normalization layers work more effectively.
+    \item \textbf{Convergence Speed}: Normalized data typically allows for faster and more stable convergence.
+\end{itemize}
+
+\paragraph{Preprocessing Pipeline Details:}
+\begin{enumerate}
+    \item \textbf{Resize}: Images are resized to 128×128 pixels to ensure uniform input size. This is necessary for batching and consistent processing.
+    \item \textbf{ToTensor}: Converts PIL images to PyTorch tensors and scales pixel values from $[0, 255]$ to $[0, 1]$.
+    \item \textbf{Normalize}: Applies the transformation $x_{\text{norm}} = \frac{x - \mu}{\sigma}$ where $\mu = 0.5$ and $\sigma = 0.5$ for each channel, mapping to $[-1, 1]$.
+\end{enumerate}
+
+\paragraph{Data Splitting:}
+The 80\%/20\% train/validation split provides:
+\begin{itemize}
+    \item Sufficient training data (962 samples) for learning the data distribution
+    \item Adequate validation data (241 samples) for monitoring generalization
+    \item Prevents overfitting by regularly evaluating on unseen data
+\end{itemize}
 
 \subsubsection{Results}
 \begin{itemize}
@@ -268,21 +425,98 @@ def reparameterize(self, mean, logvar):
     return mean + epsilon * std_dev
 \end{lstlisting}
 
-\textbf{Analysis:}
+\textbf{Detailed Analysis:}
+
+\paragraph{Numerical Stability with Clamping:}
 \begin{itemize}
-    \item \texttt{torch.clamp(logvar, min=-10, max=10)}: Prevents numerical instability by constraining log-variance to reasonable values
-    \item \texttt{std\_dev = torch.exp(0.5 * logvar)}: Computes standard deviation from log-variance
-    \item \texttt{epsilon $\sim$ $\mathcal{N}(0,I)$}: Samples from standard normal distribution
-    \item This enables gradients to flow through the deterministic path ($\mu + \sigma \odot \epsilon$)
+    \item \texttt{torch.clamp(logvar, min=-10, max=10)}: 
+    \begin{itemize}
+        \item Prevents extreme values that could cause numerical underflow or overflow
+        \item If $\logvar < -10$: $\sigma = \exp(0.5 \times (-10)) \approx 0.0067$ (very small variance)
+        \item If $\logvar > 10$: $\sigma = \exp(0.5 \times 10) \approx 148.4$ (very large variance)
+        \item This range is sufficient for most practical cases while preventing numerical issues
+        \item Without clamping, extreme $\logvar$ values could cause $\exp()$ to overflow or produce near-zero values causing division by zero
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Log-Variance Parameterization:}
+\begin{itemize}
+    \item \texttt{std\_dev = torch.exp(0.5 * logvar)}: 
+    \begin{itemize}
+        \item Using $\logvar$ instead of $\sigma^2$ ensures positivity without constraints
+        \item Avoids need for softplus or other positive activations
+        \item Enables unconstrained optimization: the network can output any real value
+        \item The factor of 0.5 comes from: $\sigma = \sqrt{\sigma^2} = \exp(\log(\sqrt{\sigma^2})) = \exp(0.5 \log(\sigma^2)) = \exp(0.5 \times \logvar)$
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Sampling Procedure:}
+\begin{itemize}
+    \item \texttt{epsilon $\sim$ $\mathcal{N}(0,I)$}: 
+    \begin{itemize}
+        \item Samples random noise from standard normal distribution
+        \item Independent of model parameters, enabling gradient flow
+        \item Same dimensionality as mean and logvar vectors (32 dimensions in our case)
+        \item During training, different $\epsilon$ values are sampled each forward pass, providing stochasticity
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Gradient Flow:}
+\begin{itemize}
+    \item The reparameterization creates a deterministic path: $\mathbf{z} = \boldsymbol{\mu} + \boldsymbol{\sigma} \odot \epsilon$
+    \item Gradients can flow through $\boldsymbol{\mu}$ and $\boldsymbol{\sigma}$ (deterministic functions of encoder parameters)
+    \item The stochastic component $\epsilon$ doesn't block gradients because it's independent of parameters
+    \item This enables end-to-end training of both encoder and decoder using standard backpropagation
 \end{itemize}
 
 \paragraph{Forward Pass:}
 The forward method combines encoding, reparameterization, and decoding:
+
+\begin{enumerate}
+    \item \textbf{Encoding Phase}:
+    \begin{itemize}
+        \item Input image $\mathbf{x} \in \mathbb{R}^{3 \times 128 \times 128}$ passes through convolutional encoder
+        \item Convolutional layers extract hierarchical features (edges → shapes → high-level features)
+        \item Features are flattened and passed through fully connected layers
+        \item Encoder outputs:
+        \begin{itemize}
+            \item $\boldsymbol{\mu}_\phi(\mathbf{x}) \in \mathbb{R}^{32}$: Mean of latent distribution
+            \item $\logvar_\phi(\mathbf{x}) \in \mathbb{R}^{32}$: Log-variance of latent distribution
+        \end{itemize}
+    \end{itemize}
+    
+    \item \textbf{Reparameterization Phase}:
+    \begin{itemize}
+        \item Sample $\epsilon \sim \mathcal{N}(0, I)$ from standard normal distribution
+        \item Compute $\boldsymbol{\sigma} = \exp(0.5 \times \logvar)$
+        \item Generate latent vector: $\mathbf{z} = \boldsymbol{\mu} + \boldsymbol{\sigma} \odot \epsilon$
+        \item This $\mathbf{z}$ represents a point in the latent space sampled from $q_\phi(\mathbf{z}|\mathbf{x})$
+    \end{itemize}
+    
+    \item \textbf{Decoding Phase}:
+    \begin{itemize}
+        \item Latent vector $\mathbf{z}$ is expanded through fully connected layers
+        \item Reshaped to 256×8×8 for transposed convolutional processing
+        \item Transposed convolutions upscale feature maps: 8×8 → 16×16 → 32×32 → 64×64 → 128×128
+        \item Final Tanh activation ensures output in $[-1, 1]$ range
+        \item Output: $\hat{\mathbf{x}} \in \mathbb{R}^{3 \times 128 \times 128}$ (reconstructed image)
+    \end{itemize}
+    
+    \item \textbf{Return Values}:
+    \begin{itemize}
+        \item \texttt{reconstructed\_output}: $\hat{\mathbf{x}}$ for computing reconstruction loss
+        \item \texttt{mean}: $\boldsymbol{\mu}$ for computing KL divergence
+        \item \texttt{logvar}: $\logvar$ for computing KL divergence and future reparameterization
+    \end{itemize}
+\end{enumerate}
+
+\paragraph{Architecture Design Rationale:}
 \begin{itemize}
-    \item Encoder processes input → produces mean and log-variance
-    \item Reparameterization trick generates latent vector $\mathbf{z}$
-    \item Decoder reconstructs image from $\mathbf{z}$
-    \item Returns: (reconstructed image, mean, log-variance)
+    \item \textbf{Convolutional Encoder}: Captures spatial patterns and hierarchical features efficiently
+    \item \textbf{Bottleneck Dimension (32)}: Forces compression while maintaining essential information
+    \item \textbf{Symmetric Decoder}: Mirrors encoder structure for intuitive upsampling
+    \item \textbf{BatchNorm and Dropout}: Regularization prevents overfitting and improves generalization
+    \item \textbf{LeakyReLU}: Prevents dying ReLU problem, allows small negative gradients
 \end{itemize}
 
 \subsection{Exercise 3: Loss Function Implementation}
@@ -306,18 +540,77 @@ def vae_loss_function(reconstructed_x, original_x, latent_mean, latent_logvar):
 \subsubsection{Analysis}
 
 \paragraph{Reconstruction Loss:}
+
+The reconstruction loss measures the difference between original and reconstructed images.
+
 \begin{itemize}
-    \item Uses Mean Squared Error (MSE) with \texttt{reduction='sum'}
-    \item Measures how well the decoder reconstructs input images
-    \item $\mathcal{L}_{\text{recon}} = \sum ||\mathbf{x} - \hat{\mathbf{x}}||^2$
+    \item \textbf{MSE with 'sum' reduction}: 
+    \begin{itemize}
+        \item Computes: $\sum_{i,j,k} (x_{i,j,k} - \hat{x}_{i,j,k})^2$ over all pixels and channels
+        \item 'sum' rather than 'mean' gives larger loss values but keeps gradients proportional
+        \item The magnitude will be averaged later when dividing by dataset size
+    \end{itemize}
+    
+    \item \textbf{Why MSE?}:
+    \begin{itemize}
+        \item Assumes Gaussian noise in reconstruction: $p_\theta(\mathbf{x}|\mathbf{z}) = \mathcal{N}(\mathbf{x}; \hat{\mathbf{x}}, \sigma^2 I)$
+        \item For Gaussian likelihood: $\log p_\theta(\mathbf{x}|\mathbf{z}) \propto -||\mathbf{x} - \hat{\mathbf{x}}||^2$
+        \item MSE directly corresponds to maximizing log-likelihood under Gaussian assumption
+        \item Works well for natural images, penalizing all pixel differences equally
+    \end{itemize}
+    
+    \item \textbf{Alternative Loss Functions}:
+    \begin{itemize}
+        \item L1 loss ($|\mathbf{x} - \hat{\mathbf{x}}|$): More robust to outliers, encourages sparsity
+        \item Perceptual loss: Uses features from pre-trained networks (VGG), better captures semantic similarity
+        \item Adversarial loss: Combined with discriminator (VAE-GAN) for sharper images
+    \end{itemize}
+    
+    \item \textbf{Loss Interpretation}:
+    \begin{itemize}
+        \item Lower loss $\rightarrow$ Better reconstruction quality
+        \item Loss decreases from $\sim$6489 (initial) to $\sim$2807 (converged)
+        \item This represents per-sample averaged loss across all pixels
+    \end{itemize}
 \end{itemize}
 
 \paragraph{KL Divergence Loss:}
+
+The KL divergence term implements the closed-form expression for Gaussian distributions.
+
 \begin{itemize}
-    \item Implements the closed-form KL divergence between $q_\phi(\mathbf{z}|\mathbf{x})$ and $\mathcal{N}(0,I)$
-    \item Formula: $\mathcal{L}_{\text{KL}} = -\frac{1}{2}\sum(1 + \log(\sigma^2) - \mu^2 - \sigma^2)$
-    \item Regularizes latent space to follow standard normal prior
-    \item Prevents posterior collapse and ensures smooth latent manifold
+    \item \textbf{Mathematical Formulation}:
+    \begin{itemize}
+        \item For diagonal Gaussian: $q_\phi(\mathbf{z}|\mathbf{x}) = \prod_{j=1}^{d} \mathcal{N}(z_j; \mu_j, \sigma_j^2)$
+        \item KL divergence decomposes: $\text{KL}(q||p) = \sum_{j=1}^{d} \text{KL}(q_j||p_j)$
+        \item Each term: $\text{KL}(\mathcal{N}(\mu_j, \sigma_j^2) || \mathcal{N}(0, 1)) = \frac{1}{2}(\sigma_j^2 + \mu_j^2 - 1 - \log(\sigma_j^2))$
+        \item Implementation uses: $-\frac{1}{2}\sum(1 + \logvar - \mu^2 - \exp(\logvar))$
+    \end{itemize}
+    
+    \item \textbf{Regularization Mechanism}:
+    \begin{itemize}
+        \item $\mu_j^2$ term: Encourages means to be close to zero
+        \item $\sigma_j^2$ term: Encourages variances to be close to 1
+        \item $-\log(\sigma_j^2)$ term: Prevents variance collapse (penalizes very small variances)
+        \item Together: Shapes latent distribution to match $\mathcal{N}(0, I)$
+    \end{itemize}
+    
+    \item \textbf{Training Dynamics}:
+    \begin{itemize}
+        \item Initially: KL loss may be high as encoder learns to match prior
+        \item During training: Decreases as posterior converges toward prior
+        \item At convergence: Should stabilize, indicating balanced regularization
+        \item Too low: Risk of posterior collapse (encoder ignores input)
+        \item Too high: Over-regularization (blurry reconstructions)
+    \end{itemize}
+    
+    \item \textbf{Implications for Latent Space}:
+    \begin{itemize}
+        \item Smooth manifold: Regularization ensures continuous, interpolable latent space
+        \item Meaningful generation: Sampling $\mathbf{z} \sim \mathcal{N}(0, I)$ produces realistic images
+        \item Class separation: While regularized, latent space can still learn discriminative features
+        \item Dimensionality: Optimal latent dimension balances capacity vs. regularization
+    \end{itemize}
 \end{itemize}
 
 \paragraph{Balance Between Terms:}
@@ -351,12 +644,95 @@ For each epoch:
 
 \subsubsection{Results Analysis}
 
-The training showed:
+\paragraph{Training Convergence Analysis:}
+
+The training showed progressive improvement with good generalization:
+
 \begin{itemize}
-    \item Initial loss (epoch 0): Training = 6489.75, Validation = 5491.95
-    \item After 10 epochs: Training = 3236.25, Validation = 2895.76 (50\% reduction)
-    \item Final loss (epoch 33+): Training = 2807.38, Validation = 2456.94
-    \item Good generalization: Small gap between train/val loss indicates minimal overfitting
+    \item \textbf{Initial Stage (Epoch 0)}:
+    \begin{itemize}
+        \item Training Loss: 6489.75, Validation Loss: 5491.95
+        \item High loss expected: Randomly initialized model has poor reconstructions
+        \item Validation loss lower initially due to randomness in early batches
+    \end{itemize}
+    
+    \item \textbf{Rapid Learning Phase (Epochs 1-10)}:
+    \begin{itemize}
+        \item Training: 6489.75 → 3236.25 (50.2\% reduction)
+        \item Validation: 5491.95 → 2895.76 (47.3\% reduction)
+        \item Model quickly learns basic structure and feature extraction
+        \item Both reconstruction and KL losses decrease rapidly
+    \end{itemize}
+    
+    \item \textbf{Refinement Phase (Epochs 10-30)}:
+    \begin{itemize}
+        \item Training: 3236.25 → 2814.31 (12.9\% additional reduction)
+        \item Validation: 2895.76 → 2468.48 (14.8\% additional reduction)
+        \item Gradual improvement as model fine-tunes learned representations
+        \item Loss curves begin to plateau
+    \end{itemize}
+    
+    \item \textbf{Convergence Phase (Epoch 33+)}:
+    \begin{itemize}
+        \item Training: Stabilized around 2807.38
+        \item Validation: Stabilized around 2456.94
+        \item Minimal further improvement indicates model convergence
+        \item Small gap (12.5\%) between train/val suggests good generalization
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Loss Component Analysis:}
+
+From the training loss curves (Figure 4):
+
+\begin{itemize}
+    \item \textbf{Reconstruction Loss Trend}:
+    \begin{itemize}
+        \item Starts high (dominant term initially)
+        \item Decreases rapidly in early epochs
+        \item Stabilizes as model learns to reconstruct main features
+        \item Remains the larger component (as expected)
+    \end{itemize}
+    
+    \item \textbf{KL Divergence Trend}:
+    \begin{itemize}
+        \item Starts relatively low (prior regularization)
+        \item Increases initially as encoder learns non-trivial mappings
+        \item Then decreases as posterior aligns with prior
+        \item Stabilizes at moderate level maintaining regularization
+    \end{itemize}
+    
+    \item \textbf{Balance}:
+    \begin{itemize}
+        \item Both losses decrease together, indicating healthy training
+        \item No indication of posterior collapse (KL wouldn't be decreasing)
+        \item No indication of overfitting (gap between train/val remains small)
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Generalization Assessment:}
+
+\begin{itemize}
+    \item \textbf{Train-Validation Gap}:
+    \begin{itemize}
+        \item Final gap: 350.44 (12.5\% relative difference)
+        \item Small gap indicates good generalization
+        \item Model learns meaningful representations rather than memorizing
+    \end{itemize}
+    
+    \item \textbf{Validation Performance}:
+    \begin{itemize}
+        \item Validation loss consistently tracks training loss
+        \item No divergence suggesting overfitting
+        \item Slight improvement (lower loss) on validation suggests well-balanced model
+    \end{itemize}
+    
+    \item \textbf{Early Stopping}:
+    \begin{itemize}
+        \item Loss plateaued around epoch 20-30
+        \item Continued training for 1000 epochs ensures full convergence
+        \item No overfitting observed despite extended training
+    \end{itemize}
 \end{itemize}
 
 \begin{figure}[H]
