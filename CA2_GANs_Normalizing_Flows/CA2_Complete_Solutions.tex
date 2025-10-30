@@ -1,0 +1,91 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+
+% Page setup
+\geometry{margin=1in}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={CA2: GANs and Normalizing Flows - Complete Solutions},
+}
+
+% Code listing style
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    frame=single,
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=4,
+    showspaces=false,
+    showstringspaces=false
+}
+
+% Title information
+\title{\textbf{Deep Generative Models - Assignment 2}\\
+       \Large\textbf{GANs and Normalizing Flows}\\
+       \large Complete Solutions with Code Analysis and Results}
+\author{Mohammad Taha Majlesi\\
+        Student ID: 8100101504\\
+        University of Tehran}
+\date{November 2023}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document provides comprehensive solutions to Assignment 2 on Generative Adversarial Networks (GANs) and Normalizing Flows. The assignment covers theoretical derivations, implementations of RealNVP normalizing flows and DCGAN on FashionMNIST dataset, out-of-distribution detection, and comprehensive evaluation using FID scores. All code implementations, results analysis, and visualizations are included with detailed explanations of concepts and methodology.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+This assignment implements two powerful generative modeling approaches: \textbf{Generative Adversarial Networks (GANs)} and \textbf{Normalizing Flows}. The work focuses on the FashionMNIST dataset, demonstrating both pixel-level and latent-space generative modeling with quantitative evaluation using Fréchet Inception Distance (FID).
+
+\subsection{Dataset: FashionMNIST}
+
+FashionMNIST consists of 70,000 grayscale images (28×28 pixels) from 10 clothing categories:
+\begin{itemize}
+    \item T-shirt/top, Trouser, Pullover, Dress, Coat
+    \item Sandal, Shirt, Sneaker, Bag, Ankle boot
+\end{itemize}
+
+For GAN training, images are resized to 64×64 pixels and normalized to the range $[-1, 1]$ to match the generator's Tanh activation output.
+
+\subsection{Technical Setup}
+
+\begin{itemize}
+    \item \textbf{Framework}: PyTorch 1.12+
+    \item \textbf{Dataset}: FashionMNIST (60,000 training, 10,000 test images)
+    \item \textbf{GPU}: CUDA-compatible GPU recommended
+    \item \textbf{Libraries}: torchvision, numpy, matplotlib, scipy, pytorch-fid
+\end{itemize}
+
+\newpage
+
