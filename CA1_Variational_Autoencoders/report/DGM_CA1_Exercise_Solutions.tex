@@ -1,0 +1,117 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\geometry{margin=2.5cm}
+
+\title{Deep Generative Models - Course Assignment 1\\
+\large Variational Autoencoders (VAEs)\\
+\large Complete Exercises, Analysis, and Results}
+\author{Mohammad Taha Majlesi\\Student ID: 8100101504\\University of Tehran}
+\date{2023}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+This document presents a comprehensive report on the implementation and analysis of Variational Autoencoders (VAEs), as part of the Deep Generative Models course. The report includes all exercises, code implementation details, experimental results, theoretical analysis, and visualizations.
+
+\subsection{Project Overview}
+
+This assignment focuses on implementing and evaluating a Variational Autoencoder for facial image data. The project covers:
+
+\begin{enumerate}
+    \item \textbf{VAE Architecture Design}: Encoder-decoder architecture with probabilistic latent space
+    \item \textbf{Reparameterization Trick}: Enabling gradient flow through stochastic sampling
+    \item \textbf{Training and Optimization}: Balancing reconstruction and regularization losses
+    \item \textbf{Image Reconstruction}: Evaluating compression and reconstruction quality
+    \item \textbf{Image Generation}: Sampling from learned latent distribution
+    \item \textbf{Latent Space Analysis}: Interpolation and visualization of latent representations
+\end{enumerate}
+
+\subsection{Structure}
+
+The report is organized as follows:
+\begin{itemize}
+    \item Section 2: Theoretical Background and Concepts
+    \item Section 3: Implementation Details
+    \item Section 4: Exercise Solutions and Code Analysis
+    \item Section 5: Results and Analysis
+    \item Section 6: Conclusions
+\end{itemize}
+
+\section{Theoretical Background}
+
+\subsection{Variational Autoencoders (VAEs)}
+
+Variational Autoencoders are a class of generative models that learn probabilistic representations of data by combining the compression capabilities of traditional autoencoders with probabilistic inference.
+
+\subsection{Key Concepts}
+
+\subsubsection{Probabilistic Latent Space}
+
+Unlike deterministic autoencoders, VAEs learn a probabilistic latent space where each input $x$ is encoded into a distribution $q_\phi(z|x)$ rather than a fixed point. This enables meaningful generation and interpolation.
+
+\subsubsection{Evidence Lower Bound (ELBO)}
+
+The training objective maximizes the Evidence Lower Bound:
+
+\begin{equation}
+\mathcal{L}(\theta, \phi; \mathbf{x}) = \mathbb{E}_{q_\phi(\mathbf{z}|\mathbf{x})} [\log p_\theta(\mathbf{x}|\mathbf{z})] - \text{KL}(q_\phi(\mathbf{z}|\mathbf{x}) || p(\mathbf{z}))
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $p_\theta(\mathbf{x}|\mathbf{z})$: Decoder (generative model)
+    \item $q_\phi(\mathbf{z}|\mathbf{x})$: Encoder (recognition model)
+    \item $p(\mathbf{z})$: Prior distribution (typically $\mathcal{N}(0, I)$)
+\end{itemize}
+
+\subsubsection{Reparameterization Trick}
+
+To enable gradient flow through stochastic sampling, the reparameterization trick is used:
+
+\begin{equation}
+\mathbf{z} = \boldsymbol{\mu} + \boldsymbol{\sigma} \odot \epsilon, \quad \epsilon \sim \mathcal{N}(0, I), \quad \boldsymbol{\sigma} = \exp(0.5 \times \logvar)
+\end{equation}
+
+This separates the randomness ($\epsilon$) from the learnable parameters ($\boldsymbol{\mu}$, $\boldsymbol{\sigma}$).
+
+\subsubsection{Loss Function Components}
+
+The total loss consists of two components:
+
+\begin{equation}
+\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{recon}} + \mathcal{L}_{\text{KL}}
+\end{equation}
+
+\paragraph{Reconstruction Loss:}
+\begin{equation}
+\mathcal{L}_{\text{recon}} = \frac{1}{N} \sum_{i=1}^{N} ||\mathbf{x}_i - \hat{\mathbf{x}}_i||^2
+\end{equation}
+
+\paragraph{KL Divergence Loss:}
+\begin{equation}
+\mathcal{L}_{\text{KL}} = -\frac{1}{2} \sum_{j=1}^{d} (1 + \log(\sigma_j^2) - \mu_j^2 - \sigma_j^2)
+\end{equation}
+
+The KL divergence regularizes the latent distribution to follow the prior, ensuring smooth interpolation.
+
+\end{document}
+
