@@ -5,7 +5,9 @@
    "id": "52824b89-532a-4e54-87e9-1410813cd39e",
    "metadata": {},
    "source": [
-    "# LangChain: Q&A over Documents\n\n## I. ABSTRACT\n\nThis paper presents a parameter-efficient approach using 8-bit quantization and LoRA. It details environment setup, data preprocessing, training configuration, and analysis.\n\nKeywords— deep generative models, training analysis, evaluation, implementation details\n\nAn example might be a tool that would allow you to query a product catalog for items of interest."
+    "# LangChain: Q&A over Documents\n",
+    "\n",
+    "An example might be a tool that would allow you to query a product catalog for items of interest."
    ]
   },
   {
@@ -167,7 +169,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "## STEP BY STEP"
+    "## Step By Step"
    ]
   },
   {

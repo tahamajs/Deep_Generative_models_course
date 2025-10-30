@@ -5,7 +5,13 @@
    "id": "a786c77c",
    "metadata": {},
    "source": [
-    "# LangChain: Memory\n\n## I. ABSTRACT\n\nThis paper presents a parameter-efficient approach using 8-bit quantization and LoRA. It details environment setup, data preprocessing, training configuration, and analysis.\n\nKeywords— deep generative models, training analysis, evaluation, implementation details\n\n## OUTLINE\n* ConversationBufferMemory\n* ConversationBufferWindowMemory\n* ConversationTokenBufferMemory\n* ConversationSummaryMemory"
+    "# LangChain: Memory\n",
+    "\n",
+    "## Outline\n",
+    "* ConversationBufferMemory\n",
+    "* ConversationBufferWindowMemory\n",
+    "* ConversationTokenBufferMemory\n",
+    "* ConversationSummaryMemory"
    ]
   },
   {
@@ -13,7 +19,7 @@
    "id": "1297dcd5",
    "metadata": {},
    "source": [
-    "## CONVERSATIONBUFFERMEMORY"
+    "## ConversationBufferMemory"
    ]
   },
   {
@@ -399,7 +405,7 @@
     "tags": []
    },
    "source": [
-    "## CONVERSATIONBUFFERWINDOWMEMORY"
+    "## ConversationBufferWindowMemory"
    ]
   },
   {
@@ -564,7 +570,7 @@
    "id": "d2931b92",
    "metadata": {},
    "source": [
-    "## CONVERSATIONTOKENBUFFERMEMORY"
+    "## ConversationTokenBufferMemory"
    ]
   },
   {
@@ -643,7 +649,7 @@
    "id": "5ff55d5d",
    "metadata": {},
    "source": [
-    "## CONVERSATIONSUMMARYMEMORY"
+    "## ConversationSummaryMemory"
    ]
   },
   {
