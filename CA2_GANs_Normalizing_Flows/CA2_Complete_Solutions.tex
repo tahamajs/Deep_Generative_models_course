@@ -60,7 +60,9 @@ Generative adversarial networks, normalizing flows, deep learning, image generat
 
 Generative modeling is a fundamental problem in machine learning, with applications spanning image generation, anomaly detection, and data augmentation. This work compares two state-of-the-art approaches: Generative Adversarial Networks (GANs)~\cite{goodfellow2014generative} and Normalizing Flows~\cite{dinh2017density}.
 
-GANs train two competing networks—a generator and discriminator—through adversarial optimization, producing high-quality samples but lacking explicit density estimation. Normalizing flows learn invertible transformations mapping data to simple latent distributions, enabling exact likelihood computation and out-of-distribution (OOD) detection.
+GANs train two competing networks---a generator and discriminator---through adversarial optimization, producing high-quality samples but lacking explicit density estimation. Normalizing flows learn invertible transformations mapping data to simple latent distributions, enabling exact likelihood computation and out-of-distribution (OOD) detection.
+
+Recent advances have demonstrated the complementary strengths of these approaches. DCGANs~\cite{radford2016unsupervised} established stable architectures for adversarial training, while RealNVP~\cite{dinh2017density} provided efficient normalizing flow implementations. Evaluation metrics such as FID~\cite{heusel2017gans} enable quantitative assessment of generative quality.
 
 \subsection{Dataset and Experimental Setup}
 
@@ -939,7 +941,7 @@ For our FashionMNIST GAN implementation, we use:
 
 \subsection{Model Architecture}
 
-We implement a Deep Convolutional GAN (DCGAN) following the architecture guidelines from Radford et al. (2016) for stable training.
+We implement a Deep Convolutional GAN (DCGAN) following the architecture guidelines from~\cite{radford2016unsupervised} for stable training.
 
 \subsubsection{Generator Architecture}
 
