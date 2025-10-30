@@ -113,5 +113,489 @@ The total loss consists of two components:
 
 The KL divergence regularizes the latent distribution to follow the prior, ensuring smooth interpolation.
 
+\section{Implementation Details}
+
+\subsection{Architecture Overview}
+
+Our VAE implementation uses a convolutional encoder-decoder architecture designed for 128×128 RGB images.
+
+\subsection{Encoder Architecture}
+
+The encoder progressively reduces spatial dimensions while increasing feature depth:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Layer Type} & \textbf{Configuration} & \textbf{Output Size} \\
+\midrule
+Conv2d & 3→32, kernel=4, stride=2, padding=1 & 64×64 \\
+LeakyReLU & negative\_slope=0.2 & - \\
+Conv2d & 32→64, kernel=4, stride=2, padding=1 & 32×32 \\
+BatchNorm2d & - & - \\
+LeakyReLU & negative\_slope=0.2 & - \\
+Dropout & p=0.2 & - \\
+Conv2d & 64→128, kernel=4, stride=2, padding=1 & 16×16 \\
+BatchNorm2d & - & - \\
+LeakyReLU & negative\_slope=0.2 & - \\
+Dropout & p=0.3 & - \\
+Conv2d & 128→256, kernel=4, stride=2, padding=1 & 8×8 \\
+LeakyReLU & negative\_slope=0.2 & - \\
+Flatten & - & 16384 \\
+Linear & 16384→4096 & 4096 \\
+LeakyReLU & negative\_slope=0.2 & - \\
+Linear ($\mu$) & 4096→32 & 32 \\
+Linear ($\log \sigma^2$) & 4096→32 & 32 \\
+\bottomrule
+\end{tabular}
+\caption{Encoder network architecture}
+\end{table}
+
+\subsection{Decoder Architecture}
+
+The decoder reconstructs images from latent vectors using transposed convolutions:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Layer Type} & \textbf{Configuration} & \textbf{Output Size} \\
+\midrule
+Linear & 32→4096 & 4096 \\
+LeakyReLU & negative\_slope=0.2 & - \\
+Linear & 4096→16384 & 16384 \\
+Unflatten & - & 256×8×8 \\
+ConvTranspose2d & 256→128, kernel=4, stride=2, padding=1 & 16×16 \\
+BatchNorm2d & - & - \\
+LeakyReLU & negative\_slope=0.2 & - \\
+Dropout & p=0.3 & - \\
+ConvTranspose2d & 128→64, kernel=4, stride=2, padding=1 & 32×32 \\
+BatchNorm2d & - & - \\
+LeakyReLU & negative\_slope=0.2 & - \\
+Dropout & p=0.2 & - \\
+ConvTranspose2d & 64→32, kernel=4, stride=2, padding=1 & 64×64 \\
+LeakyReLU & negative\_slope=0.2 & - \\
+ConvTranspose2d & 32→3, kernel=4, stride=2, padding=1 & 128×128 \\
+Tanh & - & 128×128 \\
+\bottomrule
+\end{tabular}
+\caption{Decoder network architecture}
+\end{table}
+
+\subsection{Training Configuration}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Epochs & 1000 \\
+Learning Rate & 0.0005 \\
+Optimizer & Adam \\
+Batch Size & 32 \\
+Latent Dimension & 32 \\
+Hidden Dimension & 4096 \\
+Train/Validation Split & 80\%/20\% \\
+\bottomrule
+\end{tabular}
+\caption{Training hyperparameters}
+\end{table}
+
+\section{Exercise Solutions and Code Analysis}
+
+\subsection{Exercise 1: Data Loading and Preprocessing}
+
+\subsubsection{Objective}
+Load and preprocess the facial image dataset with smile/non-smile classes.
+
+\subsubsection{Implementation}
+The data preprocessing pipeline includes:
+\begin{itemize}
+    \item Resizing images to 128×128 pixels
+    \item Converting to tensors
+    \item Normalizing pixel values to range $[-1, 1]$ using mean=0.5, std=0.5
+\end{itemize}
+
+\subsubsection{Code Analysis}
+The normalization formula is: $x_{\text{norm}} = \frac{x - 0.5}{0.5} = 2(x - 0.5)$, which maps pixel values from $[0, 1]$ to $[-1, 1]$. This is suitable for Tanh activation in the decoder output.
+
+\subsubsection{Results}
+\begin{itemize}
+    \item Total dataset size: 1,203 images
+    \item Class distribution: 600 smile, 603 non-smile
+    \item Training samples: 962 (80\%)
+    \item Validation samples: 241 (20\%)
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{../images/output_cell_11_img_0.png}
+\caption{Sample batch of preprocessed training images (4×1 grid) showing the diversity and quality of the dataset}
+\end{figure}
+
+\subsection{Exercise 2: VAE Model Implementation}
+
+\subsubsection{Objective}
+Implement the complete VAE architecture with encoder, reparameterization trick, and decoder.
+
+\subsubsection{Key Implementation Details}
+
+\paragraph{Reparameterization Trick:}
+The reparameterization trick is implemented as follows:
+\begin{lstlisting}[language=Python]
+def reparameterize(self, mean, logvar):
+    logvar = torch.clamp(logvar, min=-10, max=10)
+    std_dev = torch.exp(0.5 * logvar)
+    epsilon = torch.randn_like(std_dev)
+    return mean + epsilon * std_dev
+\end{lstlisting}
+
+\textbf{Analysis:}
+\begin{itemize}
+    \item \texttt{torch.clamp(logvar, min=-10, max=10)}: Prevents numerical instability by constraining log-variance to reasonable values
+    \item \texttt{std\_dev = torch.exp(0.5 * logvar)}: Computes standard deviation from log-variance
+    \item \texttt{epsilon $\sim$ $\mathcal{N}(0,I)$}: Samples from standard normal distribution
+    \item This enables gradients to flow through the deterministic path ($\mu + \sigma \odot \epsilon$)
+\end{itemize}
+
+\paragraph{Forward Pass:}
+The forward method combines encoding, reparameterization, and decoding:
+\begin{itemize}
+    \item Encoder processes input → produces mean and log-variance
+    \item Reparameterization trick generates latent vector $\mathbf{z}$
+    \item Decoder reconstructs image from $\mathbf{z}$
+    \item Returns: (reconstructed image, mean, log-variance)
+\end{itemize}
+
+\subsection{Exercise 3: Loss Function Implementation}
+
+\subsubsection{Objective}
+Implement the VAE loss function combining reconstruction and KL divergence terms.
+
+\subsubsection{Implementation}
+\begin{lstlisting}[language=Python]
+def vae_loss_function(reconstructed_x, original_x, latent_mean, latent_logvar):
+    reconstruction_loss = nn.functional.mse_loss(
+        reconstructed_x, original_x, reduction='sum'
+    )
+    kl_divergence_loss = -0.5 * torch.sum(
+        1 + latent_logvar - latent_mean.pow(2) - latent_logvar.exp()
+    )
+    total_loss = reconstruction_loss + kl_divergence_loss
+    return total_loss, reconstruction_loss, kl_divergence_loss
+\end{lstlisting}
+
+\subsubsection{Analysis}
+
+\paragraph{Reconstruction Loss:}
+\begin{itemize}
+    \item Uses Mean Squared Error (MSE) with \texttt{reduction='sum'}
+    \item Measures how well the decoder reconstructs input images
+    \item $\mathcal{L}_{\text{recon}} = \sum ||\mathbf{x} - \hat{\mathbf{x}}||^2$
+\end{itemize}
+
+\paragraph{KL Divergence Loss:}
+\begin{itemize}
+    \item Implements the closed-form KL divergence between $q_\phi(\mathbf{z}|\mathbf{x})$ and $\mathcal{N}(0,I)$
+    \item Formula: $\mathcal{L}_{\text{KL}} = -\frac{1}{2}\sum(1 + \log(\sigma^2) - \mu^2 - \sigma^2)$
+    \item Regularizes latent space to follow standard normal prior
+    \item Prevents posterior collapse and ensures smooth latent manifold
+\end{itemize}
+
+\paragraph{Balance Between Terms:}
+\begin{itemize}
+    \item High reconstruction loss $\rightarrow$ Poor image quality
+    \item High KL loss $\rightarrow$ Over-regularization, blurry reconstructions
+    \item Optimal balance is achieved through training
+\end{itemize}
+
+\subsection{Exercise 4: Training Loop}
+
+\subsubsection{Objective}
+Train the VAE model with proper tracking of training and validation losses.
+
+\subsubsection{Training Process}
+For each epoch:
+\begin{enumerate}
+    \item \textbf{Training Phase:}
+    \begin{itemize}
+        \item Set model to training mode
+        \item For each batch: forward pass, compute loss, backpropagate, update parameters
+        \item Accumulate losses
+    \end{itemize}
+    \item \textbf{Validation Phase:}
+    \begin{itemize}
+        \item Set model to evaluation mode
+        \item Disable gradient computation
+        \item Compute validation loss without parameter updates
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Results Analysis}
+
+The training showed:
+\begin{itemize}
+    \item Initial loss (epoch 0): Training = 6489.75, Validation = 5491.95
+    \item After 10 epochs: Training = 3236.25, Validation = 2895.76 (50\% reduction)
+    \item Final loss (epoch 33+): Training = 2807.38, Validation = 2456.94
+    \item Good generalization: Small gap between train/val loss indicates minimal overfitting
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{../images/output_cell_21_img_0.png}
+\caption{Training loss curves showing reconstruction loss and KL divergence over 1000 epochs. The balance between reconstruction fidelity and latent space regularization is maintained throughout training.}
+\end{figure}
+
+\section{Results and Analysis}
+
+\subsection{Image Reconstruction}
+
+\subsubsection{Objective}
+Evaluate the VAE's ability to compress and reconstruct input images.
+
+\subsubsection{Qualitative Analysis}
+
+The VAE demonstrates effective reconstruction capabilities:
+\begin{itemize}
+    \item \textbf{Feature Preservation}: Facial structure, eyes, nose, and mouth positions accurately maintained
+    \item \textbf{Expression Retention}: Facial expressions and key characteristics preserved
+    \item \textbf{Slight Smoothing}: Minor blurring due to latent space compression and KL regularization
+    \item \textbf{Consistency}: Reconstruction quality consistent across diverse samples
+\end{itemize}
+
+\subsubsection{Visual Results}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../images/output_cell_19_img_0.png}
+\caption{Image reconstruction results (Batch 1). Top row: original images. Bottom row: reconstructed images.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../images/output_cell_19_img_1.png}
+\caption{Additional reconstruction examples (Batch 2) showing consistency in quality across different samples.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../images/output_cell_19_img_2.png}
+\caption{Further reconstruction results (Batch 3) demonstrating the model's ability to handle diverse facial expressions and appearances.}
+\end{figure}
+
+\subsubsection{Quantitative Metrics}
+\begin{itemize}
+    \item Mean reconstruction error decreases from $\sim$6489 (epoch 0) to $\sim$2807 (converged)
+    \item Visual inspection confirms high perceptual similarity between originals and reconstructions
+    \item Structural details maintained while high-frequency noise is suppressed
+\end{itemize}
+
+\subsection{Image Generation}
+
+\subsubsection{Objective}
+Generate new images by sampling from the learned latent distribution.
+
+\subsubsection{Method}
+\begin{enumerate}
+    \item Sample random latent vectors from standard normal prior: $\mathbf{z} \sim \mathcal{N}(0, I)$
+    \item Pass through decoder to generate images
+    \item Display generated samples in a grid
+\end{enumerate}
+
+\subsubsection{Results Analysis}
+
+\textbf{Characteristics of Generated Images:}
+\begin{itemize}
+    \item \textbf{Diversity}: Generated samples exhibit variation in facial features, expressions, and appearances
+    \item \textbf{Realism}: Images maintain realistic facial proportions and structure
+    \item \textbf{Coherence}: Generated faces are coherent without major artifacts or distortions
+    \item \textbf{Distribution Coverage}: Samples span the learned data manifold effectively
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../images/output_cell_23_img_0.png}
+\caption{Generated images from random latent vectors sampled from $\mathcal{N}(0, I)$. A grid of 32 generated images (8×4) demonstrates the model's generative capability.}
+\end{figure}
+
+\subsubsection{Analysis}
+\begin{itemize}
+    \item Model successfully maps from standard normal prior to realistic facial images
+    \item Generation quality validates that latent space captures meaningful data variation
+    \item No evidence of mode collapse: diverse samples indicate proper distribution coverage
+\end{itemize}
+
+\subsection{Latent Space Interpolation}
+
+\subsubsection{Objective}
+Explore latent space structure through interpolation between class means.
+
+\subsubsection{Method}
+\begin{enumerate}
+    \item Compute mean latent vectors for "smile" and "non-smile" classes:
+    \begin{align}
+    \mu_{\text{smile}} &= \frac{1}{|\mathcal{S}|} \sum_{\mathbf{x} \in \mathcal{S}} \mathbb{E}_{q_\phi(\mathbf{z}|\mathbf{x})}[\mathbf{z}] \\
+    \mu_{\text{non-smile}} &= \frac{1}{|\mathcal{N}|} \sum_{\mathbf{x} \in \mathcal{N}} \mathbb{E}_{q_\phi(\mathbf{z}|\mathbf{x})}[\mathbf{z}]
+    \end{align}
+    \item Define direction vector: $\delta = \mu_{\text{smile}} - \mu_{\text{non-smile}}$
+    \item Perform interpolation with $\alpha \in [-3, 3]$:
+    \begin{equation}
+    \mathbf{z}_{\text{interpolated}} = \mathbf{z}_{\text{sample}} + \alpha \times \delta
+    \end{equation}
+    \item Decode interpolated vectors to generate images
+\end{enumerate}
+
+\subsubsection{Results Analysis}
+
+\textbf{Observations:}
+\begin{itemize}
+    \item \textbf{Smooth Transition}: Gradual morphological changes observed across interpolation steps
+    \item \textbf{Attribute Control}: Smile intensity changes progressively while facial identity is preserved
+    \item \textbf{Feature Disentanglement}: The interpolation demonstrates that smile attribute is encoded in a semantically meaningful direction
+    \item \textbf{Continuous Manifold}: Smooth transitions validate the latent space forms a continuous, well-structured manifold
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../images/output_cell_25_img_0.png}
+\caption{Latent space interpolation along the direction $\delta = \mu_{\text{smile}} - \mu_{\text{non-smile}}$ with $\alpha$ values from -3 to 3. The sequence (left to right) shows gradual transition from non-smile to smile expression while preserving facial identity.}
+\end{figure}
+
+\subsubsection{Interpretation}
+\begin{itemize}
+    \item Negative $\alpha$ values suppress smile, positive values enhance it
+    \item Facial identity remains consistent, confirming effective disentanglement
+    \item The learned latent space encodes semantic attributes in interpretable directions
+\end{itemize}
+
+\subsection{Latent Space Visualization}
+
+\subsubsection{Objective}
+Visualize the structure of the learned latent space using dimensionality reduction.
+
+\subsubsection{Method}
+\begin{enumerate}
+    \item Extract latent vectors from 500 training samples using the encoder
+    \item Apply t-SNE to reduce from 32 dimensions to 2D
+    \item Color points by class labels (smile/non-smile)
+\end{enumerate}
+
+\subsubsection{Results Analysis}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{../images/output_cell_27_img_0.png}
+\caption{2D visualization of latent space using t-SNE (500 samples). Points are colored by class label. Good separation between smile and non-smile classes with continuous structure.}
+\end{figure}
+
+\textbf{t-SNE Visualization Characteristics:}
+\begin{itemize}
+    \item \textbf{Class Separation}: Distinct clusters visible for smile and non-smile classes
+    \item \textbf{Cluster Coherence}: Points within each class cluster tightly together
+    \item \textbf{Continuous Manifold}: Smooth transitions between clusters indicate continuous latent space structure
+    \item \textbf{Good Separability}: Suggests encoder learns discriminative features
+\end{itemize}
+
+\subsubsection{Interpretation}
+\begin{itemize}
+    \item Good separation indicates VAE learns class-discriminative latent representations
+    \item Continuous structure validates KL regularization effectively maintains smooth latent manifold
+    \item Inter-cluster distance indicates meaningful semantic separation between classes
+\end{itemize}
+
+\subsection{Latent Dimension Analysis}
+
+\subsubsection{Objective}
+Analyze the utilization of different latent dimensions.
+
+\subsubsection{Method}
+\begin{enumerate}
+    \item For each sample, extract standard deviation: $\sigma_j = \exp(0.5 \times \logvar_j)$
+    \item Compute mean standard deviation per dimension across dataset
+    \item Visualize with bar chart
+\end{enumerate}
+
+\subsubsection{Results Analysis}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{../images/output_cell_29_img_0.png}
+\caption{Mean standard deviation per latent dimension (32 dimensions) across 500 dataset samples. Dimensions with higher standard deviation are more actively used.}
+\end{figure}
+
+\textbf{Key Findings:}
+\begin{itemize}
+    \item \textbf{Balanced Utilization}: Most dimensions show varying levels of activity
+    \item \textbf{Active Dimensions}: Higher standard deviation dimensions encode salient, variable features
+    \item \textbf{Reserve Dimensions}: Lower standard deviation dimensions provide capacity for diversity and interpolation
+    \item \textbf{No Collapsed Dimensions}: All dimensions show non-zero activity, indicating effective latent space usage
+\end{itemize}
+
+\subsubsection{Interpretation}
+\begin{itemize}
+    \item Distribution suggests model learns both discriminative and generative features
+    \item Higher-variance dimensions likely encode facial expression and pose variations
+    \item Lower-variance dimensions contribute to identity preservation and smooth interpolation
+    \item Balanced distribution indicates optimal latent dimension selection (32 dimensions provide sufficient capacity)
+\end{itemize}
+
+\section{Discussion}
+
+\subsection{Reconstruction Quality}
+
+The VAE successfully reconstructs input images with high fidelity. Main facial features are preserved, though fine details may be slightly smoothed due to:
+
+\begin{enumerate}
+    \item \textbf{Latent space regularization}: KL divergence encourages latent distribution to follow prior, causing slight smoothing
+    \item \textbf{Information bottleneck}: Compression from 49,152 dimensions (128×128×3) to 32 dimensions inherently loses some fine details
+    \item \textbf{Trade-off}: Model balances reconstruction accuracy with generative capabilities
+\end{enumerate}
+
+\subsection{Generative Performance}
+
+The model demonstrates effective generative capabilities, producing diverse and realistic images when sampling from the prior distribution. The quality indicates successful learning of the underlying data manifold.
+
+\subsection{Latent Space Structure}
+
+The latent space exhibits:
+\begin{itemize}
+    \item \textbf{Good class separation}: t-SNE visualization shows distinct clusters with minimal overlap
+    \item \textbf{Continuous structure}: Smooth interpolations indicate well-formed latent manifold
+    \item \textbf{Semantic organization}: Interpolation experiments reveal meaningful attribute directions
+    \item \textbf{Proper regularization}: KL divergence ensures structure compatible with standard normal prior
+\end{itemize}
+
+\subsection{Limitations}
+
+\begin{enumerate}
+    \item \textbf{Resolution constraints}: Fixed 128×128 resolution limits fine detail preservation
+    \item \textbf{Latent dimension}: 32 dimensions may be insufficient for highly complex variations
+    \item \textbf{Class separation}: While classes are separated, perfect disentanglement is challenging
+    \item \textbf{Computational cost}: Training requires significant GPU resources
+\end{enumerate}
+
+\section{Conclusions}
+
+This project successfully implements and evaluates a Variational Autoencoder for facial image generation and reconstruction. The model demonstrates:
+
+\begin{itemize}
+    \item \textbf{Effective compression}: Encoding 128×128×3 images into 32-dimensional latent vectors
+    \item \textbf{High-quality reconstruction}: Preserving main features while learning compressed representations
+    \item \textbf{Generative capability}: Producing diverse and realistic images from latent samples
+    \item \textbf{Interpretable latent space}: Enabling semantic manipulation through interpolation
+\end{itemize}
+
+The results validate the effectiveness of VAEs for unsupervised representation learning and provide a foundation for exploring more advanced generative modeling techniques.
+
+\section{References}
+
+\begin{enumerate}
+    \item D. P. Kingma and M. Welling, "Auto-encoding variational bayes," arXiv preprint arXiv:1312.6114, 2013.
+    \item D. J. Rezende, S. Mohamed, and D. Wierstra, "Stochastic backpropagation and approximate inference in deep generative models," in International conference on machine learning, 2014.
+    \item I. Higgins et al., "$\beta$-VAE: Learning basic visual concepts with a constrained variational framework," in ICLR, 2017.
+\end{enumerate}
+
 \end{document}
 

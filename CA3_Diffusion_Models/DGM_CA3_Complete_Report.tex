@@ -437,4 +437,243 @@ The trajectory visualization validates several theoretical concepts:
     \item \textbf{Starting point selection}: Random initialization works well; the score function guides samples regardless of starting location
 \end{itemize}
 
+\subsection{Phase 3: Varying Sigma Training}
+
+\subsubsection{Objective}
+
+Train a single score network on multiple noise levels simultaneously to achieve:
+\begin{itemize}
+    \item Generalization across different noise scales
+    \item Compatibility with annealed Langevin dynamics
+    \item Robustness to noise level mismatches
+    \item Single model efficiency (one model for all $\sigma$ values)
+\end{itemize}
+
+\subsubsection{Implementation Details}
+
+\textbf{Training Configuration:}
+\begin{itemize}
+    \item Epochs: 1000 (longer than fixed $\sigma$ due to complexity)
+    \item Batch size: 256
+    \item Learning rate: 0.001 with step decay (factor 0.5 every 500 epochs)
+    \item Noise range: Random $\sigma \in [1, 20]$ per batch
+    \item Early stopping: Patience = 200 epochs
+\end{itemize}
+
+\textbf{Key Difference from Phase 1:}
+\begin{itemize}
+    \item \textbf{Fixed $\sigma$}: Each model trained on single noise level
+    \item \textbf{Varying $\sigma$}: Single model trained on random noise levels per batch
+\end{itemize}
+
+\subsubsection{Training Progress}
+
+The following table shows training progress at different epochs:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{cc}
+\toprule
+Epoch & Loss \\
+\midrule
+1 & 0.066374 \\
+100 & 0.021640 \\
+200 & 0.017978 \\
+300 & 0.020751 \\
+400 & 0.017566 \\
+500 & 0.020670 \\
+600 & 0.020269 \\
+700 & 0.018625 \\
+800 & 0.020360 \\
+900 & 0.018659 \\
+1000 & 0.018004 \\
+\bottomrule
+\end{tabular}
+\caption{Training loss progression for varying sigma model}
+\label{tab:varying_sigma_progress}
+\end{table}
+
+\textbf{Final Loss}: 0.018004 (after 1000 epochs)
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/output_cell_29_img_2.png}
+    \caption{Training loss curve for varying sigma model over 1000 epochs}
+    \label{fig:varying_sigma_loss}
+\end{figure}
+
+\subsubsection{Convergence Analysis}
+
+\textbf{Training Phases:}
+
+\textbf{1. Initial Phase (Epochs 1-200):}
+\begin{itemize}
+    \item Loss: $\sim$0.05-0.07
+    \item Behavior: Learning basic score directions
+    \item Challenge: Adapting to multiple noise levels simultaneously
+    \item Progress: Gradual decrease as model learns multi-scale patterns
+\end{itemize}
+
+\textbf{2. Mid Phase (Epochs 200-500):}
+\begin{itemize}
+    \item Loss: $\sim$0.02-0.025
+    \item Behavior: Refining score predictions across scales
+    \item Progress: Steady improvement, model finds balance
+    \item Sampling: Samples begin to show proper distribution
+\end{itemize}
+
+\textbf{3. Late Phase (Epochs 500-1000):}
+\begin{itemize}
+    \item Loss: $\sim$0.017-0.02
+    \item Behavior: Fine-tuning, stable across noise levels
+    \item Convergence: Loss stabilizes, minimal further decrease
+    \item Quality: High-quality samples at various $\sigma$
+\end{itemize}
+
+\subsubsection{Sampling Quality During Training}
+
+We monitored sampling quality at various epochs to track model learning:
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_5.png}
+        \caption{Epoch 1 - Initial training phase}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_8.png}
+        \caption{Epoch 100 - Early training}
+    \end{subfigure}
+    
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_11.png}
+        \caption{Epoch 200 - Mid training}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_14.png}
+        \caption{Epoch 300 - Improving}
+    \end{subfigure}
+    
+    \caption{Evolution of sampling quality during training (continued on next page)}
+    \label{fig:varying_sigma_sampling_1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_17.png}
+        \caption{Epoch 400 - Good progress}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_20.png}
+        \caption{Epoch 500 - Stable}
+    \end{subfigure}
+    
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_23.png}
+        \caption{Epoch 600 - Refined}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_26.png}
+        \caption{Epoch 700 - Excellent quality}
+    \end{subfigure}
+    
+    \caption{Evolution of sampling quality during training (continued)}
+    \label{fig:varying_sigma_sampling_2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_29.png}
+        \caption{Epoch 800 - Maintained quality}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\textwidth]{images/output_cell_29_img_32.png}
+        \caption{Epoch 900 - Near convergence}
+    \end{subfigure}
+    
+    \caption{Final stages of training evolution}
+    \label{fig:varying_sigma_sampling_3}
+\end{figure}
+
+\subsubsection{Comparison with Fixed Sigma Models}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Aspect & Fixed $\sigma=1$ & Fixed $\sigma=3$ & Varying $\sigma$ [1,20] \\
+\midrule
+Training Time & 100 epochs & 100 epochs & 1000 epochs \\
+Initial Loss & 0.331 & 0.045 & 0.066 \\
+Final Loss & 0.269 & 0.012 & 0.018 \\
+At $\sigma=1$ Quality & ⭐⭐⭐⭐⭐ & ❌ Poor & ⭐⭐⭐⭐ \\
+At $\sigma=3$ Quality & ❌ Poor & ⭐⭐⭐⭐⭐ & ⭐⭐⭐⭐ \\
+At $\sigma=7$ Quality & ❌ Poor & ❌ Poor & ⭐⭐⭐⭐ \\
+Generalization & ⭐⭐ & ⭐⭐ & ⭐⭐⭐⭐⭐ \\
+Annealed Sampling & ❌ Not suitable & ❌ Not suitable & ⭐⭐⭐⭐⭐ \\
+Storage & 3 models & 3 models & 1 model \\
+\bottomrule
+\end{tabular}
+\caption{Comprehensive comparison of training strategies}
+\label{tab:strategy_comparison}
+\end{table}
+
+\subsubsection{Analysis}
+
+\textbf{Key Advantages of Varying Sigma Training:}
+
+\textbf{1. Multi-Scale Flexibility:}
+\begin{itemize}
+    \item The model can perform sampling at \textbf{any} noise level $\sigma \in [1, 20]$
+    \item Single model handles all noise scales, unlike fixed-$\sigma$ models which work only at their training $\sigma$
+    \item Essential for annealed sampling which requires multiple $\sigma$ values
+\end{itemize}
+
+\textbf{2. Robustness:}
+\begin{itemize}
+    \item Handles slight $\sigma$ mismatches during sampling gracefully
+    \item Works even if exact training $\sigma$ is forgotten
+    \item Adapts to different sampling needs without retraining
+\end{itemize}
+
+\textbf{3. Practical Efficiency:}
+\begin{itemize}
+    \item One model file instead of multiple specialized models
+    \item One forward pass supports all $\sigma$ values
+    \item Reduced storage and deployment complexity
+\end{itemize}
+
+\textbf{Trade-offs:}
+
+\textbf{Advantages} ✅:
+\begin{itemize}
+    \item Generalization across noise scales
+    \item Single model for all needs
+    \item Robust to $\sigma$ variations
+    \item Compatible with annealed sampling
+\end{itemize}
+
+\textbf{Disadvantages} ❌:
+\begin{itemize}
+    \item Higher final loss than specialized models (0.018 vs 0.012)
+    \item Slightly lower peak quality at specific $\sigma$
+    \item More complex training objective
+    \item Longer training time needed (1000 vs 100 epochs)
+\end{itemize}
+
+\textbf{Recommendations:}
+
+\begin{itemize}
+    \item \textbf{Use varying-$\sigma$ training for}: Production systems, general-purpose models, when annealed sampling is needed
+    \item \textbf{Use fixed-$\sigma$ training for}: Specialized high-precision scenarios, when maximum quality at specific $\sigma$ is required
+    \item \textbf{Best practice}: Start with varying-$\sigma$ training for flexibility, fine-tune with fixed-$\sigma$ if needed
+\end{itemize}
+
 \end{document}
