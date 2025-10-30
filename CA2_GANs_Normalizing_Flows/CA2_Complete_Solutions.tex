@@ -1,34 +1,24 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[journal,conference,12pt,onecolumn]{IEEEtran}
 
-% Packages
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{amsmath}
-\usepackage{amssymb}
+% IEEE packages
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
 \usepackage{graphicx}
-\usepackage{subcaption}
-\usepackage{hyperref}
-\usepackage{listings}
+\usepackage{textcomp}
 \usepackage{xcolor}
-\usepackage{geometry}
-\usepackage{float}
+\usepackage{listings}
+\usepackage{subcaption}
 \usepackage{booktabs}
 \usepackage{array}
-
-% Page setup
-\geometry{margin=1in}
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    filecolor=magenta,      
-    urlcolor=cyan,
-    pdftitle={CA2: GANs and Normalizing Flows - Complete Solutions},
-}
+\usepackage{url}
 
 % Code listing style
 \lstset{
     language=Python,
-    basicstyle=\ttfamily\small,
+    basicstyle=\ttfamily\footnotesize,
     keywordstyle=\color{blue}\bfseries,
     commentstyle=\color{green!60!black},
     stringstyle=\color{red},
@@ -41,57 +31,46 @@
     breakatwhitespace=true,
     tabsize=4,
     showspaces=false,
-    showstringspaces=false
+    showstringspaces=false,
+    captionpos=b
 }
 
-% Title information
-\title{\textbf{Deep Generative Models - Assignment 2}\\
-       \Large\textbf{GANs and Normalizing Flows}\\
-       \large Complete Solutions with Code Analysis and Results}
-\author{Mohammad Taha Majlesi\\
-        Student ID: 8100101504\\
-        University of Tehran}
-\date{November 2023}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \begin{document}
+
+\title{Generative Adversarial Networks and Normalizing Flows:\\
+Implementation and Analysis on FashionMNIST Dataset}
+
+\author{Mohammad~Taha~Majlesi,~\IEEEmembership{Student~Member,~IEEE}
+\thanks{M. T. Majlesi is with the Department of Electrical and Computer Engineering, University of Tehran, Tehran, Iran (e-mail: m.t.majlesi@ut.ac.ir; Student ID: 8100101504).}}
 
 \maketitle
 
 \begin{abstract}
-This document provides comprehensive solutions to Assignment 2 on Generative Adversarial Networks (GANs) and Normalizing Flows. The assignment covers theoretical derivations, implementations of RealNVP normalizing flows and DCGAN on FashionMNIST dataset, out-of-distribution detection, and comprehensive evaluation using FID scores. All code implementations, results analysis, and visualizations are included with detailed explanations of concepts and methodology.
+This paper presents a comprehensive study of two prominent deep generative modeling approaches: Generative Adversarial Networks (GANs) and Normalizing Flows. We implement and analyze RealNVP normalizing flows and Deep Convolutional GANs (DCGANs) on the FashionMNIST dataset. Our RealNVP implementation achieves effective density estimation with log-likelihood values of 1706.93 on training data and demonstrates improved out-of-distribution detection in learned latent spaces. The DCGAN implementation achieves a Fréchet Inception Distance (FID) of 171.67 at optimal training epoch, with comprehensive analysis of training dynamics, loss curves, and generation quality. We provide detailed theoretical derivations of GAN objectives, optimal discriminator analysis, and comprehensive evaluation metrics. Experimental results show that normalizing flows excel in density estimation and OOD detection, while GANs produce higher-quality visual samples through adversarial training. The work includes complete code implementations, architectural details, and analysis of training stability, mode collapse, and convergence patterns.
 \end{abstract}
 
-\tableofcontents
-\newpage
+\begin{IEEEkeywords}
+Generative adversarial networks, normalizing flows, deep learning, image generation, density estimation, out-of-distribution detection, Fréchet Inception Distance
+\end{IEEEkeywords}
 
 \section{Introduction}
 
-This assignment implements two powerful generative modeling approaches: \textbf{Generative Adversarial Networks (GANs)} and \textbf{Normalizing Flows}. The work focuses on the FashionMNIST dataset, demonstrating both pixel-level and latent-space generative modeling with quantitative evaluation using Fréchet Inception Distance (FID).
+Generative modeling is a fundamental problem in machine learning, with applications spanning image generation, anomaly detection, and data augmentation. This work compares two state-of-the-art approaches: Generative Adversarial Networks (GANs)~\cite{goodfellow2014generative} and Normalizing Flows~\cite{dinh2017density}.
 
-\subsection{Dataset: FashionMNIST}
+GANs train two competing networks—a generator and discriminator—through adversarial optimization, producing high-quality samples but lacking explicit density estimation. Normalizing flows learn invertible transformations mapping data to simple latent distributions, enabling exact likelihood computation and out-of-distribution (OOD) detection.
 
-FashionMNIST consists of 70,000 grayscale images (28×28 pixels) from 10 clothing categories:
-\begin{itemize}
-    \item T-shirt/top, Trouser, Pullover, Dress, Coat
-    \item Sandal, Shirt, Sneaker, Bag, Ankle boot
-\end{itemize}
+\subsection{Dataset and Experimental Setup}
 
-For GAN training, images are resized to 64×64 pixels and normalized to the range $[-1, 1]$ to match the generator's Tanh activation output.
+We employ the FashionMNIST dataset~\cite{xiao2017fashion}, containing 70,000 grayscale images (28×28 pixels) from 10 clothing categories: T-shirt/top, Trouser, Pullover, Dress, Coat, Sandal, Shirt, Sneaker, Bag, and Ankle boot. For GAN training, images are resized to 64×64 pixels and normalized to $[-1,1]$ to match the generator's Tanh output.
 
-\subsection{Technical Setup}
+Experiments use PyTorch 1.12+ with CUDA support. Models train on 60,000 training images with 10,000 reserved for testing. Normalizing flows use 80/20 train/validation split (48,000/12,000 images).
 
-\begin{itemize}
-    \item \textbf{Framework}: PyTorch 1.12+
-    \item \textbf{Dataset}: FashionMNIST (60,000 training, 10,000 test images)
-    \item \textbf{GPU}: CUDA-compatible GPU recommended
-    \item \textbf{Libraries}: torchvision, numpy, matplotlib, scipy, pytorch-fid
-\end{itemize}
+\section{Normalizing Flows: RealNVP Implementation}
 
-\newpage
-
-\section{Question 1: Models Based on Normalizing Flows}
-
-\subsection{Introduction to RealNVP (4 points)}
+\subsection{RealNVP Architecture and Theory}
 
 Normalizing flows are a class of generative models that learn complex data distributions by transforming a simple base distribution (typically a standard Gaussian) through a series of invertible transformations. RealNVP (Real-valued Non-Volume Preserving) is a prominent architecture that enables efficient density estimation and sampling.
 
@@ -225,7 +204,7 @@ The training objective is to maximize the log-likelihood of the data, which is e
     \end{itemize}
 \end{enumerate}
 
-\subsection{Implementation of RealNVP on FashionMNIST (10 points)}
+\subsection{RealNVP Implementation on FashionMNIST}
 
 \subsubsection{Architecture Overview}
 
@@ -331,9 +310,9 @@ class CouplingLayer(nn.Module):
 
 The model was trained on 80\% of the FashionMNIST training data (48,000 images) and evaluated on 20\% validation set (12,000 images). The negative log-likelihood (NLL) was minimized during training.
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/CA2_DGM_cell4_out20.png}
+    \includegraphics[width=\columnwidth]{images/CA2_DGM_cell4_out20.png}
     \caption{Training and validation loss curves for RealNVP model. The negative log-likelihood decreases over epochs, indicating successful learning of the data distribution.}
     \label{fig:realnvp_loss}
 \end{figure}
@@ -349,14 +328,14 @@ with torch.no_grad():
     x_samples = x_samples.cpu().view(-1, 1, 28, 28)
 \end{lstlisting}
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.6\textwidth]{images/CA2_DGM_cell11_out1.png}
+    \includegraphics[width=\columnwidth]{images/CA2_DGM_cell11_out1.png}
     \caption{Generated FashionMNIST samples from RealNVP model after training. The model learns to generate diverse fashion items with reasonable quality.}
     \label{fig:realnvp_samples}
 \end{figure}
 
-\subsection{Out-of-Distribution Detection Using Flow-Based Models (3 points)}
+\subsection{Out-of-Distribution Detection}
 
 \subsubsection{Probabilistic OOD Detection Method}
 
@@ -423,9 +402,9 @@ The computed log-likelihoods are:
     \item \textbf{KMNIST}: -1850.95 (OOD - negative likelihood, very different)
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/CA2_DGM_cell10_out0.png}
+    \includegraphics[width=\columnwidth]{images/CA2_DGM_cell10_out0.png}
     \caption{Log-likelihood distributions for FashionMNIST test, MNIST, and KMNIST datasets. FashionMNIST has the highest likelihood as expected, while MNIST and KMNIST show lower likelihoods, enabling OOD detection.}
     \label{fig:ood_detection}
 \end{figure}
@@ -439,7 +418,7 @@ The computed log-likelihoods are:
     \item \textbf{Mode Collapse}: Flow models might not cover all modes of the data distribution, missing some in-distribution patterns
 \end{enumerate}
 
-\subsection{Likelihood Evaluation and Analysis (12 points)}
+\subsection{Likelihood Evaluation: Pixel Space vs. Latent Space}
 
 \subsubsection{Pixel Space vs. Latent Space Comparison}
 
@@ -510,7 +489,7 @@ The autoencoder is trained with MSE reconstruction loss for 5 epochs, achieving 
     \item \textbf{OOD Detection Improvement}: The relative difference between FashionMNIST and OOD datasets is larger in latent space, making OOD detection more reliable
 \end{enumerate}
 
-\subsection{Hidden Space Experiments (6 points)}
+\subsection{Latent Space Analysis}
 
 The latent space experiments demonstrate that applying normalizing flows in learned latent representations provides several advantages:
 
@@ -533,11 +512,9 @@ The latent space experiments demonstrate that applying normalizing flows in lear
 
 The latent space model achieves negative log-likelihood of -164.52 after 10 epochs, showing excellent density modeling performance.
 
-\newpage
+\section{Generative Adversarial Networks: Theory and Implementation}
 
-\section{Question 2: Generative Adversarial Networks (GANs)}
-
-\subsection{Analysis of GAN Training Objectives (5 points)}
+\subsection{GAN Training Objectives and Vanishing Gradients}
 
 Generative Adversarial Networks (GANs) are trained through a minimax game between two neural networks: a generator $G$ and a discriminator $D$.
 
@@ -661,7 +638,7 @@ This loss provides stronger gradients when $D(G(z))$ is small, encouraging the g
     \item \textbf{Better Convergence}: Generator can make progress even when discriminator is strong, leading to more stable training
 \end{enumerate}
 
-\subsection{Optimal Discriminator Derivation (5 points)}
+\subsection{Optimal Discriminator Analysis}
 
 For a fixed generator $G$, we derive the optimal discriminator $D^*$ that maximizes $V(D,G)$.
 
@@ -727,7 +704,7 @@ This shows that:
     \item At optimality, $D^*(x) = \frac{1}{2}$ for all $x$ (discriminator cannot distinguish real from fake)
 \end{itemize}
 
-\subsection{Discriminator Logit Relationship (3 points)}
+\subsection{Discriminator Logit Interpretation}
 
 \subsubsection{Discriminator Output Structure}
 
@@ -771,7 +748,7 @@ The optimal discriminator logit $h^*(x) = \log \frac{p_{data}(x)}{p_\theta(x)}$ 
     \item \textbf{Optimality Indicator}: When the generator is optimal ($p_\theta = p_{data}$), $h^*(x) = 0$ for all $x$, meaning the discriminator is maximally confused
 \end{itemize}
 
-\subsection{WGAN and Its Benefits (5 points)}
+\subsection{Wasserstein GANs: Theory and Benefits}
 
 Wasserstein GAN (WGAN) addresses critical issues in traditional GANs by replacing Jensen-Shannon divergence with Wasserstein distance.
 
@@ -847,11 +824,14 @@ To enforce $\|f\|_L \leq 1$, WGAN uses:
 
 \subsubsection{Comparison: Traditional GAN vs WGAN}
 
-\begin{table}[H]
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.3}
+\caption{Comparison between Traditional GANs and WGAN}
+\label{tab:gan_comparison}
 \centering
-\begin{tabular}{|l|p{5cm}|p{5cm}|}
+\begin{tabular}{|p{2cm}|p{3cm}|p{3cm}|}
 \hline
-\textbf{Aspect} & \textbf{Traditional GAN} & \textbf{WGAN} \\
+Aspect & Traditional GAN & WGAN \\
 \hline
 Distance Metric & JS Divergence & Wasserstein Distance \\
 \hline
@@ -864,11 +844,9 @@ Architecture & Requires specific design & More flexible architectures \\
 Mode Collapse & Common problem & Reduced tendency \\
 \hline
 \end{tabular}
-\caption{Comparison between Traditional GANs and WGAN}
-\label{tab:gan_comparison}
 \end{table}
 
-\subsection{Evaluation Metrics for GAN Convergence (4 points)}
+\subsection{Evaluation Metrics for GANs}
 
 Evaluating GAN performance is challenging because explicit likelihood computation is not available. Several metrics have been developed:
 
@@ -957,11 +935,9 @@ For our FashionMNIST GAN implementation, we use:
     \item \textbf{Training Stability}: Monitor for oscillations, mode collapse, or divergence
 \end{enumerate}
 
-\newpage
+\section{DCGAN Implementation and Results}
 
-\section{Question 3: Implementation of GAN on FashionMNIST}
-
-\subsection{Model Implementation (4 points)}
+\subsection{Model Architecture}
 
 We implement a Deep Convolutional GAN (DCGAN) following the architecture guidelines from Radford et al. (2016) for stable training.
 
@@ -1080,7 +1056,7 @@ class Discriminator(nn.Module):
     \item \textbf{Total Parameters}: ~7.8 million parameters
 \end{itemize}
 
-\subsection{Role of ConvTranspose2D Layer (6 points)}
+\subsection{Transposed Convolution: Mathematical Analysis}
 
 The \texttt{ConvTranspose2d} (also called deconvolution or fractional-strided convolution) is crucial for the generator's upsampling operation.
 
@@ -1136,14 +1112,14 @@ For our specific layers:
 
 \subsubsection{Visual Example}
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/CA2_DGM_cell6_out1.png}
+    \includegraphics[width=\columnwidth]{images/CA2_DGM_cell6_out1.png}
     \caption{Visualization of transposed convolution operation: a 3×3 input is upsampled to 5×5 output using kernel size 3, stride 1, and padding 1.}
     \label{fig:transposed_conv}
 \end{figure}
 
-\subsection{Visualization and Analysis of Generated Images (4 points)}
+\subsection{Generated Image Analysis}
 
 We train the DCGAN for 10 epochs and visualize generated samples at different stages of training.
 
@@ -1196,50 +1172,50 @@ We train the DCGAN for 10 epochs and visualize generated samples at different st
 \subsubsection{Generated Samples Throughout Training}
 
 \textbf{Epoch 1 - Initial Samples:}
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_1.png}
+    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_1.png}
     \caption{Generated samples at Epoch 1 (FID: 270.55). The model produces blurry, low-quality images with poorly defined structures as it begins learning.}
     \label{fig:epoch1}
 \end{figure}
 
 \textbf{Epoch 3 - Mid Training:}
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_3.png}
+    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_3.png}
     \caption{Generated samples at Epoch 3 (FID: 214.45). Significant improvement in image quality with better structure definition and recognizable fashion item shapes.}
     \label{fig:epoch3}
 \end{figure}
 
 \textbf{Epoch 5 - Continued Improvement:}
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_5.png}
+    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_5.png}
     \caption{Generated samples at Epoch 5 (FID: 201.78). Further improvement in detail and realism with clearer separation between different fashion items.}
     \label{fig:epoch5}
 \end{figure}
 
 \textbf{Epoch 8 - Best Performance:}
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_8.png}
+    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_8.png}
     \caption{Generated samples at Epoch 8 (FID: 171.67 - Best). Highest quality samples achieved with sharp, detailed, and diverse fashion items. Best FID score indicates optimal generation quality.}
     \label{fig:epoch8}
 \end{figure}
 
 \textbf{Epoch 10 - Final Samples:}
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/generated_sample_epoch_10.png}
+    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_10.png}
     \caption{Generated samples at Epoch 10 (FID: 208.15). Final samples showing slight quality degradation from best epoch, possibly indicating overfitting or training instability.}
     \label{fig:epoch10}
 \end{figure}
 
 \subsubsection{Comparison with Real Samples}
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.5\textwidth]{images/CA2_DGM_cell4_out1.png}
+    \includegraphics[width=0.8\columnwidth]{images/CA2_DGM_cell4_out1.png}
     \caption{Real FashionMNIST samples from the dataset. These represent the target distribution that the generator learns to approximate.}
     \label{fig:real_samples}
 \end{figure}
@@ -1279,7 +1255,7 @@ We train the DCGAN for 10 epochs and visualize generated samples at different st
     \end{itemize}
 \end{enumerate}
 
-\subsection{Loss Analysis During Training (4 points)}
+\subsection{Training Dynamics and Loss Analysis}
 
 The loss curves provide crucial insights into the adversarial training dynamics.
 
@@ -1299,9 +1275,9 @@ Using non-saturating loss for generator to avoid vanishing gradients.
 
 \subsubsection{Loss Curves}
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/Q2_final_res_cell53_out40.png}
+    \includegraphics[width=\columnwidth]{images/Q2_final_res_cell53_out40.png}
     \caption{Generator and Discriminator loss curves throughout training. The losses oscillate as the networks compete, with discriminator generally stabilizing while generator shows more variance.}
     \label{fig:loss_curves}
 \end{figure}
@@ -1389,24 +1365,27 @@ Using non-saturating loss for generator to avoid vanishing gradients.
 
 \subsubsection{Per-Epoch Loss Analysis}
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/Q2_final_res_cell53_out20.png}
+    \includegraphics[width=\columnwidth]{images/Q2_final_res_cell53_out20.png}
     \caption{Average loss per epoch for Generator and Discriminator. The trend shows overall stability with some fluctuations during mid-training epochs.}
     \label{fig:epoch_loss}
 \end{figure}
 
-\subsection{FID Score Calculation and Analysis (3 points)}
+\subsection{Fréchet Inception Distance Evaluation}
 
 FID scores provide quantitative evaluation of generation quality throughout training.
 
 \subsubsection{FID Score Progression}
 
-\begin{table}[H]
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.3}
+\caption{FID Score Progression Throughout Training}
+\label{tab:fid_scores}
 \centering
-\begin{tabular}{|c|c|c|c|}
+\begin{tabular}{|c|c|c|p{3.5cm}|}
 \hline
-\textbf{Epoch} & \textbf{FID Score} & \textbf{Change} & \textbf{Notes} \\
+Epoch & FID Score & Change & Notes \\
 \hline
 1 & 270.55 & Baseline & Initial high score, model learning \\
 2 & 260.57 & -3.7\% & Slight improvement \\
@@ -1420,15 +1399,13 @@ FID scores provide quantitative evaluation of generation quality throughout trai
 10 & 208.15 & +2.4\% & Final FID Score \\
 \hline
 \end{tabular}
-\caption{FID Score progression throughout training. Best performance achieved at Epoch 8 with 36.5\% improvement from start.}
-\label{tab:fid_scores}
 \end{table}
 
 \subsubsection{FID Score Plot}
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/Q2_final_res_cell53_out31.png}
+    \includegraphics[width=\columnwidth]{images/Q2_final_res_cell53_out31.png}
     \caption{FID Score progression over 10 epochs. The curve shows overall improvement with best performance at Epoch 8, followed by slight degradation.}
     \label{fig:fid_progression}
 \end{figure}

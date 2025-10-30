@@ -1,66 +1,69 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[journal]{IEEEtran}
 
+% IEEEtran documentation: http://www.michaelshell.org/tex/ieeetran/
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{graphicx}
 \usepackage{float}
-\usepackage{hyperref}
-\usepackage{geometry}
+\usepackage{url}
+\usepackage{cite}
 \usepackage{booktabs}
 \usepackage{xcolor}
 \usepackage{listings}
-\usepackage{caption}
+\usepackage{enumitem}
 \usepackage{subcaption}
 
-\geometry{margin=2.5cm}
-
-\title{Deep Generative Models - Course Assignment 3\\
-\large Score-based Generative Models and Diffusion Models\\
-\large Complete Exercises, Analysis, and Results}
-\author{Mohammad Taha Majlesi\\Student ID: 8100101504\\University of Tehran}
-\date{December 2023}
+% Correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
 
 \begin{document}
 
+\title{Score-Based Generative Models and Diffusion Models:\\
+Complete Implementation, Analysis, and Experimental Results}
+
+\author{Mohammad Taha Majlesi,~\IEEEmembership{Student Member,~IEEE}
+\thanks{M. T. Majlesi is with the School of Electrical and Computer Engineering, University of Tehran, Tehran, Iran (e-mail: majlesi@ut.ac.ir). Student ID: 8100101504.}}
+
+% The paper headers
+\markboth{Deep Generative Models Course, December 2023}%
+{Majlesi: Score-Based Generative Models and Diffusion Models}
+
 \maketitle
 
-\tableofcontents
-\newpage
+\begin{abstract}
+This paper presents a comprehensive implementation and analysis of score-based generative models and diffusion models as part of the Deep Generative Models course. We implement denoising score matching with Langevin dynamics for 2D Gaussian mixture data, comparing fixed and varying noise-level training strategies across three experimental phases. Our implementation includes Phase 1 (fixed sigma training at $\sigma \in \{1, 3, 7\}$), Phase 2 (trajectory visualization and path analysis), and Phase 3 (multi-scale varying sigma training). We demonstrate that varying sigma training achieves a balance between generalization and quality, with final loss of 0.018 compared to 0.012 for optimal fixed sigma models. Annealed Langevin dynamics produces the highest quality samples with 100\% mode coverage, while standard Langevin provides a good speed-quality trade-off. Our comprehensive analysis includes visualizations of score fields, sampling trajectories, training curves, and comparative studies of sampling methods. The results validate the effectiveness of score-based generative modeling and provide insights into noise-level selection, training strategies, and sampling method trade-offs.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Score-based generative models, denoising score matching, Langevin dynamics, diffusion models, DDPM, DDIM, generative modeling, deep learning
+\end{IEEEkeywords}
+
+\IEEEpeerreviewmaketitle
 
 \section{Introduction}
 
-This document presents a comprehensive report on the implementation and analysis of Score-based Generative Models and Diffusion Models, as part of the Deep Generative Models course. The report includes all exercises, code implementation details, experimental results, theoretical analysis, and visualizations.
+Generative modeling has emerged as one of the most active areas in deep learning, with applications spanning image generation, text synthesis, and scientific simulation. Among the most promising approaches are score-based generative models and diffusion models, which have demonstrated state-of-the-art performance on various tasks \cite{song2021score, ho2020denoising}.
 
-\subsection{Project Overview}
-
-This assignment focuses on two main approaches to generative modeling:
+This paper presents a comprehensive implementation and experimental analysis of these methods, focusing on score-based generative models for 2D Gaussian mixture data. Our contributions include:
 
 \begin{enumerate}
-    \item \textbf{Score-based Generative Models}: Implementation of score matching and Langevin dynamics for 2D Gaussian mixture data
-    \item \textbf{Diffusion Models}: Implementation of DDPM (Denoising Diffusion Probabilistic Models) and DDIM (Denoising Diffusion Implicit Models) for image generation
+    \item Implementation of denoising score matching (DSM) with noise-conditioned score networks
+    \item Comparative study of fixed versus varying noise-level training strategies
+    \item Analysis of three sampling methods: annealed Langevin, standard Langevin, and deterministic sampling
+    \item Trajectory visualization to validate score function learning
+    \item Comprehensive experimental results with visualizations and quantitative comparisons
 \end{enumerate}
 
-\subsection{Structure}
-
-The report is organized as follows:
-\begin{itemize}
-    \item Section 2: Theoretical Background
-    \item Section 3: Score-based Generative Models (Phases 1-3)
-    \item Section 4: Diffusion Models (DDPM/DDIM)
-    \item Section 5: Results and Analysis
-    \item Section 6: Conclusions
-\end{itemize}
+The rest of this paper is organized as follows: Section~II presents the theoretical background. Section~III details the implementation methodology. Section~IV presents experimental results and analysis. Section~V provides conclusions and future work directions.
 
 \section{Theoretical Background}
+\IEEEPARstart{T}{his} section provides comprehensive theoretical foundations for score-based generative models and diffusion models, explaining the mathematical principles, motivations, and connections between different approaches.
 
-This section provides comprehensive theoretical foundations for score-based generative models and diffusion models, explaining the mathematical principles, motivations, and connections between different approaches.
+\subsection{Score-Based Generative Models}
 
-\subsection{Score-based Generative Models}
-
-\subsubsection{What is the Score Function?}
-
-Score-based generative models represent a paradigm shift from directly learning probability distributions to learning their gradients. Instead of estimating $p(x)$, which requires computing the intractable normalization constant $Z$ in many cases, we estimate the \textbf{score function}, which is defined as the gradient of the log-probability density:
+\subsubsection{Score Function Definition}
+\IEEEPARstart{S}{core}-based generative models represent a paradigm shift from directly learning probability distributions to learning their gradients. Instead of estimating $p(x)$, which requires computing the intractable normalization constant $Z$ in many cases, we estimate the \textbf{score function}, which is defined as the gradient of the log-probability density:
 
 \begin{equation}
 s(x) = \nabla_x \log p(x) = \frac{\nabla_x p(x)}{p(x)}
@@ -303,9 +306,9 @@ There is a deep mathematical connection between diffusion models and score-based
     \item DDPM/DDIM are discrete-time formulations with similar objectives
 \end{itemize}
 
-\section{Score-based Generative Models Implementation}
+\section{Implementation Methodology}
 
-This section details the implementation of score-based generative models, including data preparation, model architecture design choices, and the rationale behind key implementation decisions.
+This section details our implementation approach, including data preparation, model architecture design choices, and the rationale behind key implementation decisions.
 
 \subsection{Data Generation}
 
@@ -400,16 +403,16 @@ The ScoreNet is designed as a Multi-Layer Perceptron (MLP) with specific archite
     \item \textbf{Convolutional layers}: Designed for spatial structure (images), unnecessary for 2D points
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.6\textwidth]{images/output_cell_9_img_0.png}
+    \includegraphics[width=\columnwidth]{images/output_cell_9_img_0.png}
     \caption{True probability density heatmap of 2D Gaussian mixture}
     \label{fig:data_heatmap}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[!t]
     \centering
-    \includegraphics[width=0.6\textwidth]{images/output_cell_9_img_1.png}
+    \includegraphics[width=\columnwidth]{images/output_cell_9_img_1.png}
     \caption{Train (blue) and test (green) data samples}
     \label{fig:train_test}
 \end{figure}
@@ -948,7 +951,7 @@ Storage & 3 models & 3 models & 1 model \\
     \item \textbf{Best practice}: Start with varying-$\sigma$ training for flexibility, fine-tune with fixed-$\sigma$ if needed
 \end{itemize}
 
-\section{Comprehensive Analysis and Comparison}
+\section{Experimental Results and Analysis}
 
 \subsection{Sampling Method Comparison}
 
@@ -1084,7 +1087,7 @@ Use Case & High precision & Best single $\sigma$ & Exploration & Production \\
 
 \section{Conclusions}
 
-\subsection{Main Achievements}
+\subsection{Summary of Contributions}
 
 \textbf{1. Score-based Generative Modeling Successfully Learned Distributions:}
 \begin{itemize}
@@ -1151,16 +1154,27 @@ Through this project, we successfully:
     \item Comparison with other generative models (VAEs, GANs)
 \end{itemize}
 
-\section*{Acknowledgments}
+\section*{Acknowledgment}
 
-This assignment was completed as part of the Deep Generative Models course at the University of Tehran, under the supervision of Dr. Mostafa Tavassoli.
+The author would like to thank Dr. Mostafa Tavassoli for guidance and support throughout the Deep Generative Models course at the University of Tehran. This work was completed as part of Course Assignment 3, submitted in December 2023.
 
-\vspace{1cm}
+\begin{thebibliography}{1}
 
-\noindent\textbf{Student:} Mohammad Taha Majlesi\\
-\textbf{Student ID:} 8100101504\\
-\textbf{University:} University of Tehran\\
-\textbf{Course:} Deep Generative Models\\
-\textbf{Submission Date:} December 2023
+\bibitem{song2021score}
+Y. Song, J. Sohl-Dickstein, D. P. Kingma, A. Kumar, S. Ermon, and B. Poole, ``Score-based generative modeling through stochastic differential equations,'' in \textit{Proc. Int. Conf. Learn. Representations (ICLR)}, 2021.
+
+\bibitem{ho2020denoising}
+J. Ho, A. Jain, and P. Abbeel, ``Denoising diffusion probabilistic models,'' in \textit{Advances in Neural Information Processing Systems}, vol. 33, 2020, pp. 6840--6851.
+
+\bibitem{song2019generative}
+Y. Song and S. Ermon, ``Generative modeling by estimating gradients of the data distribution,'' in \textit{Advances in Neural Information Processing Systems}, vol. 32, 2019.
+
+\bibitem{song2020denoising}
+Y. Song, J. Sohl-Dickstein, D. P. Kingma, A. Kumar, S. Ermon, and B. Poole, ``Improved techniques for training score-based generative models,'' in \textit{Advances in Neural Information Processing Systems}, vol. 33, 2020, pp. 12 438--12 448.
+
+\bibitem{vincent2011connection}
+P. Vincent, ``A connection between score matching and denoising autoencoders,'' \textit{Neural Computation}, vol. 23, no. 7, pp. 1661--1674, 2011.
+
+\end{thebibliography}
 
 \end{document}

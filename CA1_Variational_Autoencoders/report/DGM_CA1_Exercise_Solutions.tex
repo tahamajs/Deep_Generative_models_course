@@ -1,17 +1,16 @@
-\documentclass[12pt,a4paper]{article}
-
-\usepackage[utf8]{inputenc}
-\usepackage[english]{babel}
-\usepackage{amsmath,amssymb,amsthm}
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
 \usepackage{graphicx}
-\usepackage{float}
-\usepackage{hyperref}
-\usepackage{geometry}
-\usepackage{booktabs}
+\usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{booktabs}
 
 % Configure listings for Python code
 \lstset{
@@ -27,57 +26,47 @@
     backgroundcolor=\color{gray!10},
     frame=single,
     breaklines=true,
-    showstringspaces=false
+    showstringspaces=false,
+    breakatwhitespace=false
 }
 
-\geometry{margin=2.5cm}
-
-\title{Deep Generative Models - Course Assignment 1\\
-\large Variational Autoencoders (VAEs)\\
-\large Complete Exercises, Analysis, and Results}
-\author{Mohammad Taha Majlesi\\Student ID: 8100101504\\University of Tehran}
-\date{2023}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \begin{document}
 
+\title{Variational Autoencoders: Implementation, Analysis, and Evaluation of Probabilistic Latent Representations for Facial Image Generation\\
+{\footnotesize \textsuperscript{*}Course Assignment 1, Deep Generative Models}
+}
+
+\author{\IEEEauthorblockN{1\textsuperscript{st} Mohammad Taha Majlesi}
+\IEEEauthorblockA{\textit{Student ID: 8100101504}\\
+\textit{Department of Computer Engineering}\\
+\textit{University of Tehran}\\
+Tehran, Iran}
+}
+
 \maketitle
 
-\tableofcontents
-\newpage
+\begin{abstract}
+This report presents a comprehensive implementation and analysis of Variational Autoencoders (VAEs) for learning compressed probabilistic representations of facial image data. We implement a convolutional VAE architecture that employs hierarchical feature extraction through convolutional layers and utilizes the reparameterization trick to enable gradient-based optimization of stochastic latent variables. Through training on a dataset of 1,203 facial images with binary classification (smile/non-smile), we demonstrate effective reconstruction capabilities with 1,536:1 compression ratio, generative image synthesis through sampling from the learned latent distribution, and interpretable latent space manipulation via interpolation experiments. Our experimental results show convergence to training and validation losses of 2807.38 and 2456.94 respectively, achieving high-quality reconstructions while maintaining a smooth, well-regularized latent manifold. Analysis of the latent space reveals class-separated clusters with continuous structure, enabling semantic attribute manipulation. The model successfully generates diverse facial images from random latent samples, validating the effectiveness of the probabilistic latent space formulation.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Variational Autoencoders, Generative Models, Probabilistic Inference, Deep Learning, Image Generation, Latent Space, Reparameterization Trick, Evidence Lower Bound
+\end{IEEEkeywords}
 
 \section{Introduction}
 
-This document presents a comprehensive report on the implementation and analysis of Variational Autoencoders (VAEs), as part of the Deep Generative Models course. The report includes all exercises, code implementation details, experimental results, theoretical analysis, and visualizations.
+Variational Autoencoders (VAEs) represent a significant advancement in generative modeling, combining the compression capabilities of traditional autoencoders with probabilistic inference. Unlike deterministic autoencoders, VAEs learn a probabilistic latent space that enables meaningful generation and interpolation of new data samples \cite{kingma2013auto}.
 
-\subsection{Project Overview}
-
-This assignment focuses on implementing and evaluating a Variational Autoencoder for facial image data. The project covers:
-
-\begin{enumerate}
-    \item \textbf{VAE Architecture Design}: Encoder-decoder architecture with probabilistic latent space
-    \item \textbf{Reparameterization Trick}: Enabling gradient flow through stochastic sampling
-    \item \textbf{Training and Optimization}: Balancing reconstruction and regularization losses
-    \item \textbf{Image Reconstruction}: Evaluating compression and reconstruction quality
-    \item \textbf{Image Generation}: Sampling from learned latent distribution
-    \item \textbf{Latent Space Analysis}: Interpolation and visualization of latent representations
-\end{enumerate}
-
-\subsection{Structure}
-
-The report is organized as follows:
-\begin{itemize}
-    \item Section 2: Theoretical Background and Concepts
-    \item Section 3: Implementation Details
-    \item Section 4: Exercise Solutions and Code Analysis
-    \item Section 5: Results and Analysis
-    \item Section 6: Conclusions
-\end{itemize}
+This project implements and evaluates a VAE for facial image data, addressing the fundamental challenge of learning meaningful latent representations that simultaneously enable accurate reconstruction, controlled generation, and semantic manipulation. We demonstrate the effectiveness of the Evidence Lower Bound (ELBO) optimization framework and the reparameterization trick in enabling end-to-end training of probabilistic generative models.
 
 \section{Theoretical Background}
 
-\subsection{Variational Autoencoders (VAEs)}
+\subsection{Variational Autoencoders Framework}
 
-Variational Autoencoders are a class of generative models that learn probabilistic representations of data by combining the compression capabilities of traditional autoencoders with probabilistic inference.
+Variational Autoencoders are a class of generative models that learn probabilistic representations of data by combining the compression capabilities of traditional autoencoders with variational inference principles. The key innovation of VAEs lies in introducing probabilistic latent variables, enabling both reconstruction and generation capabilities.
 
 \paragraph{Motivation and Background:}
 Traditional autoencoders learn deterministic mappings from input space to a bottleneck latent representation and back to the input space. While effective for compression and denoising, deterministic latent spaces have several limitations:
@@ -264,18 +253,30 @@ If KL divergence becomes too small during training, the posterior collapses:
     \item Can be prevented by adjusting the weight of KL term or using techniques like KL annealing
 \end{itemize}
 
-\section{Implementation Details}
+\section{Methodology}
 
-\subsection{Architecture Overview}
+\subsection{Dataset}
 
-Our VAE implementation uses a convolutional encoder-decoder architecture designed for 128×128 RGB images.
+The project utilizes a facial image dataset consisting of 1,203 images with binary classification:
+\begin{itemize}
+    \item \textbf{Smile}: 600 images containing smiles
+    \item \textbf{Non-smile}: 603 images without smiles
+\end{itemize}
 
-\subsection{Encoder Architecture}
+Images are preprocessed to 128×128 resolution with RGB channels and normalized to the range $[-1, 1]$ using mean=0.5 and standard deviation=0.5, matching the Tanh activation output range. The dataset is split into 80\% training (962 samples) and 20\% validation (241 samples).
 
-The encoder progressively reduces spatial dimensions while increasing feature depth:
+\subsection{Architecture Implementation}
 
-\begin{table}[H]
+Our VAE implementation employs a convolutional encoder-decoder architecture designed for 128×128 RGB images. The architecture balances reconstruction quality with generative capability through careful design of the encoder, latent space, and decoder components.
+
+\subsubsection{Encoder Architecture}
+
+The encoder progressively reduces spatial dimensions while increasing feature depth through four convolutional layers, followed by fully connected layers that output latent distribution parameters. The architecture is detailed in Table~\ref{tab:encoder}.
+
+\begin{table*}[t]
 \centering
+\caption{Encoder Network Architecture}
+\label{tab:encoder}
 \begin{tabular}{@{}lll@{}}
 \toprule
 \textbf{Layer Type} & \textbf{Configuration} & \textbf{Output Size} \\
@@ -299,15 +300,16 @@ Linear ($\mu$) & 4096→32 & 32 \\
 Linear ($\log \sigma^2$) & 4096→32 & 32 \\
 \bottomrule
 \end{tabular}
-\caption{Encoder network architecture}
-\end{table}
+\end{table*}
 
-\subsection{Decoder Architecture}
+\subsubsection{Decoder Architecture}
 
-The decoder reconstructs images from latent vectors using transposed convolutions:
+The decoder reconstructs images from latent vectors using transposed convolutions in a symmetric structure to the encoder, as detailed in Table~\ref{tab:decoder}.
 
-\begin{table}[H]
+\begin{table*}[t]
 \centering
+\caption{Decoder Network Architecture}
+\label{tab:decoder}
 \begin{tabular}{@{}lll@{}}
 \toprule
 \textbf{Layer Type} & \textbf{Configuration} & \textbf{Output Size} \\
@@ -330,13 +332,16 @@ ConvTranspose2d & 32→3, kernel=4, stride=2, padding=1 & 128×128 \\
 Tanh & - & 128×128 \\
 \bottomrule
 \end{tabular}
-\caption{Decoder network architecture}
-\end{table}
+\end{table*}
 
 \subsection{Training Configuration}
 
-\begin{table}[H]
+Training hyperparameters are selected to balance convergence speed and stability, as shown in Table~\ref{tab:hyperparams}.
+
+\begin{table}[t]
 \centering
+\caption{Training Hyperparameters}
+\label{tab:hyperparams}
 \begin{tabular}{@{}ll@{}}
 \toprule
 \textbf{Parameter} & \textbf{Value} \\
@@ -350,10 +355,9 @@ Hidden Dimension & 4096 \\
 Train/Validation Split & 80\%/20\% \\
 \bottomrule
 \end{tabular}
-\caption{Training hyperparameters}
 \end{table}
 
-\section{Exercise Solutions and Code Analysis}
+\section{Implementation Details and Code Analysis}
 
 \subsection{Exercise 1: Data Loading and Preprocessing}
 
@@ -402,10 +406,11 @@ The 80\%/20\% train/validation split provides:
     \item Validation samples: 241 (20\%)
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{../images/output_cell_11_img_0.png}
-\caption{Sample batch of preprocessed training images (4×1 grid) showing the diversity and quality of the dataset}
+\includegraphics[width=\columnwidth]{../images/output_cell_11_img_0.png}
+\caption{Sample batch of preprocessed training images (4×1 grid) showing the diversity and quality of the dataset.}
+\label{fig:data_samples}
 \end{figure}
 
 \subsection{Exercise 2: VAE Model Implementation}
@@ -735,13 +740,14 @@ From the training loss curves (Figure 4):
     \end{itemize}
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{../images/output_cell_21_img_0.png}
+\includegraphics[width=\columnwidth]{../images/output_cell_21_img_0.png}
 \caption{Training loss curves showing reconstruction loss and KL divergence over 1000 epochs. The balance between reconstruction fidelity and latent space regularization is maintained throughout training.}
+\label{fig:training_loss}
 \end{figure}
 
-\section{Results and Analysis}
+\section{Experimental Results}
 
 \subsection{Image Reconstruction}
 
@@ -801,23 +807,26 @@ The model achieves impressive compression:
 
 \subsubsection{Visual Results}
 
-\begin{figure}[H]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.9\textwidth]{../images/output_cell_19_img_0.png}
+\includegraphics[width=0.98\textwidth]{../images/output_cell_19_img_0.png}
 \caption{Image reconstruction results (Batch 1). Top row: original images. Bottom row: reconstructed images.}
-\end{figure}
+\label{fig:recon1}
+\end{figure*}
 
-\begin{figure}[H]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.9\textwidth]{../images/output_cell_19_img_1.png}
+\includegraphics[width=0.98\textwidth]{../images/output_cell_19_img_1.png}
 \caption{Additional reconstruction examples (Batch 2) showing consistency in quality across different samples.}
-\end{figure}
+\label{fig:recon2}
+\end{figure*}
 
-\begin{figure}[H]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.9\textwidth]{../images/output_cell_19_img_2.png}
+\includegraphics[width=0.98\textwidth]{../images/output_cell_19_img_2.png}
 \caption{Further reconstruction results (Batch 3) demonstrating the model's ability to handle diverse facial expressions and appearances.}
-\end{figure}
+\label{fig:recon3}
+\end{figure*}
 
 \subsubsection{Quantitative Metrics}
 \begin{itemize}
@@ -879,11 +888,12 @@ Image generation from learned distribution involves:
     \item \textbf{Distribution Coverage}: Samples span the learned data manifold effectively
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.9\textwidth]{../images/output_cell_23_img_0.png}
+\includegraphics[width=0.98\textwidth]{../images/output_cell_23_img_0.png}
 \caption{Generated images from random latent vectors sampled from $\mathcal{N}(0, I)$. A grid of 32 generated images (8×4) demonstrates the model's generative capability.}
-\end{figure}
+\label{fig:generation}
+\end{figure*}
 
 \subsubsection{Analysis}
 
@@ -959,11 +969,12 @@ Explore latent space structure through interpolation between class means.
     \item \textbf{Continuous Manifold}: Smooth transitions validate the latent space forms a continuous, well-structured manifold
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.9\textwidth]{../images/output_cell_25_img_0.png}
+\includegraphics[width=0.98\textwidth]{../images/output_cell_25_img_0.png}
 \caption{Latent space interpolation along the direction $\delta = \mu_{\text{smile}} - \mu_{\text{non-smile}}$ with $\alpha$ values from -3 to 3. The sequence (left to right) shows gradual transition from non-smile to smile expression while preserving facial identity.}
-\end{figure}
+\label{fig:interpolation}
+\end{figure*}
 
 \subsubsection{Interpretation}
 
@@ -1039,10 +1050,11 @@ Visualize the structure of the learned latent space using dimensionality reducti
 
 \subsubsection{Results Analysis}
 
-\begin{figure}[H]
+\begin{figure}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{../images/output_cell_27_img_0.png}
+\includegraphics[width=\columnwidth]{../images/output_cell_27_img_0.png}
 \caption{2D visualization of latent space using t-SNE (500 samples). Points are colored by class label. Good separation between smile and non-smile classes with continuous structure.}
+\label{fig:tsne}
 \end{figure}
 
 \textbf{t-SNE Visualization Characteristics:}
@@ -1119,10 +1131,11 @@ Analyze the utilization of different latent dimensions.
 
 \subsubsection{Results Analysis}
 
-\begin{figure}[H]
+\begin{figure}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{../images/output_cell_29_img_0.png}
+\includegraphics[width=\columnwidth]{../images/output_cell_29_img_0.png}
 \caption{Mean standard deviation per latent dimension (32 dimensions) across 500 dataset samples. Dimensions with higher standard deviation are more actively used.}
+\label{fig:dim_analysis}
 \end{figure}
 
 \textbf{Key Findings:}
@@ -1229,59 +1242,37 @@ Understanding dimension utilization can help with:
 
 \section{Discussion}
 
-\subsection{Reconstruction Quality}
+\subsection{Reconstruction Quality Analysis}
 
-The VAE successfully reconstructs input images with high fidelity. Main facial features are preserved, though fine details may be slightly smoothed due to:
+The VAE successfully reconstructs input images with high fidelity, achieving a compression ratio of 1,536:1 (49,152 pixels to 32 dimensions) while preserving essential visual information. Main facial features are accurately maintained, though fine details exhibit slight smoothing attributable to: (1) latent space regularization via KL divergence encouraging smooth distributions, (2) information bottleneck from extreme dimensionality reduction, and (3) inherent trade-off between reconstruction accuracy and generative capabilities.
 
-\begin{enumerate}
-    \item \textbf{Latent space regularization}: KL divergence encourages latent distribution to follow prior, causing slight smoothing
-    \item \textbf{Information bottleneck}: Compression from 49,152 dimensions (128×128×3) to 32 dimensions inherently loses some fine details
-    \item \textbf{Trade-off}: Model balances reconstruction accuracy with generative capabilities
-\end{enumerate}
+\subsection{Generative Performance Evaluation}
 
-\subsection{Generative Performance}
-
-The model demonstrates effective generative capabilities, producing diverse and realistic images when sampling from the prior distribution. The quality indicates successful learning of the underlying data manifold.
+Experimental results demonstrate effective generative capabilities, with the model producing diverse and realistic facial images when sampling from $\mathcal{N}(0, I)$. The generation quality validates successful learning of the underlying data manifold structure. Analysis reveals no evidence of mode collapse, with generated samples exhibiting variation across facial features, expressions, appearances, and orientations.
 
 \subsection{Latent Space Structure}
 
-The latent space exhibits:
-\begin{itemize}
-    \item \textbf{Good class separation}: t-SNE visualization shows distinct clusters with minimal overlap
-    \item \textbf{Continuous structure}: Smooth interpolations indicate well-formed latent manifold
-    \item \textbf{Semantic organization}: Interpolation experiments reveal meaningful attribute directions
-    \item \textbf{Proper regularization}: KL divergence ensures structure compatible with standard normal prior
-\end{itemize}
+The learned latent space exhibits several desirable properties: (1) good class separation with distinct smile/non-smile clusters in t-SNE visualization, (2) continuous structure enabling smooth interpolations, (3) semantic organization where interpolation experiments reveal meaningful attribute directions, and (4) proper regularization ensuring compatibility with the standard normal prior for generation.
 
-\subsection{Limitations}
+\subsection{Limitations and Future Work}
 
-\begin{enumerate}
-    \item \textbf{Resolution constraints}: Fixed 128×128 resolution limits fine detail preservation
-    \item \textbf{Latent dimension}: 32 dimensions may be insufficient for highly complex variations
-    \item \textbf{Class separation}: While classes are separated, perfect disentanglement is challenging
-    \item \textbf{Computational cost}: Training requires significant GPU resources
-\end{enumerate}
+Current limitations include: fixed 128×128 resolution constraining fine detail preservation, 32 latent dimensions potentially insufficient for highly complex variations, challenging perfect attribute disentanglement without explicit constraints, and significant computational requirements for training. Future directions include exploring $\beta$-VAE for improved disentanglement \cite{higgs2017beta}, hierarchical architectures for higher-resolution generation, conditional VAEs for attribute-controlled generation, and VAE-GAN hybrids for enhanced image quality.
 
-\section{Conclusions}
+\section{Conclusion}
 
-This project successfully implements and evaluates a Variational Autoencoder for facial image generation and reconstruction. The model demonstrates:
+This work successfully implements and evaluates a Variational Autoencoder for facial image generation and reconstruction. The model demonstrates effective compression (128×128×3 to 32 dimensions), high-quality reconstruction preserving essential features, generative capability producing diverse realistic samples, and interpretable latent space enabling semantic manipulation. Results validate VAEs' effectiveness for unsupervised representation learning and provide foundation for advanced generative modeling techniques. The probabilistic framework, enabled by the reparameterization trick and ELBO optimization, successfully bridges traditional autoencoders with generative modeling, demonstrating the power of variational inference in deep learning.
 
-\begin{itemize}
-    \item \textbf{Effective compression}: Encoding 128×128×3 images into 32-dimensional latent vectors
-    \item \textbf{High-quality reconstruction}: Preserving main features while learning compressed representations
-    \item \textbf{Generative capability}: Producing diverse and realistic images from latent samples
-    \item \textbf{Interpretable latent space}: Enabling semantic manipulation through interpolation
-\end{itemize}
+\begin{thebibliography}{00}
+\bibitem{kingma2013auto} D. P. Kingma and M. Welling, ``Auto-encoding variational bayes,'' \textit{arXiv preprint arXiv:1312.6114}, 2013.
 
-The results validate the effectiveness of VAEs for unsupervised representation learning and provide a foundation for exploring more advanced generative modeling techniques.
+\bibitem{rezende2014stochastic} D. J. Rezende, S. Mohamed, and D. Wierstra, ``Stochastic backpropagation and approximate inference in deep generative models,'' in \textit{Proc. International Conference on Machine Learning}, 2014, pp. 1278--1286.
 
-\section{References}
+\bibitem{higgs2017beta} I. Higgins et al., ``$\beta$-VAE: Learning basic visual concepts with a constrained variational framework,'' in \textit{Proc. ICLR}, 2017.
 
-\begin{enumerate}
-    \item D. P. Kingma and M. Welling, "Auto-encoding variational bayes," arXiv preprint arXiv:1312.6114, 2013.
-    \item D. J. Rezende, S. Mohamed, and D. Wierstra, "Stochastic backpropagation and approximate inference in deep generative models," in International conference on machine learning, 2014.
-    \item I. Higgins et al., "$\beta$-VAE: Learning basic visual concepts with a constrained variational framework," in ICLR, 2017.
-\end{enumerate}
+\bibitem{larsen2016autoencoding} A. B. L. Larsen et al., ``Autoencoding beyond pixels using a learned similarity metric,'' in \textit{Proc. International Conference on Machine Learning}, 2016, pp. 1558--1566.
+
+\bibitem{sohn2015learning} K. Sohn, H. Lee, and X. Yan, ``Learning structured output representation using deep conditional generative models,'' in \textit{Advances in Neural Information Processing Systems}, vol. 28, 2015.
+\end{thebibliography}
 
 \end{document}
 
