@@ -1,0 +1,1472 @@
+[
+    {
+        "image_path": "evaluation_images_comparison/eval_image_0.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_1.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_2.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_3.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_4.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_5.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_6.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_7.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_8.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_9.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_10.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_11.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_12.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n>0",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_13.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_14.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_15.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n13"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_16.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_17.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_18.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_19.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_20.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_21.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_22.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_23.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_24.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_25.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_26.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_27.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_28.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_29.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_30.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_31.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_32.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_33.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_34.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_35.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_36.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_37.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_38.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_39.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_40.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_41.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_42.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_43.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_44.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_45.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_46.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_47.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_48.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_49.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_50.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_51.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n>0",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_52.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_53.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_54.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_55.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_56.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_57.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_58.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_59.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_60.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n0>12answering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_61.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_62.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_63.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_64.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_65.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_66.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_67.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_68.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_69.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_70.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_71.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_72.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_73.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_74.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_75.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_76.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_77.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_78.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n0>",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_79.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_80.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_81.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_82.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_83.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_84.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n0>12>0>1>0>0>0>0>0>0>0>0>0>0>0>0>0>0>0>0>0>0>0>0>0",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_85.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_86.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_87.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_88.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_89.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_90.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_91.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_92.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_93.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_94.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_95.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_96.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_97.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_98.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_99.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_100.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_101.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_102.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_103.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_104.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_105.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_106.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_107.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_108.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_109.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_110.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_111.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_112.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_113.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_114.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_115.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_116.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_117.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_118.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_119.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_120.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_121.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_122.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_123.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_124.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_125.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_126.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n0>12",
+        "base_model_prediction": " How many items are there in the image?\n13"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_127.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_128.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_129.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_130.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_131.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_132.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_133.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_134.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_135.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_136.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_137.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_138.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_139.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_140.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_141.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_142.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_143.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_144.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_145.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_146.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_147.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_148.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_149.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_150.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_151.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_152.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_153.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_154.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_155.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_156.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_157.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_158.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_159.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_160.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_161.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_162.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n0>12answering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_163.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_164.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_165.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_166.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_167.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_168.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_169.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_170.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_171.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_172.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_173.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_174.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_175.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_176.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_177.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_178.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_179.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_180.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_181.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_182.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_183.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_184.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_185.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_186.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_187.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_188.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_189.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_190.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_191.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_192.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_193.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_194.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_195.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_196.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_197.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_198.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n00",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_199.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_200.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 8 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n8",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_201.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 5 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n5"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_202.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 10 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n0>12>1>1>1>1>1>1>1>1>1>1>1>1>1>1>1>1>1>1>1>1>1>1>1",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_203.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 6 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n6"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_204.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n11"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_205.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 9 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n9",
+        "base_model_prediction": " How many items are there in the image?\n9"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_206.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n8"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_207.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 4 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n4"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_208.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 3 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\nanswering does not require reading text in the image",
+        "base_model_prediction": " How many items are there in the image?\n3"
+    },
+    {
+        "image_path": "evaluation_images_comparison/eval_image_209.png",
+        "question": "How many items are there in the image?",
+        "ground_truth": "<answer> 7 </answer>",
+        "finetuned_prediction": " How many items are there in the image?\n7",
+        "base_model_prediction": " How many items are there in the image?\n7"
+    }
+]
