@@ -1,0 +1,328 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{enumitem}
+
+% Page setup
+\geometry{margin=2.5cm}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={CA4: Fine-Tuning PaliGemma Vision-Language Model},
+}
+
+% Code listing style
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    commentstyle=\color{green!60!black},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    breaklines=true,
+    showspaces=false,
+    showstringspaces=false,
+    frame=single,
+    captionpos=b
+}
+
+% Title information
+\title{\textbf{CA4: Fine-Tuning PaliGemma Vision-Language Model on CLEVR Dataset}\\
+\large Deep Generative Models Course Assignment}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Introduction and Project Overview}
+
+\subsection{Project Objective}
+
+This project demonstrates the fine-tuning of Google's \textbf{PaliGemma-3B-Mix-224} Vision-Language Model on the \textbf{CLEVR-COGEN-A} dataset using \textbf{Low-Rank Adaptation (LoRA)} and \textbf{8-bit Quantization} for parameter-efficient fine-tuning. The goal is to enhance the model's visual reasoning capabilities by training it to answer complex questions about synthetic scenes containing multiple objects with varying attributes.
+
+\subsection{Key Components}
+
+\begin{itemize}
+    \item \textbf{Model}: PaliGemma-3B-Mix-224 (pre-trained vision-language model)
+    \item \textbf{Dataset}: CLEVR-COGEN-A (20\% subset: 12,600 training, 1,400 test samples)
+    \item \textbf{Technique}: LoRA (Low-Rank Adaptation) for efficient fine-tuning
+    \item \textbf{Quantization}: 8-bit quantization using BitsAndBytes
+    \item \textbf{Hardware}: NVIDIA GeForce RTX 3090 (24GB VRAM)
+    \item \textbf{Evaluation}: ROUGE metrics for answer quality assessment
+\end{itemize}
+
+\subsection{Technologies \& Frameworks}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l|l}
+\toprule
+\textbf{Component} & \textbf{Technology} \\
+\midrule
+Base Model & PaliGemma-3B-Mix-224 \\
+Dataset & CLEVR-COGEN-A (20\% subset) \\
+Fine-tuning Method & LoRA with 8-bit Quantization \\
+Framework & Hugging Face Transformers \& PEFT \\
+Hardware & NVIDIA GeForce RTX 3090 \\
+\bottomrule
+\end{tabular}
+\caption{Technologies used in the project}
+\end{table}
+
+\section{Core Concepts}
+
+\subsection{Vision-Language Models (VLMs)}
+
+Vision-Language Models are AI systems that can process and understand both visual (images) and textual (language) inputs simultaneously. They bridge computer vision and natural language processing, enabling tasks like:
+
+\begin{itemize}
+    \item \textbf{Image Captioning}: Generating descriptive text for images
+    \item \textbf{Visual Question Answering (VQA)}: Answering questions about image content
+    \item \textbf{Visual Reasoning}: Understanding relationships and logic in visual scenes
+\end{itemize}
+
+\textbf{PaliGemma} combines a vision encoder (SigLIP) with a language decoder (Gemma), processing images and generating coherent text responses. The architecture allows for:
+\begin{itemize}
+    \item Multi-modal understanding of visual and textual information
+    \item End-to-end training on vision-language tasks
+    \item Transfer learning from pre-trained models
+\end{itemize}
+
+\subsection{CLEVR Dataset}
+
+CLEVR (Compositional Language and Elementary Visual Reasoning) is a synthetic dataset designed to test visual reasoning abilities:
+
+\begin{itemize}
+    \item \textbf{Synthetic Scenes}: Computer-generated images with 3D objects (spheres, cubes, cylinders) in various colors, sizes, and materials
+    \item \textbf{Structured Questions}: Questions requiring understanding of object properties, spatial relationships, and logical operations
+    \item \textbf{Ground Truth Answers}: Deterministic answers based on scene composition
+    \item \textbf{Compositionality}: Questions test different reasoning skills (counting, comparison, spatial reasoning, logical operations)
+\end{itemize}
+
+The CLEVR-COGEN-A variant used in this project focuses on counting tasks, where the model must identify the number of objects in a scene.
+
+\subsection{Parameter-Efficient Fine-Tuning (PEFT)}
+
+\textbf{Low-Rank Adaptation (LoRA)}:
+
+Instead of updating all model weights during fine-tuning, LoRA adds trainable low-rank matrices to frozen original weights. The mathematical formulation is:
+
+\begin{equation}
+W' = W + BA
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $W \in \mathbb{R}^{d \times k}$: Original frozen weight matrix
+    \item $B \in \mathbb{R}^{d \times r}$: Trainable low-rank matrix B
+    \item $A \in \mathbb{R}^{r \times k}$: Trainable low-rank matrix A
+    \item $r << \min(d, k)$: Rank parameter (typically 8-64)
+\end{itemize}
+
+\textbf{Benefits of LoRA}:
+\begin{enumerate}
+    \item \textbf{Memory Efficiency}: Only train $\sim$1-2\% of parameters
+    \item \textbf{Faster Training}: Reduced gradient computation and memory usage
+    \item \textbf{Modular Adaptation}: Easy to switch between different tasks
+    \item \textbf{Maintained Performance}: Often achieves 95-100\% of full fine-tuning performance
+\end{enumerate}
+
+\subsection{Quantization}
+
+\textbf{8-bit Quantization (BitsAndBytes)}:
+
+The process converts 32-bit floating-point weights to 8-bit integers, providing:
+
+\begin{itemize}
+    \item \textbf{Memory Reduction}: $\sim$4x memory reduction (e.g., $\sim$12GB $\rightarrow$ $\sim$6GB)
+    \item \textbf{Faster Inference}: Reduced memory bandwidth requirements
+    \item \textbf{Compatibility}: Enables larger models on limited hardware
+    \item \textbf{Trade-offs}: Slight accuracy loss (typically $<$2\%), requires compatible hardware (modern GPUs)
+\end{itemize}
+
+Quantization works by mapping the range of float32 values to int8 values using a scaling factor based on the distribution of weights in each layer.
+
+\section{Exercise Questions and Answers}
+
+\subsection{Question 1: Model Setup and Configuration}
+
+\textbf{Question}: How do we efficiently load and configure a large vision-language model (PaliGemma-3B) for fine-tuning on consumer hardware?
+
+\textbf{Answer}: We use two key techniques for efficient model loading:
+
+\begin{enumerate}
+    \item \textbf{8-bit Quantization}: Load the model in 8-bit precision using BitsAndBytes, reducing memory usage from $\sim$12GB to $\sim$6GB
+    \item \textbf{LoRA Configuration}: Apply LoRA adapters to only train 3\% of parameters (90M out of 3B total)
+\end{enumerate}
+
+\textbf{Code Implementation}:
+
+\begin{lstlisting}[caption={Model Loading with 8-bit Quantization}]
+# Configure 8-bit quantization
+bnb_config = BitsAndBytesConfig(
+    load_in_8bit=True,
+    llm_int8_threshold=6.0,
+)
+
+# Load model with quantization
+model = PaliGemmaForConditionalGeneration.from_pretrained(
+    model_id,
+    device_map="auto",
+    quantization_config=bnb_config,
+)
+\end{lstlisting}
+
+\textbf{Analysis}: The 8-bit quantization allows us to fit the 3B parameter model on a single RTX 3090 GPU (24GB VRAM). Without quantization, the model would require multiple GPUs or model parallelism.
+
+\subsection{Question 2: LoRA Configuration}
+
+\textbf{Question}: How do we configure LoRA for parameter-efficient fine-tuning? What modules should we target?
+
+\textbf{Answer}: We configure LoRA with the following parameters and target specific attention and feed-forward layers.
+
+\textbf{LoRA Configuration}:
+
+\begin{lstlisting}[caption={LoRA Configuration}]
+lora_config = LoraConfig(
+    r=64,                    # Rank of LoRA matrices
+    lora_alpha=64,          # Scaling parameter
+    lora_dropout=0.05,      # Dropout to prevent overfitting
+    target_modules=[
+        "q_proj", "k_proj", "v_proj",  # Attention projections
+        "o_proj",                      # Attention output
+        "gate_proj", "up_proj", "down_proj"  # Feed-forward layers
+    ],
+    task_type="CAUSAL_LM",
+)
+
+model = get_peft_model(model, lora_config)
+\end{lstlisting}
+
+\textbf{Target Modules Explanation}:
+\begin{itemize}
+    \item \textbf{Attention Layers} (q\_proj, k\_proj, v\_proj, o\_proj): Critical for vision-language understanding and cross-modal attention
+    \item \textbf{Feed-Forward Layers} (gate\_proj, up\_proj, down\_proj): Capture task-specific patterns and transformations
+\end{itemize}
+
+\textbf{Parameter Statistics}:
+\begin{itemize}
+    \item Total Parameters: 3,013,857,008 ($\sim$3B)
+    \item Trainable Parameters: 90,390,528 ($\sim$90M)
+    \item Trainable Percentage: 2.9992\% ($\sim$3\%)
+    \item Parameter Reduction: $\sim$97\% compared to full fine-tuning
+\end{itemize}
+
+\subsection{Question 3: Data Preprocessing}
+
+\textbf{Question}: How do we preprocess the CLEVR dataset for the PaliGemma model?
+
+\textbf{Answer}: The preprocessing function handles image and text formatting for the model.
+
+\textbf{Preprocessing Steps}:
+
+\begin{lstlisting}[caption={Data Preprocessing Function}]
+def preprocess_function(examples):
+    # Process images
+    images = []
+    for img in examples["image"]:
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        images.append(img)
+    
+    # Format text prompts
+    prompts = [f"<image> {q}" for q in examples["problem"]]
+    
+    # Process with processor
+    model_inputs = processor(
+        text=prompts,
+        images=images,
+        padding="max_length",
+        max_length=300,
+        truncation=True,
+        return_tensors="pt"
+    )
+    
+    # Prepare labels (ignore padding tokens)
+    labels = model_inputs["input_ids"].clone()
+    labels[labels == processor.tokenizer.pad_token_id] = -100
+    
+    model_inputs["labels"] = labels
+    return model_inputs
+\end{lstlisting}
+
+\textbf{Key Components}:
+\begin{itemize}
+    \item \textbf{Image Formatting}: Convert to RGB and ensure proper encoding
+    \item \textbf{Prompt Format}: Add \texttt{<image>} token prefix required by PaliGemma
+    \item \textbf{Tokenization}: Use processor to tokenize both image and text
+    \item \textbf{Label Masking}: Set padding tokens to -100 so they're ignored in loss calculation
+\end{itemize}
+
+\subsection{Question 4: Training Configuration}
+
+\textbf{Question}: What training hyperparameters should be used for fine-tuning?
+
+\textbf{Answer}: The training configuration balances memory efficiency with learning effectiveness.
+
+\textbf{Training Arguments}:
+
+\begin{lstlisting}[caption={Training Configuration}]
+training_args = TrainingArguments(
+    output_dir="./paligemma-lora-clevr",
+    learning_rate=1e-4,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
+    gradient_accumulation_steps=4,  # Effective batch size: 16
+    num_train_epochs=1,
+    fp16=True,                      # Mixed precision training
+    logging_steps=100,
+    evaluation_strategy="steps",
+    eval_steps=100,
+    save_strategy="steps",
+    save_steps=100,
+    save_total_limit=3,
+    load_best_model_at_end=True,
+    metric_for_best_model="eval_loss",
+)
+\end{lstlisting}
+
+\textbf{Hyperparameter Analysis}:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l|l|l}
+\toprule
+\textbf{Parameter} & \textbf{Value} & \textbf{Reasoning} \\
+\midrule
+Learning Rate & $1 \times 10^{-4}$ & Standard for fine-tuning large models \\
+Batch Size & 4 & Memory constraints with quantization \\
+Gradient Accumulation & 4 & Effective batch size of 16 \\
+Epochs & 1 & Sufficient for convergence in one epoch \\
+FP16 & True & Reduces memory, minimal accuracy loss \\
+\bottomrule
+\end{tabular}
+\caption{Training hyperparameters and rationale}
+\end{table}
+
