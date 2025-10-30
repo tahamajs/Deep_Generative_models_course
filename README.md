@@ -161,15 +161,36 @@ Students without this background may find the course challenging and are encoura
 
 ## Repository structure (top-level)
 
-- `CAs/` — Course assignments. Each `CA#` typically contains:
-  - `code/` — Jupyter notebooks and code used for experiments (e.g. `code.ipynb`, `CA2_DGM.ipynb`).
-  - `description/` — Written answers and explanations required by the assignment.
-  - `report/` — PDF report and figures.
-  - `train/` — checkpoints, small prepared datasets, or saved outputs (if present).
+- `CA1_Variational_Autoencoders/` — Course Assignment 1: Variational Autoencoders
+  - `code/` — Jupyter notebooks and code used for experiments (e.g., `code.ipynb`).
+  - `description/` — Assignment description PDF.
+  - `report/` — PDF reports and figures.
+  - `images/` — Generated images and visualizations.
+  - `train/` — Training datasets (CelebA subset: smile/non-smile images).
+  - `README.md` — Detailed documentation for CA1.
+- `CA2_GANs_Normalizing_Flows/` — Course Assignment 2: GANs and Normalizing Flows
+  - `code/` — Jupyter notebooks (e.g., `CA2_DGM.ipynb`, `Q2_final_res.ipynb`).
+  - `description/` — Assignment description PDF.
+  - `report/` — PDF reports and figures.
+  - `images/` — Generated samples and visualizations.
+  - `README.md` — Detailed documentation for CA2.
+- `CA3_Diffusion_Models/` — Course Assignment 3: Diffusion and Score-based Models
+  - `codes/` — Jupyter notebooks (e.g., `Diffusion_Models.ipynb`, `score_based_models.ipynb`).
+  - `description/` — Assignment description PDF.
+  - `report/` — PDF reports and figures.
+  - `images/` — Generated samples and visualizations.
+  - `README.md` — Detailed documentation for CA3.
+- `CA4_Vision_Language_Model/` — Course Assignment 4: Vision-Language Models
+  - `code/` — Jupyter notebooks (e.g., `final_CA4_training.ipynb`, evaluation notebooks).
+  - `description/` — Assignment description PDF.
+  - `report/` — PDF reports and figures.
+  - `images/` — Generated images and visualizations.
+  - `README.md` — Detailed documentation for CA4.
 - `Slides/` — Lecture slides and course material used in class.
-- `papers/` — Research papers referenced during the course.
+  - `DGM_Fall_2023_Slides/` — Course lecture slides.
+  - `Stanford_slides/` — Supplementary slides from Stanford's CS236 course.
 - `Exams/` — Past exams and solutions.
-- `Extra/` — Misc utilities, templates, or exploratory notebooks.
+- `Extra/` — Misc utilities, templates, or exploratory notebooks (e.g., `VAE.ipynb`, `VAE.py`).
 
 This repository is primarily an educational resource. Notebooks are annotated for readability and (where possible) reorganized to centralize imports and configuration.
 
@@ -231,7 +252,7 @@ Notes:
 jupyter lab
 ```
 
-4. Important safety note: the notebooks under `CAs/` were edited as part of a documentation pass (imports consolidated, configuration cell added). The editorial pass did not execute the notebooks. Before running long training jobs, review the `Setup and Configuration` cell in each notebook and run smoke tests described below.
+4. Important safety note: the notebooks in the assignment folders were edited as part of a documentation pass (imports consolidated, configuration cell added). The editorial pass did not execute the notebooks. Before running long training jobs, review the `Setup and Configuration` cell in each notebook and run smoke tests described below.
 
 ---
 
@@ -239,35 +260,35 @@ jupyter lab
 
 This section summarizes the primary assignments and their current status in the repository.
 
-- CA1 (folder: `CAs/CA1`)
+- CA1 (folder: `CA1_Variational_Autoencoders/`)
 
   - Focus: Variational Autoencoders (VAE) and experiments exploring latent structure.
-  - Key files: `code/code.ipynb`, `report/report.pdf`.
-  - Datasets: CelebA dataset (smiling/non-smiling classification task).
+  - Key files: `code/code.ipynb`, `report/DGM_CA1_final_EN.pdf`, `README.md`.
+  - Datasets: CelebA dataset (smiling/non-smiling classification task) stored in `train/smile/` and `train/non_smile/`.
   - Status: Fully improved with comprehensive README explaining all VAE concepts in depth, notebook reorganized (imports consolidated, configuration cell added, explanatory Markdown blocks added), and overview cell inserted for educational clarity. The accompanying PDF report summary was synthesized in the CA1 README due to extraction limitations.
 
-- CA2 (folder: `CAs/CA2`)
+- CA2 (folder: `CA2_GANs_Normalizing_Flows/`)
 
   - Focus: Normalizing flows (RealNVP) and GANs (DCGAN-style) applied to FashionMNIST. Includes OOD detection experiments (MNIST, KMNIST) and FID evaluation for GANs.
-  - Key files: `code/CA2_DGM.ipynb`, `README.md` (created to document run instructions and reproducibility).
-  - Datasets: FashionMNIST, MNIST, KMNIST.
+  - Key files: `code/CA2_DGM.ipynb`, `code/Q2_final_res.ipynb`, `README.md`.
+  - Datasets: FashionMNIST, MNIST, KMNIST (downloaded via torchvision).
   - Status: Fully improved with comprehensive README explaining GANs and Normalizing Flows concepts in depth, notebook reorganized (imports consolidated, configuration cell added, explanatory Markdown blocks added), and overview cell inserted for educational clarity.
 
-- CA3 (folder: `CAs/CA3`)
+- CA3 (folder: `CA3_Diffusion_Models/`)
 
   - Focus: Diffusion Models and Score-based Generative Models.
-  - Key files: `codes/Diffusion_Models (1).ipynb`, `codes/score_based_models.ipynb`, `report/DGM_CA3.pdf`.
+  - Key files: `codes/Diffusion_Models.ipynb`, `codes/score_based_models.ipynb`, `report/DGM_CA3_EN_final.pdf`, `README.md`.
   - Datasets: Likely image datasets such as CIFAR-10 or custom datasets for diffusion processes.
   - Status: Fully improved with comprehensive README explaining Diffusion and Score-based Models concepts in depth, notebooks reorganized (imports consolidated, configuration cells added, explanatory Markdown blocks added), and overview cells inserted for educational clarity.
 
-- CA4 (folder: `CAs/CA4`)
+- CA4 (folder: `CA4_Vision_Language_Model/`)
 
-  - Focus: Advanced topics in deep generative models (possibly Transformers, Energy-based Models, or other modern techniques).
-  - Key files: `code/CA4.ipynb`, `report/DGM CA4.pdf`.
-  - Datasets: TBD based on assignment description.
+  - Focus: Fine-tuning Vision-Language Models (Paligemma) on CLEVR dataset using PEFT/LoRA techniques.
+  - Key files: `code/final_CA4_training.ipynb`, `code/eval_p1/final_CA4_results1.ipynb`, `code/eval_p2/final_CA4_results2.ipynb`, `README.md`.
+  - Datasets: CLEVR (Compositional Language and Elementary Visual Reasoning).
   - Status: Fully improved with comprehensive README explaining Vision-Language Models, PEFT, and LoRA concepts in depth, notebook reorganized (imports consolidated, configuration cell added, explanatory Markdown blocks added), and overview cell inserted for educational clarity. Removed Google Drive dependencies, fixed evaluation metrics, and switched to Hugging Face model loading.
 
-Other folders (Slides, papers, Extra, Exams) contain lecture materials, relevant readings, and supporting documents.
+Other folders (`Slides/`, `Extra/`, `Exams/`) contain lecture materials, relevant readings, and supporting documents.
 
 ---
 
@@ -287,7 +308,7 @@ CA1 introduces Variational Autoencoders (VAEs), a cornerstone of generative mode
 
 VAEs balance reconstruction fidelity with latent space regularization, making them useful for tasks like image generation, anomaly detection, and representation learning.
 
-Key components in `CAs/CA1/code/code.ipynb`:
+Key components in `CA1_Variational_Autoencoders/code/code.ipynb`:
 
 1. **VAE Architecture**: Encoder (inference network) that maps images to latent distributions, decoder (generative network) that reconstructs images from latent samples.
 2. **Reparameterization Trick**: Enables backpropagation through stochastic sampling.
@@ -301,11 +322,13 @@ Why run CA1?
 - Explore disentangled representations and their applications in downstream tasks.
 - Compare VAEs with other generative models introduced later in the course.
 
-Files of interest in `CAs/CA1`:
+Files of interest in `CA1_Variational_Autoencoders/`:
 
 - `code/code.ipynb` — the annotated notebook (imports consolidated and configuration cell added).
 - `README.md` — detailed documentation with synthesized report summary.
 - `train/` — contains CelebA subset (smile/non-smile) for training.
+- `report/` — PDF reports including `DGM_CA1_final_EN.pdf`.
+- `images/` — generated visualizations and outputs.
 
 High-level suggested execution order:
 
@@ -359,10 +382,13 @@ Why run CA2?
 - Training RealNVP in a learned latent space (via an encoder-decoder) reduces dimensionality and speeds up flow training.
 - GAN training provides qualitative sample generation and a complementary evaluation via FID.
 
-Files of interest in `CAs/CA2`:
+Files of interest in `CA2_GANs_Normalizing_Flows/`:
 
 - `code/CA2_DGM.ipynb` — the annotated notebook (imports consolidated and a configuration cell added).
+- `code/Q2_final_res.ipynb` — additional results and experiments.
 - `README.md` — localized instructions, reproducibility notes and quick-start steps.
+- `report/` — PDF reports including `DGM_CA2_final_EN.pdf`.
+- `images/` — generated samples and training progress visualizations.
 
 High-level suggested execution order (no code is run by the editor):
 
@@ -397,7 +423,7 @@ CA3 explores cutting-edge generative modeling techniques: Denoising Diffusion Pr
 
 These models represent the current state-of-the-art in generative modeling, offering superior sample quality compared to earlier approaches like VAEs and GANs.
 
-Key components in `CAs/CA3/codes/`:
+Key components in `CA3_Diffusion_Models/codes/`:
 
 1. **Diffusion Models**: Forward process (adding noise) and reverse process (denoising) for generating high-quality images.
 2. **Score-based Models**: Learning the score function (gradient of log-density) for sampling via Langevin dynamics or ODE solvers.
@@ -410,11 +436,13 @@ Why run CA3?
 - Understand the connection between diffusion, score-based models, and energy-based models.
 - Compare with earlier models (VAEs, GANs, Flows) in terms of sample quality and training stability.
 
-Files of interest in `CAs/CA3`:
+Files of interest in `CA3_Diffusion_Models/`:
 
-- `codes/Diffusion_Models (1).ipynb` — Implementation of DDPM.
+- `codes/Diffusion_Models.ipynb` — Implementation of DDPM.
 - `codes/score_based_models.ipynb` — Score-based generative modeling.
-- `report/DGM_CA3.pdf` — Detailed report on experiments and results.
+- `report/DGM_CA3_EN_final.pdf` — Detailed report on experiments and results.
+- `README.md` — Comprehensive documentation for CA3.
+- `images/` — Generated samples and visualizations from diffusion and score-based models.
 
 High-level suggested execution order:
 
@@ -456,7 +484,7 @@ CA4 explores advanced applications of deep generative models in vision-language 
 
 This assignment bridges traditional generative modeling with modern multi-modal AI, showing how generative techniques extend beyond image synthesis to language and reasoning tasks.
 
-Key components in `CAs/CA4/code/CA4.ipynb`:
+Key components in `CA4_Vision_Language_Model/code/final_CA4_training.ipynb`:
 
 1. **Vision-Language Model**: Paligemma-3B, a state-of-the-art VLM for understanding images and answering questions.
 2. **Dataset**: CLEVR (Compositional Language and Elementary Visual Reasoning), featuring synthetic scenes with multiple objects and complex questions.
@@ -471,11 +499,14 @@ Why run CA4?
 - Experience real-world application of generative techniques in AI assistants and chatbots.
 - Compare PEFT approaches with traditional full fine-tuning in terms of efficiency and performance.
 
-Files of interest in `CAs/CA4`:
+Files of interest in `CA4_Vision_Language_Model/`:
 
-- `code/CA4.ipynb` — Complete implementation of Paligemma fine-tuning on CLEVR with LoRA.
+- `code/final_CA4_training.ipynb` — Complete implementation of Paligemma fine-tuning on CLEVR with LoRA.
+- `code/eval_p1/final_CA4_results1.ipynb` — Evaluation notebook for part 1.
+- `code/eval_p2/final_CA4_results2.ipynb` — Evaluation notebook for part 2.
 - `description/DGM_HW4.pdf` — Assignment description and requirements.
-- `report/[report files]` — Student analysis and experimental results.
+- `report/` — Student analysis and experimental results.
+- `README.md` — Comprehensive documentation for CA4.
 
 High-level suggested execution order:
 
@@ -498,7 +529,7 @@ Proper data and artifact management is crucial for reproducible experiments in g
   - Set `torchvision` data directory: `export TORCH_HOME=./data` before running notebooks.
   - For large datasets like CelebA, consider using a shared cache directory if multiple users will run experiments.
 - **Preprocessing**: Ensure consistent preprocessing pipelines across experiments (e.g., resize, normalization, data augmentation).
-- **Custom Datasets**: For CA1's CelebA subset, the `train/` folder contains pre-split smile/non-smile images. Verify integrity and consider backing up.
+- **Custom Datasets**: For CA1's CelebA subset, the `CA1_Variational_Autoencoders/train/` folder contains pre-split smile/non-smile images. Verify integrity and consider backing up.
 
 ### Model Checkpoints and Artifacts
 
@@ -749,7 +780,7 @@ If issues persist, check GitHub issues for similar problems or post with full er
 
 ## References and further reading
 
-This section lists key papers, books, and resources related to the course topics. Many papers are available in the `papers/` directory.
+This section lists key papers, books, and resources related to the course topics.
 
 ### Core Papers
 
@@ -799,14 +830,14 @@ For the latest research, check arXiv, NeurIPS, ICML, ICLR proceedings.
 
 ### Additional Resources in Repository
 
-- **Slides/**: Lecture slides from the course, including annotated versions and PDFs on topics like Mean-Field VI, Normalizing Flows, VAEs, Diffusion Models.
+- **Slides/**: Lecture slides from the course, including:
+  - `DGM_Fall_2023_Slides/`: Course lecture slides with annotated versions and PDFs on topics like Mean-Field VI, Normalizing Flows, VAEs, Diffusion Models.
+  - `Stanford_slides/`: Supplementary slides from Stanford's CS236 (Deep Generative Models) course.
 - **Exams/**: Past midterm and final exams with solutions, useful for review and practice.
 - **Extra/**: Miscellaneous resources including:
   - `VAE.ipynb` and `VAE.py`: Additional VAE implementations.
   - Research papers on bidirectional VAEs, D-separation, etc.
-  - Homework templates and utility scripts.
-- **Stanford_slides/**: Supplementary slides from Stanford's CS236 (Deep Generative Models) course.
-- **Videos/**: (If present) Recorded lectures or tutorials.
+  - `homework_template/`: Homework templates and utility scripts.
 
 ---
 
