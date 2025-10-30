@@ -632,6 +632,35 @@ A common solution is to use the \textbf{non-saturating generator loss}:
 
 This loss provides stronger gradients when $D(G(z))$ is small, encouraging the generator to improve even when the discriminator is strong.
 
+\textbf{Mathematical Comparison:}
+
+\textbf{Saturating Loss (original):}
+\begin{equation}
+    L_G^{sat} = \mathbb{E}[\log(1-D(G(z)))]
+\end{equation}
+\begin{itemize}
+    \item When $D(G(z)) = 0$ (discriminator confident fake): $L_G^{sat} = \log(1) = 0$ (no signal!)
+    \item Gradient: $\frac{\partial L_G^{sat}}{\partial D} = \frac{-1}{1-D} \to -1$ when $D \to 0$ (weak gradient)
+    \item Problem: Generator gets little learning signal when discriminator is strong
+\end{itemize}
+
+\textbf{Non-Saturating Loss:}
+\begin{equation}
+    L_G^{non-sat} = -\mathbb{E}[\log(D(G(z)))]
+\end{equation}
+\begin{itemize}
+    \item When $D(G(z)) = 0$: $L_G^{non-sat} = -\log(0) = +\infty$ (strong penalty!)
+    \item Gradient: $\frac{\partial L_G^{non-sat}}{\partial D} = \frac{-1}{D} \to -\infty$ when $D \to 0$ (strong gradient)
+    \item Benefit: Generator gets strong learning signal to improve, even when discriminator is winning
+\end{itemize}
+
+\textbf{Why This Helps:}
+\begin{enumerate}
+    \item \textbf{Stronger Gradients}: When discriminator rejects fakes ($D \to 0$), generator gets strong gradient to improve
+    \item \textbf{Non-Zero Gradients}: Unlike saturating loss, gradients remain informative throughout training
+    \item \textbf{Better Convergence}: Generator can make progress even when discriminator is strong, leading to more stable training
+\end{enumerate}
+
 \subsection{Optimal Discriminator Derivation (5 points)}
 
 For a fixed generator $G$, we derive the optimal discriminator $D^*$ that maximizes $V(D,G)$.
@@ -1127,6 +1156,41 @@ We train the DCGAN for 10 epochs and visualize generated samples at different st
     \item \textbf{Epochs}: 10
     \item \textbf{Optimizer}: Adam with $\beta_1 = 0.5$, $\beta_2 = 0.999$
     \item \textbf{Dataset}: FashionMNIST (60,000 training images, resized to 64×64)
+\end{itemize}
+
+\textbf{Rationale for Hyperparameters:}
+
+\begin{itemize}
+    \item \textbf{Learning Rate 0.0002}: 
+    \begin{itemize}
+        \item Small enough to prevent training instability
+        \item Large enough for reasonable convergence in 10 epochs
+        \item Standard choice from DCGAN paper for stable training
+        \item Lower than typical CNNs (often 0.001) due to adversarial training sensitivity
+    \end{itemize}
+    
+    \item \textbf{Batch Size 64}:
+    \begin{itemize}
+        \item Balances gradient estimation quality vs. memory constraints
+        \item Large enough to provide stable gradient estimates
+        \item Small enough to allow reasonable diversity per batch
+        \item Multiple samples per batch enable better discriminator training
+    \end{itemize}
+    
+    \item \textbf{Adam $\beta_1 = 0.5$}:
+    \begin{itemize}
+        \item Lower than default (0.9) reduces momentum, helping with adversarial oscillations
+        \item Prevents networks from overshooting optimal points
+        \item Critical for maintaining generator-discriminator balance
+    \end{itemize}
+    
+    \item \textbf{Latent Dimension 100}:
+    \begin{itemize}
+        \item Provides sufficient capacity for complex data generation
+        \item Large enough to encode diverse fashion item variations
+        \item Standard choice in DCGAN literature
+        \item Balance between model capacity and training stability
+    \end{itemize}
 \end{itemize}
 
 \subsubsection{Generated Samples Throughout Training}

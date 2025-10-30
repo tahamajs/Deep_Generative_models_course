@@ -305,27 +305,99 @@ There is a deep mathematical connection between diffusion models and score-based
 
 \section{Score-based Generative Models Implementation}
 
+This section details the implementation of score-based generative models, including data preparation, model architecture design choices, and the rationale behind key implementation decisions.
+
 \subsection{Data Generation}
 
-We generate a 2D Gaussian mixture distribution with two components:
+\subsubsection{Why Gaussian Mixtures?}
+
+We generate a 2D Gaussian mixture distribution for several important reasons:
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item \textbf{Analytically tractable}: We know the true distribution, allowing us to evaluate model performance
+    \item \textbf{Multimodal}: Tests the model's ability to learn complex, multi-peaked distributions
+    \item \textbf{2D visualization}: Easy to visualize score fields, trajectories, and sampling results
+    \item \textbf{Computational efficiency}: Fast training and sampling for rapid experimentation
+    \item \textbf{Known score function}: Can validate learned scores against ground truth
+\end{itemize}
+
+\subsubsection{Dataset Specifications}
 
 \begin{itemize}
-    \item 5000 total samples (80\% train, 20\% test)
-    \item Random component weights $w_1, w_2$
-    \item Means at $[-5, 5]$ and $[5, -5]$ (or similar)
-    \item Diagonal covariance matrices
+    \item \textbf{Total samples}: 5000 (sufficient for learning, not overwhelming)
+    \item \textbf{Train/Test split}: 80\% train (4000), 20\% test (1000) - standard split for validation
+    \item \textbf{Component weights}: Random $w_1, w_2$ such that $w_1 + w_2 = 1$ - ensures proper probability distribution
+    \item \textbf{Means}: Typically at $[-5, 5]$ and $[5, -5]$ (or similar) - separated enough for distinct modes
+    \item \textbf{Covariance}: Diagonal matrices - simpler structure, faster computation
+    \item \textbf{Domain}: $[-15, 15] \times [-15, 15]$ - large enough to capture full distribution
+\end{itemize}
+
+\textbf{Why This Distribution is Challenging:}
+\begin{itemize}
+    \item \textbf{Bimodal structure}: Model must learn to capture both modes, not just one
+    \item \textbf{Low-density regions}: Between modes where $p(x)$ is small, score function is harder to estimate
+    \item \textbf{Symmetry}: Tests the model's robustness to symmetric starting points
 \end{itemize}
 
 \subsection{Model Architecture: ScoreNet}
 
-The ScoreNet is a Multi-Layer Perceptron (MLP) with the following architecture:
+\subsubsection{Architecture Design Rationale}
+
+The ScoreNet is designed as a Multi-Layer Perceptron (MLP) with specific architectural choices:
+
+\textbf{Input Design:}
+\begin{itemize}
+    \item \textbf{2D data coordinates}: $x = [x_1, x_2]$ - the point where we want to know the score
+    \item \textbf{1D noise level}: $\sigma$ - crucial for noise-conditioned score networks
+    \item \textbf{Concatenation}: Input is $[x_1, x_2, \sigma]$ - simple but effective
+    \item \textbf{Why $\sigma$ as input?}: Score function depends on noise scale: $s(x, \sigma) \neq s(x, \sigma')$ for $\sigma \neq \sigma'$
+\end{itemize}
+
+\textbf{Hidden Layer Design:}
+\begin{itemize}
+    \item \textbf{4 hidden layers}: Deep enough to learn complex score functions, not so deep to cause vanishing gradients
+    \item \textbf{256 neurons per layer}: Sufficient capacity for 2D problem, not overparameterized
+    \item \textbf{Why this width?}: Balances expressiveness with computational cost
+\end{itemize}
+
+\textbf{Activation Function: LeakyReLU}
+\begin{itemize}
+    \item \textbf{Prevents dying ReLU}: Negative inputs have small gradient ($\alpha = 0.01$), avoiding dead neurons
+    \item \textbf{Non-saturating}: Unlike sigmoid/tanh, gradients flow through even for large inputs
+    \item \textbf{Differentiable almost everywhere}: Good for gradient-based optimization
+    \item \textbf{Formula}: $\text{LeakyReLU}(x) = \max(x, \alpha x)$ where $\alpha = 0.01$
+\end{itemize}
+
+\textbf{Batch Normalization:}
+\begin{itemize}
+    \item \textbf{Stabilizes training}: Normalizes activations, reducing internal covariate shift
+    \item \textbf{Faster convergence}: Allows larger learning rates
+    \item \textbf{Regularization effect}: Adds noise during training (stochasticity from batch statistics)
+    \item \textbf{Important for score learning}: Score values can vary widely; normalization helps
+\end{itemize}
+
+\textbf{Output Design:}
+\begin{itemize}
+    \item \textbf{2D vector}: Score function $\nabla_x \log p_\sigma(x) = [\frac{\partial}{\partial x_1}, \frac{\partial}{\partial x_2}]$
+    \item \textbf{No activation}: Direct output (scores can be positive or negative)
+    \item \textbf{Interpretation}: Points in direction of steepest ascent of log-probability
+\end{itemize}
+
+\subsubsection{Why This Architecture Works}
 
 \begin{itemize}
-    \item Input: 3D vector (2D data + 1D noise level $\sigma$)
-    \item Hidden layers: 4 layers, 256 neurons each
-    \item Activation: LeakyReLU
-    \item Normalization: BatchNorm
-    \item Output: 2D score vector $\nabla_x \log p_\sigma(x)$
+    \item \textbf{Sufficient capacity}: 4 layers × 256 neurons provides enough parameters to learn complex score fields
+    \item \textbf{Noise conditioning}: Including $\sigma$ as input enables single model for multiple noise levels
+    \item \textbf{Stable training}: BatchNorm and LeakyReLU prevent common training issues
+    \item \textbf{Simple structure}: MLP is easy to understand and debug, sufficient for 2D data
+\end{itemize}
+
+\textbf{Alternative Designs Considered:}
+\begin{itemize}
+    \item \textbf{Residual connections}: Could help for very deep networks (not needed here)
+    \item \textbf{Attention mechanisms}: Overkill for 2D data, useful for high-dimensional problems
+    \item \textbf{Convolutional layers}: Designed for spatial structure (images), unnecessary for 2D points
 \end{itemize}
 
 \begin{figure}[H]
@@ -344,13 +416,29 @@ The ScoreNet is a Multi-Layer Perceptron (MLP) with the following architecture:
 
 \subsection{Phase 1: Fixed Sigma Training Experiments}
 
-\subsubsection{Objective}
+\subsubsection{Objective and Motivation}
 
-Train separate score networks for different fixed noise levels ($\sigma \in \{1, 3, 7\}$) to understand how noise scale affects:
+The purpose of Phase 1 is to conduct a controlled study of how the noise level $\sigma$ affects score-based learning. By training separate models with fixed noise levels ($\sigma \in \{1, 3, 7\}$), we can isolate the effect of $\sigma$ on:
+
 \begin{itemize}
-    \item Training difficulty and convergence
-    \item Score field quality
-    \item Sampling performance
+    \item \textbf{Training difficulty and convergence}: How does $\sigma$ affect the learning dynamics?
+    \item \textbf{Score field quality}: Do different noise levels produce different score field characteristics?
+    \item \textbf{Sampling performance}: Which noise level produces the best samples?
+\end{itemize}
+
+\textbf{Why Fixed $\sigma$?}
+\begin{itemize}
+    \item \textbf{Simpler objective}: Each model learns a single noise scale, reducing complexity
+    \item \textbf{Baseline comparison}: Establishes performance bounds for single-scale models
+    \item \textbf{Understanding fundamentals}: Helps understand the relationship between noise and learning
+    \item \textbf{Limitation identification}: Reveals the need for multi-scale training (Phase 3)
+\end{itemize}
+
+\textbf{Why These Specific $\sigma$ Values?}
+\begin{itemize}
+    \item \textbf{$\sigma = 1$ (Low)}: Tests performance with minimal noise smoothing - most precise but hardest to train
+    \item \textbf{$\sigma = 3$ (Medium)}: Represents a balanced choice - likely optimal for single-scale
+    \item \textbf{$\sigma = 7$ (High)}: High noise makes training easier but reduces precision - tests trade-off
 \end{itemize}
 
 \subsubsection{Implementation Details}
