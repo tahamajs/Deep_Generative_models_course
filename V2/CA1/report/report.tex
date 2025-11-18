@@ -1,58 +1,49 @@
-\documentclass[12pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
 \usepackage{graphicx}
-\usepackage{float}
-\usepackage{hyperref}
-\usepackage{geometry}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{balance}
+\usepackage{multirow}
 \usepackage{booktabs}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
-\usepackage{xcolor}
 \usepackage{listings}
 \usepackage{subcaption}
 \usepackage{tikz}
 \usetikzlibrary{arrows,shapes,positioning,fit,backgrounds}
 
-\geometry{margin=1in}
-
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    filecolor=magenta,      
-    urlcolor=cyan,
-    citecolor=green,
-}
-
-\title{\textbf{Deep Generative Models - Computer Assignment 1}\\
-\large Variational Autoencoders and Probabilistic Graphical Models}
-\author{
-    Your Name\\
-    Student ID: XXXXXXXXX\\
-    University of Tehran\\
-    School of Electrical and Computer Engineering
-}
-\date{\today}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \begin{document}
+
+\title{Deep Generative Models: Probabilistic Graphical Models and Variational Autoencoders}
+
+\author{\IEEEauthorblockN{Your Name}
+\IEEEauthorblockA{\textit{School of Electrical and Computer Engineering} \\
+\textit{University of Tehran}\\
+Tehran, Iran \\
+student.id@ut.ac.ir}
+}
 
 \maketitle
 
 \begin{abstract}
-This report presents a comprehensive implementation and theoretical analysis of Computer Assignment 1 for the Deep Generative Models course. The assignment encompasses two fundamental areas of deep generative modeling: (1) Probabilistic Graphical Models (PGMs), including detailed exploration of Bayesian Networks and Markov Networks with practical applications in medical diagnosis and activity planning, and (2) Variational Autoencoders (VAEs) with extensive implementation on the dSprites dataset, emphasizing $\beta$-VAE variants and quantitative disentanglement metrics. 
-
-We provide rigorous mathematical derivations, implement models from scratch using PyTorch, conduct extensive experiments comparing different hyperparameter configurations, and evaluate performance using both qualitative and quantitative metrics. The report demonstrates the theoretical foundations, practical implementation challenges, and empirical results that advance our understanding of latent variable models and their applications in unsupervised representation learning.
-
-\textbf{Keywords:} Variational Autoencoders, Probabilistic Graphical Models, Bayesian Networks, Markov Networks, Disentangled Representations, ELBO, $\beta$-VAE, MIG Metric, dSprites Dataset
+This paper presents a comprehensive implementation and theoretical analysis of fundamental deep generative modeling techniques. We explore two core areas: (1) Probabilistic Graphical Models (PGMs), including Bayesian Networks and Markov Networks with applications in medical diagnosis and activity planning, and (2) Variational Autoencoders (VAEs) with extensive experiments on the dSprites dataset, emphasizing $\beta$-VAE variants and quantitative disentanglement metrics. We provide rigorous mathematical derivations, implement models from scratch using PyTorch, and conduct extensive experiments comparing different hyperparameter configurations. Our results demonstrate the trade-off between reconstruction quality and disentanglement, with MIG scores improving from 0.15 to 0.51 as $\beta$ increases from 1 to 10. The paper bridges theory and practice, demonstrating how mathematical foundations inform implementation decisions and empirical validation.
 \end{abstract}
 
-\tableofcontents
-\newpage
+\begin{IEEEkeywords}
+Variational Autoencoders, Probabilistic Graphical Models, Bayesian Networks, Markov Networks, Disentangled Representations, ELBO, $\beta$-VAE, MIG Metric
+\end{IEEEkeywords}
 
-\section{Question 1: Probabilistic Graphical Models}
+\section{Probabilistic Graphical Models}
 
-\subsection{Introduction to Probabilistic Graphical Models}
+\subsection{Introduction}
 
 Probabilistic Graphical Models (PGMs) provide a unified framework for representing and reasoning about complex probability distributions over high-dimensional spaces. By leveraging graph theory and probability theory, PGMs offer several key advantages:
 
@@ -96,7 +87,7 @@ P(X) = \frac{1}{Z} \prod_{c \in \mathcal{C}} \phi_c(X_c)
 
 where $Z$ is the partition function normalizing the distribution.
 
-\subsection{Part 1: Disease Model Bayesian Network}
+\subsection{Disease Model Bayesian Network}
 
 \subsubsection{Network Structure}
 
@@ -118,9 +109,9 @@ The Bayesian network structure captures the following relationships:
     \item Treatment (T) affects Probability of death (D)
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/bayesian_network.png}
+\includegraphics[width=3.5in]{figures/bayesian_network.png}
 \caption{Bayesian Network for Disease Model. The graph shows the causal relationships between immune system, season, disease severity, financial capability, treatment, and death probability.}
 \label{fig:bayesian_network}
 \end{figure}
@@ -188,9 +179,9 @@ Since all paths are blocked by observing I, we conclude $T \perp M | I$.
 \paragraph{Non-Independence Example:}
 Consider $T \perp M | D$. Path: $T \rightarrow D \leftarrow I \leftarrow M$. Here D is a collider, and observing D \textit{activates} the path, so $T \not\perp M | D$. This demonstrates that observing a collider creates dependence between its ancestors.
 
-\subsection{Part 2: Complex Network Analysis}
+\subsection{Complex Network Analysis}
 
-\subsubsection{Given Network Structure}
+\subsubsection{Network Structure}
 
 Consider the following Bayesian network with variables:
 \begin{itemize}
@@ -211,9 +202,9 @@ The network structure is:
     \item T influences B and M
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/complex_network.png}
+\includegraphics[width=3.5in]{figures/complex_network.png}
 \caption{Complex Bayesian Network showing relationships between camping, outdoor preferences, demographics, and logistics.}
 \label{fig:complex_network}
 \end{figure}
@@ -290,11 +281,14 @@ which can be computationally intractable for large graphs.
 
 \subsection{Summary of PGM Analysis}
 
-\begin{table}[H]
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.3}
+\caption{Comparison of Bayesian Networks and Markov Networks}
+\label{tab:pgm_comparison}
 \centering
-\begin{tabular}{@{}lll@{}}
-\toprule
-\textbf{Aspect} & \textbf{Bayesian Network} & \textbf{Markov Network} \\ \midrule
+\begin{tabular}{lll}
+\hline
+\textbf{Aspect} & \textbf{Bayesian Network} & \textbf{Markov Network} \\ \hline
 Graph Type & Directed Acyclic (DAG) & Undirected \\
 Edges Represent & Causal/Conditional & Soft Constraints \\
 Factorization & $\prod_i P(X_i|\text{Pa}(X_i))$ & $\frac{1}{Z}\prod_c \phi_c(X_c)$ \\
@@ -302,15 +296,13 @@ Normalization & Automatic (CPTs sum to 1) & Requires partition function \\
 Independence & d-separation & Graph separation \\
 Marginalization & Drop factors & Recompute cliques \\
 Learning & MLE, Structure learning & Pseudo-likelihood \\
-Inference & Variable elimination & Belief propagation \\ \bottomrule
+Inference & Variable elimination & Belief propagation \\ \hline
 \end{tabular}
-\caption{Comparison of Bayesian Networks and Markov Networks}
-\label{tab:pgm_comparison}
 \end{table}
 
-\section{Question 2: Variational Autoencoders}
+\section{Variational Autoencoders}
 
-\subsection{VAE Fundamentals}
+\subsection{Fundamentals}
 
 Variational Autoencoders combine deep learning with variational inference to learn latent representations. The model consists of:
 
@@ -400,19 +392,20 @@ This mirrors the rate-distortion trade-off in information theory:
 
 VAE can be viewed as performing amortized variational inference. Compare with the Expectation-Maximization (EM) algorithm:
 
-\begin{table}[H]
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.3}
+\caption{Comparison of EM and VAE Approaches to Variational Inference}
+\label{tab:em_vae}
 \centering
-\begin{tabular}{@{}lll@{}}
-\toprule
-\textbf{Aspect} & \textbf{EM Algorithm} & \textbf{VAE} \\ \midrule
+\begin{tabular}{lll}
+\hline
+\textbf{Aspect} & \textbf{EM Algorithm} & \textbf{VAE} \\ \hline
 E-step & Compute $q(z|x)$ for each $x$ & Amortized: $q_\phi(z|x)$ for all $x$ \\
 M-step & Maximize $\mathbb{E}_q[\log p(x,z)]$ & Jointly optimize $\theta, \phi$ \\
 Inference & Per-sample & Amortized (neural network) \\
 Scalability & Poor (quadratic) & Good (stochastic gradient) \\
-Generalization & None & Generalizes to new data \\ \bottomrule
+Generalization & None & Generalizes to new data \\ \hline
 \end{tabular}
-\caption{Comparison of EM and VAE approaches to variational inference}
-\label{tab:em_vae}
 \end{table}
 
 \subsubsection{Why VAE Works: Intuition}
@@ -555,9 +548,9 @@ $\beta$-VAE introduces a hyperparameter $\beta$ to control the trade-off between
 
 \paragraph{Trade-off:} Higher $\beta$ improves disentanglement but may reduce reconstruction quality due to stricter constraints on the latent distribution.
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/beta_comparison.png}
+\includegraphics[width=3.5in]{figures/beta_comparison.png}
 \caption{Effect of $\beta$ on reconstruction quality and disentanglement. Left: $\beta=1$ (standard VAE), Middle: $\beta=2$, Right: $\beta=5$.}
 \label{fig:beta_comparison}
 \end{figure}
@@ -626,25 +619,26 @@ The dSprites (Disentanglement testing Sprites) dataset is a procedurally generat
 \end{enumerate}
 
 \paragraph{Dataset Statistics:}
-\begin{table}[H]
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.3}
+\caption{Ground Truth Factors in dSprites Dataset}
+\label{tab:dsprites_factors}
 \centering
-\begin{tabular}{@{}llll@{}}
-\toprule
-\textbf{Factor} & \textbf{Type} & \textbf{Range} & \textbf{\# Values} \\ \midrule
+\begin{tabular}{llll}
+\hline
+\textbf{Factor} & \textbf{Type} & \textbf{Range} & \textbf{\# Values} \\ \hline
 Shape & Discrete & \{square, ellipse, heart\} & 3 \\
 Scale & Continuous & [0.5, 1.0] & 6 \\
 Orientation & Circular & [0, 2$\pi$) & 40 \\
 Position X & Continuous & [0, 1] & 32 \\
 Position Y & Continuous & [0, 1] & 32 \\
-Color & Constant & white & 1 \\ \bottomrule
+Color & Constant & white & 1 \\ \hline
 \end{tabular}
-\caption{Ground truth factors in dSprites dataset}
-\label{tab:dsprites_factors}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/dsprites_samples.png}
+\includegraphics[width=3.5in]{figures/dsprites_samples.png}
 \caption{Sample images from dSprites dataset showing variations in shape, scale, orientation, and position.}
 \label{fig:dsprites}
 \end{figure}
@@ -691,35 +685,27 @@ VAE-deep & 1.0 & 10 & 512 & 50 \\ \bottomrule
 
 \subsubsection{Training Dynamics}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\begin{subfigure}{0.45\textwidth}
-    \includegraphics[width=\textwidth]{figures/training_loss.png}
-    \caption{Total loss over epochs}
-\end{subfigure}
-\hfill
-\begin{subfigure}{0.45\textwidth}
-    \includegraphics[width=\textwidth]{figures/recon_kl_loss.png}
-    \caption{Reconstruction vs KL loss}
-\end{subfigure}
+\includegraphics[width=3.5in]{figures/training_loss.png}
 \caption{Training dynamics for VAE with $\beta=1$. The model converges after approximately 30 epochs.}
 \label{fig:training}
 \end{figure}
 
 \subsubsection{Reconstruction Quality}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/reconstructions.png}
+\includegraphics[width=3.5in]{figures/reconstructions.png}
 \caption{Original images (top row) and their reconstructions (bottom row). The VAE successfully captures shape, position, and orientation.}
 \label{fig:reconstructions}
 \end{figure}
 
 \subsubsection{Latent Space Visualization}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/latent_space_pca.png}
+\includegraphics[width=3.5in]{figures/latent_space_pca.png}
 \caption{PCA projection of latent space colored by ground truth factors. Clear clustering indicates good disentanglement.}
 \label{fig:latent_pca}
 \end{figure}
@@ -1278,41 +1264,41 @@ SmallNORB & 0.42 & 0.27 & 35.7\% \\ \bottomrule
 
 \subsection{Latent Space Analysis}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/latent_traversal.png}
+\includegraphics[width=3.5in]{figures/latent_traversal.png}
 \caption{Latent space traversal showing how individual latent dimensions control specific factors of variation. Each row shows variations along one latent dimension while keeping others fixed.}
 \label{fig:latent_traversal}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/interpolation.png}
+\includegraphics[width=3.5in]{figures/interpolation.png}
 \caption{Linear interpolation in latent space between two images. Smooth transitions demonstrate continuity of the learned latent space.}
 \label{fig:interpolation}
 \end{figure}
 
 \subsection{Training Dynamics}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/loss_components.png}
+\includegraphics[width=3.5in]{figures/loss_components.png}
 \caption{Evolution of loss components during training showing the interplay between reconstruction and KL divergence terms.}
 \label{fig:loss_components}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/learning_curves.png}
+\includegraphics[width=3.5in]{figures/learning_curves.png}
 \caption{Learning curves comparing different $\beta$ values. Higher $\beta$ leads to slower convergence but better final disentanglement.}
 \label{fig:learning_curves}
 \end{figure}
 
 \subsection{Qualitative Analysis}
 
-\begin{figure}[H]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.9\textwidth]{figures/failure_cases.png}
+\includegraphics[width=3.5in]{figures/failure_cases.png}
 \caption{Failure cases showing reconstruction errors. High $\beta$ models struggle with fine details and overlapping shapes.}
 \label{fig:failures}
 \end{figure}
