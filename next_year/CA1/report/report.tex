@@ -116,6 +116,66 @@ The Bayesian network structure captures the following relationships:
 \label{fig:bayesian_network}
 \end{figure}
 
+The following code implements the Bayesian network visualization:
+
+\begin{lstlisting}[language=Python, basicstyle=\small\ttfamily]
+def draw_bayesian_network():
+    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+
+    G = nx.DiGraph()
+
+    nodes = ['M', 'S', 'I', 'F', 'T', 'D']
+    node_labels = {
+        'M': 'Immune System\n(M)',
+        'S': 'Season\n(S)',
+        'I': 'Disease Severity\n(I)',
+        'F': 'Financial Capability\n(F)',
+        'T': 'Treatment Type\n(T)',
+        'D': 'Death Probability\n(D)'
+    }
+
+    edges = [
+        ('M', 'I'),
+        ('S', 'I'),
+        ('I', 'D'),
+        ('I', 'T'),
+        ('F', 'T'),
+        ('T', 'D'),
+    ]
+
+    G.add_edges_from(edges)
+
+    pos = {
+        'M': (0, 2),
+        'S': (2, 2),
+        'I': (1, 1),
+        'F': (3, 1),
+        'T': (2, 0),
+        'D': (1, -1)
+    }
+
+    nx.draw_networkx_nodes(G, pos, node_color='lightblue',
+                          node_size=3000, alpha=0.9, ax=ax)
+    nx.draw_networkx_labels(G, pos, node_labels, font_size=9,
+                           font_weight='bold', ax=ax)
+    nx.draw_networkx_edges(G, pos, edge_color='gray',
+                          arrows=True, arrowsize=20,
+                          arrowstyle='->', width=2, ax=ax)
+
+    ax.set_title('Bayesian Network: Disease Model', fontsize=14, fontweight='bold')
+    ax.axis('off')
+    plt.tight_layout()
+    plt.savefig('bayesian_network.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
+    return G, edges
+
+G, edges = draw_bayesian_network()
+print("Bayesian Network Structure:")
+print(f"Nodes: {list(G.nodes())}")
+print(f"Edges: {edges}")
+\end{lstlisting}
+
 \subsubsection{Joint Probability Calculation}
 
 For Bayesian networks, the joint probability factors according to the graph structure:
@@ -156,6 +216,66 @@ This demonstrates how the factorization enables efficient computation: instead o
     \item \textbf{Fork}: $X \leftarrow W \rightarrow Y$ --- observing $W$ blocks the path
     \item \textbf{Collider}: $X \rightarrow W \leftarrow Y$ --- observing $W$ activates the path
 \end{itemize}
+
+The following code implements systematic conditional independence analysis:
+
+\begin{lstlisting}[language=Python, basicstyle=\small\ttfamily]
+def analyze_conditional_independence():
+    statements = {
+        'a': {
+            'statement': 'F ⊥ D',
+            'description': 'F is independent of D (unconditionally)',
+            'answer': False,
+            'reasoning': 'F and D are NOT independent because there is an active path F → T → D. '
+                        'Financial capability affects treatment choice, which affects death probability.'
+        },
+        'b': {
+            'statement': 'S ⊥ D | I',
+            'description': 'S is independent of D given I',
+            'answer': True,
+            'reasoning': 'Given I (disease severity), S (season) is independent of D (death probability). '
+                        'Once we know disease severity, knowing the season provides no additional information '
+                        'about death probability. The path S → I → D is blocked by observing I.'
+        },
+        'c': {
+            'statement': 'M ⊥ F',
+            'description': 'M is independent of F (unconditionally)',
+            'answer': True,
+            'reasoning': 'M (immune system) and F (financial capability) are independent. '
+                        'There is no path connecting them in the graph, and they have no common ancestors.'
+        },
+        'd': {
+            'statement': 'M ⊥ F | T',
+            'description': 'M is independent of F given T',
+            'answer': False,
+            'reasoning': 'Given T (treatment type), M and F become DEPENDENT. This is a V-structure (collider): '
+                        'M → I ← S and I → T ← F. Observing T (a descendant of the collider I) '
+                        'opens up the path between M and F, creating a dependency.'
+        },
+        'e': {
+            'statement': 'M ⊥ T | {D, I}',
+            'description': 'M is independent of T given both D and I',
+            'answer': True,
+            'reasoning': 'Given both I and D, M is independent of T. '
+                        'The path M → I → T is blocked by observing I. '
+                        'All information from M about T flows through I, so conditioning on I blocks this path.'
+        }
+    }
+
+    print("="*80)
+    print("CONDITIONAL INDEPENDENCE ANALYSIS")
+    print("="*80)
+
+    for key, data in statements.items():
+        print(f"\n{key}. {data['statement']}")
+        print(f"   Description: {data['description']}")
+        print(f"   Answer: {'TRUE' if data['answer'] else 'FALSE'}")
+        print(f"   Reasoning: {data['reasoning']}")
+
+    return statements
+
+independence_analysis = analyze_conditional_independence()
+\end{lstlisting}
 
 \paragraph{Example Conditional Independence:}
 In the disease model:
@@ -208,6 +328,68 @@ The network structure is:
 \caption{Complex Bayesian Network showing relationships between camping, outdoor preferences, demographics, and logistics.}
 \label{fig:complex_network}
 \end{figure}
+
+The following code implements the Markov network visualization:
+
+\begin{lstlisting}[language=Python, basicstyle=\small\ttfamily]
+def draw_markov_network():
+    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+
+    G = nx.Graph()
+
+    nodes = ['C', 'O', 'A', 'S', 'T', 'B', 'M']
+    node_labels = {
+        'C': 'Camping\n(C)',
+        'O': 'Outdoor\n(O)',
+        'A': 'Age\n(A)',
+        'S': 'Season\n(S)',
+        'T': 'Transport\n(T)',
+        'B': 'Budget\n(B)',
+        'M': 'Mood\n(M)'
+    }
+
+    edges = [
+        ('C', 'O'),
+        ('O', 'A'),
+        ('O', 'S'),
+        ('A', 'T'),
+        ('S', 'T'),
+        ('T', 'B'),
+        ('T', 'M'),
+    ]
+
+    G.add_edges_from(edges)
+
+    pos = {
+        'C': (0, 2),
+        'O': (1, 1),
+        'A': (0, 0),
+        'S': (2, 0),
+        'T': (1, -1),
+        'B': (0, -2),
+        'M': (2, -2)
+    }
+
+    nx.draw_networkx_nodes(G, pos, node_color='lightcoral',
+                          node_size=3000, alpha=0.9, ax=ax)
+    nx.draw_networkx_labels(G, pos, node_labels, font_size=9,
+                           font_weight='bold', ax=ax)
+    nx.draw_networkx_edges(G, pos, edge_color='red',
+                          width=3, ax=ax)
+
+    ax.set_title('Markov Network: Moralized Complex Network', fontsize=14, fontweight='bold')
+    ax.axis('off')
+    plt.tight_layout()
+    plt.savefig('markov_network.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
+    return G, edges
+
+G_markov, edges_markov = draw_markov_network()
+print("Markov Network Structure:")
+print(f"Nodes: {list(G_markov.nodes())}")
+print(f"Edges: {edges_markov}")
+\end{lstlisting}
 
 \subsubsection{Maximal Cliques in Markov Network}
 
@@ -763,6 +945,50 @@ Sparsity & 0.15 & 0.28 & 0.52 & 0.68 \\ \bottomrule
 \label{tab:latent_analysis}
 \end{table}
 
+\subsection{Interpretation of Results}
+
+This subsection summarizes and explains the empirical trends observed in our VAE experiments and links them to the theoretical objectives of the models.
+
+\paragraph{High-level summary:}
+\begin{itemize}
+    \item \textbf{Disentanglement (MIG):} Increasing $\beta$ improves the Mutual Information Gap (MIG) steadily (e.g. 0.15 → 0.51 across tested values). This indicates latents become more specialized and less redundant as the regularization on the posterior grows.
+    \item \textbf{Reconstruction quality:} Reconstruction error increases with $\beta$ (worse reconstructions for larger $\beta$). This is the expected trade-off: stronger regularization reduces the information the encoder can pass to the decoder.
+    \item \textbf{KL divergence:} The measured KL between $q(z|x)$ and the prior decreases as $\beta$ increases, showing the encoder distribution is pushed closer to the prior under heavier regularization.
+    \item \textbf{Latent utilization:} The number of active latent dimensions decreases as $\beta$ grows, which both helps disentanglement and risks posterior collapse (information loss).
+\end{itemize}
+
+\paragraph{Why these patterns occur}
+\begin{itemize}
+    \item The VAE objective (ELBO) trades off reconstruction and a KL regularizer: $\mathcal{L} = \mathbb{E}_{q}[\log p(x|z)] - \beta D_{KL}(q(z|x)||p(z))$. Increasing $\beta$ multiplies the KL penalty and forces $q(z|x)$ to resemble the prior more closely, reducing mutual dependence between latent dimensions (hence higher MIG).
+    \item When the encoder is forced to be close to the prior, it can carry less information about $x$; the decoder therefore reconstructs less precisely, which increases reconstruction loss.
+    \item Because the KL term is weighted by $\beta$, the reported \emph{total} loss can increase with $\beta$ even while the unweighted KL value decreases. The numbers in the results table reflect this weighted objective.
+\end{itemize}
+
+\paragraph{Per-factor differences}
+\begin{itemize}
+    \item Discrete and low-cardinality factors (e.g., \emph{shape}) are easier to align with single latent dimensions and therefore achieve higher per-factor MIG scores.
+    \item Continuous / high-resolution factors (e.g., position X/Y) require finer-grained, higher-capacity encodings and are more affected by strong compression; they therefore show lower MIG under high $\beta$.
+\end{itemize}
+
+\paragraph{Signs to watch (diagnostics)}
+\begin{itemize}
+    \item \textbf{Per-dimension KL near zero:} Many latent dims with KL close to zero indicate posterior collapse (those dims encode almost no information).
+    \item \textbf{Rapid KL drop early in training:} If KL collapses quickly, consider KL annealing or free-bits to encourage the encoder to use dimensions.
+    \item \textbf{High reconstruction artifacts:} Visual inspection of reconstructions (lossy edges, misplaced positions) helps identify what information the model is sacrificing.
+\end{itemize}
+
+\paragraph{Practical recommendations}
+\begin{itemize}
+    \item For applications prioritizing interpretability and disentanglement, use moderate-to-high $\beta$ (e.g. $2$--$5$) and verify latent utilization (avoid extreme $\beta$ that collapses many dims).
+    \item For applications prioritizing generation quality or reconstruction, prefer $\beta \approx 1$ (standard VAE) and increase capacity (latent dim, hidden units) rather than increase $\beta$.
+    \item To balance both goals: use KL annealing (gradually increase $\beta$ during training), free-bits per latent dimension, or methods that penalize total correlation (FactorVAE / TC-VAE) rather than uniformly up-weighting KL.
+\end{itemize}
+
+\paragraph{Connection to PGM analysis}
+The PGM section highlights how structure and conditional independences reduce the effective complexity of a distribution. Similarly, $\beta$-VAE enforces statistical independence (via the prior) in the latent space. Combining these perspectives suggests hybrid approaches (structured VAEs) where prior independence assumptions are informed by known causal/graphical structure can yield more sample-efficient and interpretable models.
+
+% End of interpretation subsection
+
 \subsection{Advanced VAE Variants}
 
 \subsubsection{FactorVAE}
@@ -1135,43 +1361,152 @@ The complete implementation is available in the accompanying Jupyter notebook \t
 
 \paragraph{VAE Architecture:}
 \begin{lstlisting}[language=Python, basicstyle=\small\ttfamily]
-class VAE(nn.Module):
-    def __init__(self, input_dim=4096, h_dim=256, z_dim=10):
-        # Encoder: input -> hidden -> mu, logvar
-        # Decoder: z -> hidden -> reconstruction
-        
-    def encode(self, x):
-        # Returns mu, logvar
-        
-    def reparameterize(self, mu, logvar):
-        # z = mu + sigma * epsilon
-        
-    def decode(self, z):
-        # Returns reconstruction
-        
+class Encoder(nn.Module):
+    def __init__(self, h_dim=256):
+        super(Encoder, self).__init__()
+        self.h_dim = h_dim
+
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=4, stride=2, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1)
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1)
+
+        self.fc = nn.Linear(8192, h_dim * 2)
+
     def forward(self, x):
-        # End-to-end forward pass
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+
+        x = x.view(x.size(0), -1)
+
+        h = self.fc(x)
+
+        mu, log_var = torch.chunk(h, 2, dim=1)
+
+        return mu, log_var
+
+
+class Decoder(nn.Module):
+    def __init__(self, h_dim=256):
+        super(Decoder, self).__init__()
+        self.h_dim = h_dim
+
+        self.fc = nn.Linear(h_dim, 8192)
+
+        self.deconv1 = nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1)
+        self.deconv2 = nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1)
+        self.deconv3 = nn.ConvTranspose2d(32, 1, kernel_size=4, stride=2, padding=1)
+
+    def forward(self, z):
+        x = self.fc(z)
+        x = F.relu(x)
+
+        x = x.view(x.size(0), 128, 8, 8)
+
+        x = F.relu(self.deconv1(x))
+        x = F.relu(self.deconv2(x))
+        x = torch.sigmoid(self.deconv3(x))
+
+        return x
+
+
+class VAE(nn.Module):
+    def __init__(self, h_dim=256):
+        super(VAE, self).__init__()
+        self.h_dim = h_dim
+
+        self.encoder = Encoder(h_dim)
+        self.decoder = Decoder(h_dim)
+
+    def reparameterize(self, mu, log_var):
+        std = torch.exp(0.5 * log_var)
+        eps = torch.randn_like(std)
+        z = mu + eps * std
+        return z
+
+    def forward(self, x):
+        mu, log_var = self.encoder(x)
+
+        z = self.reparameterize(mu, log_var)
+
+        x_recon = self.decoder(z)
+
+        return x_recon, mu, log_var
+
+    def sample(self, num_samples, device):
+        z = torch.randn(num_samples, self.h_dim).to(device)
+        samples = self.decoder(z)
+        return samples
 \end{lstlisting}
 
 \paragraph{Loss Functions:}
 \begin{lstlisting}[language=Python, basicstyle=\small\ttfamily]
-def vae_loss(recon_x, x, mu, logvar, beta=1.0):
-    BCE = F.binary_cross_entropy(
-        recon_x, x, reduction='sum')
-    KLD = -0.5 * torch.sum(
-        1 + logvar - mu.pow(2) - logvar.exp())
-    return BCE + beta * KLD, BCE, KLD
+def vae_loss(x_recon, x, mu, log_var, beta=1.0):
+    recon_loss = F.binary_cross_entropy(x_recon, x, reduction='sum')
+
+    kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+
+    total_loss = recon_loss + beta * kl_loss
+
+    return total_loss, recon_loss, kl_loss
 \end{lstlisting}
 
 \paragraph{MIG Computation:}
 \begin{lstlisting}[language=Python, basicstyle=\small\ttfamily]
+def discretize(data, num_bins=20):
+    data_min = data.min()
+    data_max = data.max()
+    bins = np.linspace(data_min, data_max, num_bins + 1)
+    discretized = np.digitize(data, bins) - 1
+    discretized = np.clip(discretized, 0, num_bins - 1)
+    return discretized
+
+
+def compute_mutual_information_matrix(latents, factors):
+    n_latent = latents.shape[1]
+    n_factors = factors.shape[1]
+
+    mi_matrix = np.zeros((n_latent, n_factors))
+
+    latents_discrete = np.zeros_like(latents, dtype=int)
+    for i in range(n_latent):
+        latents_discrete[:, i] = discretize(latents[:, i])
+
+    for i in range(n_latent):
+        for j in range(n_factors):
+            mi_matrix[i, j] = mutual_info_score(latents_discrete[:, i], factors[:, j])
+
+    return mi_matrix
+
+
 def compute_mig(latents, factors):
-    # Discretize continuous latents
-    # Compute mutual information I(z_j, v_k)
-    # For each factor, find gap between top 2 MIs
-    # Normalize by factor entropy
-    # Average across factors
-    return mig_score
+    mi_matrix = compute_mutual_information_matrix(latents, factors)
+
+    n_factors = factors.shape[1]
+    mig_per_factor = np.zeros(n_factors)
+
+    factor_entropy = np.zeros(n_factors)
+    for j in range(n_factors):
+        _, counts = np.unique(factors[:, j], return_counts=True)
+        probs = counts / counts.sum()
+        factor_entropy[j] = -np.sum(probs * np.log(probs + 1e-10))
+
+    for j in range(n_factors):
+        mi_sorted = np.sort(mi_matrix[:, j])[::-1]
+
+        if len(mi_sorted) >= 2:
+            gap = mi_sorted[0] - mi_sorted[1]
+        else:
+            gap = mi_sorted[0]
+
+        if factor_entropy[j] > 0:
+            mig_per_factor[j] = gap / factor_entropy[j]
+        else:
+            mig_per_factor[j] = 0
+
+    mig_score = np.mean(mig_per_factor)
+
+    return mig_score, mig_per_factor, mi_matrix
 \end{lstlisting}
 
 \subsection{Hyperparameter Tuning Results}
