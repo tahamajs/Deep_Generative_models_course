@@ -24,11 +24,11 @@
 
 \title{Deep Generative Models: Probabilistic Graphical Models and Variational Autoencoders}
 
-\author{\IEEEauthorblockN{Your Name}
+\author{\IEEEauthorblockN{Mohammad Taha Majlesi}
 \IEEEauthorblockA{\textit{School of Electrical and Computer Engineering} \\
 \textit{University of Tehran}\\
 Tehran, Iran \\
-student.id@ut.ac.ir}
+tahamajlesi@ut.ac.ir}
 }
 
 \maketitle
@@ -111,7 +111,7 @@ The Bayesian network structure captures the following relationships:
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/bayesian_network.png}
+\includegraphics[width=3.5in]{1.png}
 \caption{Bayesian Network for Disease Model. The graph shows the causal relationships between immune system, season, disease severity, financial capability, treatment, and death probability.}
 \label{fig:bayesian_network}
 \end{figure}
@@ -204,7 +204,7 @@ The network structure is:
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/complex_network.png}
+\includegraphics[width=3.5in]{2.png}
 \caption{Complex Bayesian Network showing relationships between camping, outdoor preferences, demographics, and logistics.}
 \label{fig:complex_network}
 \end{figure}
@@ -550,7 +550,7 @@ $\beta$-VAE introduces a hyperparameter $\beta$ to control the trade-off between
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/beta_comparison.png}
+\includegraphics[width=3.5in]{3.png}
 \caption{Effect of $\beta$ on reconstruction quality and disentanglement. Left: $\beta=1$ (standard VAE), Middle: $\beta=2$, Right: $\beta=5$.}
 \label{fig:beta_comparison}
 \end{figure}
@@ -638,7 +638,7 @@ Color & Constant & white & 1 \\ \hline
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/dsprites_samples.png}
+\includegraphics[width=3.5in]{4.png}
 \caption{Sample images from dSprites dataset showing variations in shape, scale, orientation, and position.}
 \label{fig:dsprites}
 \end{figure}
@@ -687,7 +687,7 @@ VAE-deep & 1.0 & 10 & 512 & 50 \\ \bottomrule
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/training_loss.png}
+\includegraphics[width=3.5in]{5.png}
 \caption{Training dynamics for VAE with $\beta=1$. The model converges after approximately 30 epochs.}
 \label{fig:training}
 \end{figure}
@@ -696,7 +696,7 @@ VAE-deep & 1.0 & 10 & 512 & 50 \\ \bottomrule
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/reconstructions.png}
+\includegraphics[width=3.5in]{6.png}
 \caption{Original images (top row) and their reconstructions (bottom row). The VAE successfully captures shape, position, and orientation.}
 \label{fig:reconstructions}
 \end{figure}
@@ -705,7 +705,7 @@ VAE-deep & 1.0 & 10 & 512 & 50 \\ \bottomrule
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/latent_space_pca.png}
+\includegraphics[width=3.5in]{7.png}
 \caption{PCA projection of latent space colored by ground truth factors. Clear clustering indicates good disentanglement.}
 \label{fig:latent_pca}
 \end{figure}
@@ -1266,14 +1266,14 @@ SmallNORB & 0.42 & 0.27 & 35.7\% \\ \bottomrule
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/latent_traversal.png}
+\includegraphics[width=3.5in]{8.png}
 \caption{Latent space traversal showing how individual latent dimensions control specific factors of variation. Each row shows variations along one latent dimension while keeping others fixed.}
 \label{fig:latent_traversal}
 \end{figure}
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/interpolation.png}
+\includegraphics[width=3.5in]{10.png}
 \caption{Linear interpolation in latent space between two images. Smooth transitions demonstrate continuity of the learned latent space.}
 \label{fig:interpolation}
 \end{figure}
@@ -1282,14 +1282,14 @@ SmallNORB & 0.42 & 0.27 & 35.7\% \\ \bottomrule
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/loss_components.png}
+\includegraphics[width=3.5in]{13.png}
 \caption{Evolution of loss components during training showing the interplay between reconstruction and KL divergence terms.}
 \label{fig:loss_components}
 \end{figure}
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/learning_curves.png}
+\includegraphics[width=3.5in]{11.png}
 \caption{Learning curves comparing different $\beta$ values. Higher $\beta$ leads to slower convergence but better final disentanglement.}
 \label{fig:learning_curves}
 \end{figure}
@@ -1298,7 +1298,7 @@ SmallNORB & 0.42 & 0.27 & 35.7\% \\ \bottomrule
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=3.5in]{figures/failure_cases.png}
+\includegraphics[width=3.5in]{12.png}
 \caption{Failure cases showing reconstruction errors. High $\beta$ models struggle with fine details and overlapping shapes.}
 \label{fig:failures}
 \end{figure}

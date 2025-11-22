@@ -18,10 +18,10 @@
 {\footnotesize \textsuperscript{*}Note: Assignment 2 for Deep Generative Models Course}
 }
 
-\author{\IEEEauthorblockN{Taha Majlesi}
+\author{\IEEEauthorblockN{Mohammad Taha Majlesi}
 \IEEEauthorblockA{\textit{Department of Computer Engineering} \\
-\textit{University}\\
-Email: taha.majlesi@example.edu}
+\textit{University of Tehran}\\
+Email: taha.majlesi@ut.ac.ir}
 }
 
 \maketitle
@@ -787,7 +787,7 @@ Training loss (Figure \ref{fig:maf_loss}) shows monotonic NLL decrease; generate
 The MAF model was trained on the MVTec AD capsule dataset over 100 epochs. Training convergence is illustrated in Fig.~\ref{fig:maf_loss}, demonstrating monotonic decrease in negative log-likelihood from initial 12.5 bits/dim to final 8.2 bits/dim.
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=3.5in]{images/maf_loss.png}
+    \includegraphics[width=3.5in]{1.png}
     \caption{MAF training loss (negative log-likelihood) across epochs showing stable convergence without gradient instabilities.}
     \label{fig:maf_loss}
 \end{figure}
@@ -804,13 +804,13 @@ Generated samples obtained through ancestral sampling via inverse MAF transforma
 Quantitative evaluation employs threshold-independent AUROC metric computed on held-out test set comprising 54 normal and 109 anomalous capsule images. Results are visualized through ROC analysis (Fig.~\ref{fig:roc_curve}) and score distribution histograms (Fig.~\ref{fig:score_dist}).
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=3.5in]{images/roc_curve.png}
+    \includegraphics[width=3.5in]{3.png}
     \caption{ROC curve for MAF-based anomaly detection achieving AUROC = 0.72 (95\% CI: [0.66, 0.78]), significantly outperforming random baseline (0.5) and pixel intensity heuristics (0.58).}
     \label{fig:roc_curve}
 \end{figure}
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=3.5in]{images/score_dist.png}
+    \includegraphics[width=3.5in]{2.png}
     \caption{Anomaly score distributions (negative log-likelihood) for normal versus defective samples showing partial separation with overlap region indicating classification uncertainty.}
     \label{fig:score_dist}
 \end{figure}
@@ -863,25 +863,25 @@ Representative $A\to B$ samples (Figures \ref{fig:cyclegan_A2B_*}) exhibit strip
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=3.5in]{images/cyclegan_loss.png}
+    \includegraphics[width=3.5in]{4.png}
     \caption{CycleGAN training dynamics over 200 epochs showing generator adversarial loss, discriminator losses for both domains, cycle consistency loss stabilizing around 0.8, and identity loss maintaining low values ($\approx$0.3), validating training convergence.}
     \label{fig:cyclegan_loss}
 \end{figure}
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=1.1in]{images/cyclegan_A2B_0.png}\hfill
-    \includegraphics[width=1.1in]{images/cyclegan_A2B_1.png}\hfill
-    \includegraphics[width=1.1in]{images/cyclegan_A2B_2.png}
+    \includegraphics[width=1.1in]{5.png}\hfill
+    \includegraphics[width=1.1in]{6.png}\hfill
+    \includegraphics[width=1.1in]{7.png}
     \caption{Horse-to-zebra translation results demonstrating realistic stripe pattern addition while preserving pose, anatomy, and background elements. Minor checkerboard artifacts observed near stripe boundaries.}
     \label{fig:cyclegan_A2B_samples}
 \end{figure}
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=1.1in]{images/cyclegan_B2A_0.png}\hfill
-    \includegraphics[width=1.1in]{images/cyclegan_B2A_1.png}\hfill
-    \includegraphics[width=1.1in]{images/cyclegan_B2A_2.png}
+    \includegraphics[width=1.1in]{8.png}\hfill
+    \includegraphics[width=1.1in]{9.png}\hfill
+    \includegraphics[width=1.1in]{10.png}
     \caption{Zebra-to-horse translation results showing successful stripe removal with natural fur texture generation and consistent anatomical structure preservation.}
     \label{fig:cyclegan_B2A_samples}
 \end{figure}
