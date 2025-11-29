@@ -1,0 +1,85 @@
+# Deep Generative Models - Project Gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# Data files (large datasets)
+*.npz
+*.h5
+*.hdf5
+*.zip
+*.tar.gz
+data/
+datasets/
+
+# Model checkpoints (large files)
+*.pth
+*.pt
+*.ckpt
+*.pkl
+*.h5
+checkpoints/
+models/
+saved_models/
+
+# Generated images and outputs
+*.png
+*.jpg
+*.jpeg
+!**/README*.png
+images/output_*.png
+samples/
+generated/
+
+# Experiment outputs
+experiments/
+runs/
+logs/
+wandb/
+tensorboard_logs/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.log
+*.cache
+.cache/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Kaggle API key (if used)
+kaggle.json
+
+# Large report PDFs (optional - uncomment if needed)
+# *.pdf
+
+# Environment variables
+.env
+.env.local
