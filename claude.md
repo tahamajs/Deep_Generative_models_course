@@ -7,7 +7,9 @@ This document contains all the rules, conventions, and best practices used in th
 ## 🎯 Core Development Rules
 
 ### Code Quality
+
 1. **No Code Duplication**: Make the codes not duplicated and fully structured
+
    - Reuse functions and classes across notebooks when possible
    - Extract common utilities into shared modules
    - Maintain DRY (Don't Repeat Yourself) principle
@@ -18,6 +20,7 @@ This document contains all the rules, conventions, and best practices used in th
    - Well-defined interfaces between components
 
 ### Version Control
+
 3. **Git Commit After Features**: After adding features to the code, you must commit that on git
    - Make atomic commits for each feature
    - Include meaningful commit messages
@@ -28,6 +31,7 @@ This document contains all the rules, conventions, and best practices used in th
 ## 📁 Repository Structure Conventions
 
 ### Standard Folder Structure
+
 Each course assignment (CA1-CA4) follows this structure:
 
 ```
@@ -41,6 +45,7 @@ CA[#]_[Name]/
 ```
 
 ### Naming Conventions
+
 - **Folders**: Use underscores and PascalCase (e.g., `CA1_Variational_Autoencoders/`)
 - **Notebooks**: Use descriptive names (e.g., `code.ipynb`, `CA2_DGM.ipynb`)
 - **Reports**: Use consistent naming (e.g., `DGM_CA1_final_EN.pdf`)
@@ -51,30 +56,36 @@ CA[#]_[Name]/
 ## 📓 Notebook Organization Rules
 
 ### Notebook Structure
+
 All Jupyter notebooks must follow this structure:
 
 1. **Overview/Introduction Cell** (Markdown)
+
    - Brief description of the notebook
    - Learning objectives
    - What will be covered
 
 2. **Setup and Configuration Cell** (Code)
+
    - Consolidated imports at the top
    - Configuration parameters (hyperparameters, paths, etc.)
    - Random seed setup for reproducibility
    - Device configuration (CPU/GPU)
 
 3. **Data Loading and Preprocessing** (Code + Markdown)
+
    - Dataset loading
    - Data preprocessing steps
    - Data visualization if applicable
 
 4. **Model Definition** (Code + Markdown)
+
    - Architecture definitions
    - Explanatory markdown blocks
    - Clear separation of components
 
 5. **Training** (Code + Markdown)
+
    - Training loops
    - Progress monitoring
    - Checkpoint saving
@@ -85,12 +96,14 @@ All Jupyter notebooks must follow this structure:
    - Analysis and interpretation
 
 ### Code Organization in Notebooks
+
 - **Consolidate Imports**: All imports should be in a single cell at the top
 - **Configuration Cell**: Centralize all hyperparameters and settings
 - **Explanatory Markdown**: Add markdown cells between major sections
 - **Educational Clarity**: Include overview cells for educational purposes
 
 ### Example Configuration Cell Structure:
+
 ```python
 # Setup and Configuration
 import random
@@ -120,11 +133,14 @@ latent_dim = 128
 ## 🔬 Reproducibility Requirements
 
 ### Environment Management
+
 1. **Always Use Virtual Environments**
+
    - Use `venv` or `conda` to isolate dependencies
    - Never install packages globally
 
 2. **Package Version Pinning**
+
    - Create `requirements.txt` or `environment.yml`
    - Pin all package versions (e.g., `torch==2.0.1`)
    - Commit dependency files to repository
@@ -134,7 +150,9 @@ latent_dim = 128
    - Document in README
 
 ### Randomness Control
+
 4. **Set Seeds for All Random Sources**
+
    - Python `random` module
    - NumPy random number generator
    - PyTorch random number generator
@@ -146,11 +164,14 @@ latent_dim = 128
    - Use fixed seeds in data splitting
 
 ### Experiment Tracking
+
 6. **Record Git Commit Hash**
+
    - Use `git rev-parse --short HEAD` for each experiment
    - Include in run metadata
 
 7. **Save Comprehensive Metadata**
+
    - Create `run_info.json` for each experiment
    - Include: timestamp, commit hash, hyperparameters, model config, dataset info
    - Save checkpoints with descriptive names
@@ -161,7 +182,9 @@ latent_dim = 128
    - Record memory requirements
 
 ### Data Consistency
+
 9. **Fixed Data Splits**
+
    - Use fixed train/val/test splits
    - Use seeded random splits
    - Document split methodology
@@ -176,13 +199,16 @@ latent_dim = 128
 ## 🧪 Testing and Validation Rules
 
 ### Before Long Training Runs
+
 1. **Smoke Tests**
+
    - Test with small batch sizes (e.g., `batch_size=16`)
    - Run for 1 epoch only
    - Verify forward/backward passes work
    - Check loss values are finite (not NaN/inf)
 
 2. **Shape Verification**
+
    - Assert correct tensor shapes throughout
    - Test encoder/decoder output shapes
    - Verify inverse transformations (for flows)
@@ -193,6 +219,7 @@ latent_dim = 128
    - Ensure checkpoint compatibility
 
 ### Evaluation Checks
+
 4. **Sanity Checks**
    - Visual inspection of generated samples
    - Verify metrics are reasonable
@@ -204,7 +231,9 @@ latent_dim = 128
 ## 💾 Data and Artifact Management
 
 ### Dataset Handling
+
 1. **Download and Caching**
+
    - Use `torchvision` default cache or set `TORCH_HOME` environment variable
    - Document dataset locations
    - Verify dataset integrity
@@ -215,7 +244,9 @@ latent_dim = 128
    - Use shared cache directories when appropriate
 
 ### Model Checkpoints
+
 3. **Saving Conventions**
+
    - Save PyTorch `state_dict()` (`.pth` files)
    - Use descriptive filenames: `model_name_epoch_[#].pth`
    - Save optimizer states if resuming training
@@ -231,6 +262,7 @@ latent_dim = 128
    ```
 
 ### Generated Artifacts
+
 5. **Image Management**
    - Save image grids as PNG/JPG
    - Use consistent naming conventions
@@ -242,6 +274,7 @@ latent_dim = 128
 ## 📝 Documentation Standards
 
 ### README Files
+
 1. **Each CA folder must have a README.md** containing:
    - Assignment overview
    - Quick start instructions
@@ -252,7 +285,9 @@ latent_dim = 128
    - References
 
 ### Code Documentation
+
 2. **Code Comments**
+
    - Explain complex logic
    - Document function parameters and returns
    - Add inline comments for non-obvious operations
@@ -263,6 +298,7 @@ latent_dim = 128
    - Document observations and findings
 
 ### Report Standards
+
 4. **Reports Must Include**
    - Abstract and introduction
    - Methodology
@@ -276,12 +312,15 @@ latent_dim = 128
 ## 🔧 Technical Best Practices
 
 ### Performance
+
 1. **GPU Usage**
+
    - Always use GPU when available (5-10× faster)
    - Check CUDA availability: `torch.cuda.is_available()`
    - Monitor GPU memory usage
 
 2. **Memory Management**
+
    - Use appropriate batch sizes
    - Enable gradient accumulation for large models
    - Use mixed precision training when applicable
@@ -293,6 +332,7 @@ latent_dim = 128
    - Optimize data loading (use multiple workers)
 
 ### Error Handling
+
 4. **Common Issues Prevention**
    - Check for CUDA out of memory errors
    - Add gradient clipping to prevent exploding gradients
@@ -302,21 +342,25 @@ latent_dim = 128
 ### Model-Specific Guidelines
 
 #### VAEs (CA1)
+
 - Monitor KL divergence to prevent collapse
 - Use KL annealing if needed
 - Test reparameterization trick gradient flow
 
 #### Normalizing Flows (CA2)
+
 - Verify invertibility: test inverse mapping
 - Check log-determinant of Jacobian is finite
 - Add small epsilon to prevent division by zero
 
 #### GANs (CA2)
+
 - Monitor for mode collapse
 - Balance generator/discriminator learning rates
 - Use fixed noise vectors for consistent evaluation
 
 #### Diffusion Models (CA3)
+
 - Use appropriate noise schedules
 - Monitor sampling quality
 - Consider DDIM for faster sampling
@@ -326,19 +370,23 @@ latent_dim = 128
 ## 🚫 Things to Avoid
 
 1. **Don't Commit Large Files**
+
    - Use `.gitignore` for datasets, checkpoints, large images
    - Consider Git LFS if necessary
 
 2. **Don't Run Long Training Without Testing**
+
    - Always run smoke tests first
    - Verify code works on small batches
 
 3. **Don't Skip Documentation**
+
    - Document all experiments
    - Explain non-obvious choices
    - Maintain README files
 
 4. **Don't Ignore Reproducibility**
+
    - Always set random seeds
    - Document all hyperparameters
    - Save experiment metadata
@@ -352,12 +400,14 @@ latent_dim = 128
 ## 📚 Additional Guidelines
 
 ### Academic Integrity
+
 - Individual work required for assignments
 - Cite all external sources and code
 - No plagiarism or code sharing
 - AI tools allowed for understanding, not direct answers
 
 ### Workflow
+
 1. **Start Early**: Training takes several hours
 2. **Monitor Progress**: Check reconstructions/generations during training
 3. **Save Often**: Enable auto-save, but save notebooks frequently
@@ -366,6 +416,7 @@ latent_dim = 128
 6. **Document Everything**: Take notes on observations
 
 ### Environment Setup
+
 - Follow the Quick Start guide in main README
 - Use virtual environments (venv or conda)
 - Install dependencies from `requirements.txt` or `environment.yml`
@@ -376,6 +427,7 @@ latent_dim = 128
 ## 🎓 Learning Outcomes Focus
 
 When working on assignments, focus on:
+
 1. Understanding the theoretical foundations
 2. Implementing models correctly
 3. Analyzing results critically
@@ -388,6 +440,7 @@ When working on assignments, focus on:
 ## 📋 Checklist for New Features/Experiments
 
 When adding new features or experiments:
+
 - [ ] Code is structured and not duplicated
 - [ ] Configuration is centralized
 - [ ] Random seeds are set
@@ -404,6 +457,7 @@ When adding new features or experiments:
 ## 🔗 References
 
 For detailed information, refer to:
+
 - Main `README.md` for project overview
 - Individual CA README files for assignment-specific details
 - Course slides in `Slides/` directory
@@ -411,5 +465,5 @@ For detailed information, refer to:
 
 ---
 
-*Last updated: Based on project structure and conventions as of project creation*
-*This document should be updated as new conventions are established*
+_Last updated: Based on project structure and conventions as of project creation_
+_This document should be updated as new conventions are established_
