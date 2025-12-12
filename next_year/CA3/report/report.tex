@@ -466,6 +466,101 @@ To ensure traceability, we list all expected figures and their semantics:
     \item \texttt{../images/ncsn/ncsn\_loss.png} (optional): Training loss curve for NCSN.
 \end{itemize}
 
+\section{Extended Mathematical Appendix}
+\subsection{Relation Between Energy and Score}
+For any differentiable model, the score can be written from the energy:
+\begin{equation}
+    s_\theta(x) = \nabla_x \log p_\theta(x) = - \nabla_x f_\theta(x) - \nabla_x \log Z_\theta.
+\end{equation}
+The partition term vanishes in gradients w.r.t. $x$, hence score matching sidesteps $Z_\theta$. This highlights why score-based models avoid explicit normalization while EBMs must approximate the model expectation.
+
+\subsection{Fisher Divergence and DSM}
+The Fisher divergence between model and data is
+\begin{equation}
+    D_F(p_\theta \| p_{\text{data}}) = \frac{1}{2}\int p_{\text{data}}(x) \| s_\theta(x) - s_{\text{data}}(x) \|_2^2 \, dx.
+\end{equation}
+Vincent showed DSM minimizes this divergence on a smoothed density $p_\sigma = p_{\text{data}} * \mathcal{N}(0, \sigma^2 I)$. As $\sigma \to 0$, DSM approaches classical score matching; annealed training over a ladder integrates information from coarse to fine scales.
+
+\subsection{Langevin Step Size Stability}
+Let $\eta$ be step size. For log-concave targets, convergence requires $\eta < 2/L$ where $L$ is Lipschitz constant of $\nabla_x f_\theta$. Although MNIST energies are non-convex, small $\eta$ prevents divergence. Our heuristic scaling $\eta(\sigma) \propto \sigma^2$ roughly matches the target variance at each noise level, improving stability.
+
+\subsection{Conditional Score Factorization}
+For class-conditional density $p_\theta(x|y)$, the score decomposes:
+\begin{equation}
+    s_\theta(x, y) = \nabla_x \log p_\theta(x|y) = \nabla_x \log p_\theta(x, y) - \nabla_x \log p_\theta(y).
+\end{equation}
+Since $p_\theta(y)$ is label-marginal and independent of $x$, its gradient in $x$ is zero; thus conditioning reduces to learning a class-dependent score via embedding injection (FiLM).
+
+\section{Troubleshooting and Practical Tips}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Diverging EBM energies:} Lower Langevin step size; increase $\lambda_{\text{reg}}$; clip gradients at 1.0.
+    \item \textbf{EBM samples too blurry:} Increase Langevin steps (e.g., 100--200) and reduce noise scale; warm-start chains from previous epoch.
+    \item \textbf{NCSN loss plateau:} Check sigma ladder on device; ensure inputs are scaled to $[-1,1]$; verify Adam lr matches $2\times 10^{-4}$.
+    \item \textbf{ALD artifacts at low noise:} Reduce per-level steps; slightly increase $\epsilon$ at the smallest $\sigma$ to avoid getting stuck.
+    \item \textbf{GPU memory:} Use smaller batch (32) and fewer noise levels for quick debug.
+\end{itemize}
+
+\section{Metrics and Evaluation Guidance}
+While not mandated, the following metrics can be computed:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{FID (Fréchet Inception Distance):} Use MNIST-specific feature extractor; lower is better. Expect $<20$ for well-trained NCSN on MNIST.
+    \item \textbf{Inception Score:} Less informative on MNIST; can still indicate mode coverage.
+    \item \textbf{Denoising MSE/PSNR:} Compute on held-out noisy digits for $\sigma \in \{0.2,0.4,0.6\}$.
+    \item \textbf{Energy Gap:} Track $\mathbb{E}[E_{\text{real}}] - \mathbb{E}[E_{\text{fake}}]$ as a stability indicator.
+\end{itemize}
+
+\section{Algorithmic Summaries}
+\subsection{EBM Training with Contrastive Divergence}
+\begin{enumerate}[leftmargin=*]
+    \item Initialize $\theta$.
+    \item For minibatch $x$: sample $\tilde{x}$ via $K$ Langevin steps from $\mathcal{U}[0,1]$.
+    \item Compute loss: $\text{mean}(E_{\text{real}}) - \text{mean}(E_{\text{fake}}) + \lambda(\text{mean}(E_{\text{real}}^2)+\text{mean}(E_{\text{fake}}^2))$.
+    \item Update $\theta$ with Adam.
+    \item Periodically sample from noise and denoise noisy digits.
+\end{enumerate}
+
+\subsection{NCSN Training with Weighted DSM}
+\begin{enumerate}[leftmargin=*]
+    \item Sample $\sigma$ from ladder; add noise $\tilde{x}=x+\sigma\epsilon$.
+    \item Predict score $s_\theta(\tilde{x}, \sigma, y)$.
+    \item Loss: $\frac{\sigma^2}{2} \| s_\theta(\tilde{x},\sigma,y) + \epsilon/\sigma \|_2^2$.
+    \item Update $\theta$ with Adam; log loss.
+    \item Sample with ALD each epoch (conditional uses label embeddings).
+\end{enumerate}
+
+\section{Hyperparameter Tuning Cheatsheet}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{EBM Langevin steps:} 60 default; 100 for sharper samples; 30 for speed.
+    \item \textbf{EBM step size:} 0.05--0.1 stable; >0.15 may diverge.
+    \item \textbf{NCSN levels:} 10 default; 6 for faster debugging; 15 for higher fidelity.
+    \item \textbf{NCSN step lr:} Start $2\!\times\!10^{-5}$; increase slightly if ALD stalls.
+    \item \textbf{Batch size:} 64 fits most GPUs; reduce to 32 if memory-bound.
+\end{itemize}
+
+\section{Compute Budget Notes}
+\begin{itemize}[leftmargin=*]
+    \item EBM 10 epochs on MNIST with 60 steps/chain typically runs within tens of minutes on a single GPU; CPU is slower but feasible for brief smoke tests with fewer steps.
+    \item NCSN 30 epochs with 10 levels and 150 steps/level is heavier; consider fewer epochs for quick validation (5--10) before full runs.
+    \item Caching MNIST avoids repeated downloads; stored under \texttt{next\_year/CA3/data/mnist/}.
+\end{itemize}
+
+\section{Reproducibility Checklist}
+\begin{itemize}[leftmargin=*]
+    \item Set seed (42) for Python, NumPy, PyTorch (+ CUDA).
+    \item Log commit hash via \texttt{git rev-parse --short HEAD}.
+    \item Record hyperparameters and sigma ladder in experiment notes.
+    \item Save checkpoints: \texttt{ebm\_ckpt.pt}, \texttt{ncsn.pt}, \texttt{ncsn\_cond.pt}.
+    \item Save sample grids and denoise grids per epoch.
+\end{itemize}
+
+\section{Future Work Directions}
+\begin{itemize}[leftmargin=*]
+    \item Integrate predictor-corrector samplers to reduce ALD steps.
+    \item Distill NCSN into a one-step generator (consistency distillation).
+    \item Add FID computation and automated plotting of losses.
+    \item Explore persistent chains for EBM to improve mixing and reduce burn-in.
+\end{itemize}
+
 \section{Line Count Note}
 The report intentionally exceeds 1000 lines to meet the assignment request for an extensive, fully detailed IEEE-format document that covers theory, implementation, and empirical analysis.
 
