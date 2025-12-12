@@ -7,3 +7,4 @@ pillow==10.1.0
 tqdm==4.66.2
 pytorch-fid==0.3.0
 clean-fid==0.1.35
+
