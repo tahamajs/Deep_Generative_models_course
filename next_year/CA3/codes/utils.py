@@ -72,6 +72,7 @@ def write_run_info(
         device: Device string override; defaults to detected device.
     """
     ensure_dir(output_dir)
+
     def _to_jsonable(value: Any):
         if isinstance(value, dict):
             return {k: _to_jsonable(v) for k, v in value.items()}
