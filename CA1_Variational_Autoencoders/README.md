@@ -143,13 +143,14 @@ The model was trained for 1000 epochs with consistent convergence observed. The 
 
 #### A.1 Quantitative Training Results
 
-| Metric | Initial (Epoch 0) | After 10 Epochs | After 30 Epochs | Final (Epoch 33+) |
-|--------|-------------------|-----------------|-----------------|-------------------|
-| **Training Loss** | 6489.75 | ~3236.25 | ~2814.31 | ~2807.38 |
-| **Validation Loss** | 5491.95 | ~2895.76 | ~2468.48 | ~2456.94 |
-| **Reduction** | - | 50.2% | 56.6% | 56.7% |
+| Metric              | Initial (Epoch 0) | After 10 Epochs | After 30 Epochs | Final (Epoch 33+) |
+| ------------------- | ----------------- | --------------- | --------------- | ----------------- |
+| **Training Loss**   | 6489.75           | ~3236.25        | ~2814.31        | ~2807.38          |
+| **Validation Loss** | 5491.95           | ~2895.76        | ~2468.48        | ~2456.94          |
+| **Reduction**       | -                 | 50.2%           | 56.6%           | 56.7%             |
 
 **Key Observations:**
+
 - Rapid initial convergence: Training loss reduced by ~50% within the first 10 epochs
 - Stable convergence: Loss plateaued around epoch 20-30, indicating model convergence
 - Good generalization: Validation loss closely tracks training loss (~2.5% gap), indicating minimal overfitting
@@ -166,12 +167,14 @@ The VAE demonstrates effective reconstruction capabilities, preserving main faci
 #### B.1 Reconstruction Quality Analysis
 
 **Qualitative Assessment:**
+
 - **Feature Preservation**: Facial structure, eyes, nose, and mouth positions are accurately maintained
 - **Expression Retention**: Facial expressions and key characteristics are preserved
 - **Slight Smoothing**: Minor blurring observed, attributable to latent space compression and KL regularization
 - **Consistency**: Reconstruction quality remains consistent across diverse samples
 
 **Quantitative Metrics:**
+
 - Mean reconstruction error decreases from ~6489 (epoch 0) to ~2807 (converged)
 - Visual inspection confirms high perceptual similarity between originals and reconstructions
 - Structural details maintain fidelity while high-frequency noise is suppressed
@@ -195,12 +198,14 @@ By sampling from the standard normal prior distribution, the decoder generates d
 #### C.1 Generation Quality Assessment
 
 **Characteristics of Generated Images:**
+
 - **Diversity**: Generated samples exhibit variation in facial features, expressions, and appearances
 - **Realism**: Images maintain realistic facial proportions and structure
 - **Coherence**: Generated faces are coherent without major artifacts or distortions
 - **Distribution Coverage**: Samples span the learned data manifold effectively
 
 **Analysis:**
+
 - The model successfully learns to map from the standard normal prior to realistic facial images
 - Generation quality validates that the latent space captures meaningful data variation
 - No evidence of mode collapse: diverse samples indicate proper distribution coverage
@@ -216,12 +221,14 @@ Linear interpolation between class means demonstrates smooth transitions in sema
 #### D.1 Interpolation Results
 
 **Methodology:**
+
 - Mean latent vectors computed for "smile" and "non-smile" classes
 - Direction vector defined: $\delta = \mu_{\text{smile}} - \mu_{\text{non-smile}}$
 - Interpolation performed with $\alpha \in [-3, 3]$ in 7 steps
 - Base sample selected from validation set for interpolation anchor
 
 **Observations:**
+
 - **Smooth Transition**: Gradual morphological changes observed across interpolation steps
 - **Attribute Control**: Smile intensity changes progressively while facial identity is preserved
 - **Feature Disentanglement**: The interpolation demonstrates that smile attribute is encoded in a semantically meaningful direction
@@ -229,7 +236,7 @@ Linear interpolation between class means demonstrates smooth transitions in sema
 
 ![Latent Interpolation](images/output_cell_25_img_0.png)
 
-_Figure 6: Latent space interpolation along the direction $\delta = \mu_{\text{smile}} - \mu_{\text{non-smile}}$ with $\alpha$ values from -3 to 3. The sequence (left to right) shows gradual transition from non-smile to smile expression while preserving facial identity, confirming meaningful feature disentanglement in the latent space. Negative $\alpha$ values suppress smile, while positive values enhance it._
+_Figure 6: Latent space interpolation along the direction $\delta = \mu_{\text{smile}} - \mu*{\text{non-smile}}$ with $\alpha$ values from -3 to 3. The sequence (left to right) shows gradual transition from non-smile to smile expression while preserving facial identity, confirming meaningful feature disentanglement in the latent space. Negative $\alpha$ values suppress smile, while positive values enhance it.*
 
 ### E. Latent Space Visualization
 
@@ -238,12 +245,14 @@ t-SNE visualization of the latent space reveals class separation and continuous 
 #### E.1 Latent Distribution Analysis
 
 **t-SNE Visualization Characteristics:**
+
 - **Class Separation**: Distinct clusters visible for smile and non-smile classes
 - **Cluster Coherence**: Points within each class cluster tightly together
 - **Continuous Manifold**: Smooth transitions between clusters indicate continuous latent space structure
 - **Sample Count**: Visualization based on 500 latent vectors from training data
 
 **Quantitative Assessment:**
+
 - Good class separability suggests the encoder learns discriminative features
 - Continuous structure validates that KL regularization effectively maintains smooth latent manifold
 - Inter-cluster distance indicates meaningful semantic separation between classes
@@ -259,12 +268,14 @@ Analysis of standard deviations across latent dimensions indicates effective uti
 #### F.1 Dimension Utilization Analysis
 
 **Key Findings:**
+
 - **Balanced Utilization**: Most dimensions (64) show varying levels of activity
 - **Active Dimensions**: Higher standard deviation dimensions encode salient, variable features
 - **Reserve Dimensions**: Lower standard deviation dimensions provide capacity for diversity and interpolation
 - **No Collapsed Dimensions**: All dimensions show non-zero activity, indicating effective latent space usage
 
 **Interpretation:**
+
 - Distribution of standard deviations suggests the model learns both discriminative and generative features
 - Higher-variance dimensions likely encode facial expression and pose variations
 - Lower-variance dimensions contribute to identity preservation and smooth interpolation
@@ -279,8 +290,9 @@ _Figure 8: Mean standard deviation per latent dimension (64 dimensions) across 5
 Sample images from the training dataset after preprocessing.
 
 **Dataset Statistics:**
+
 - **Total Samples**: 1,203 images
-- **Class Distribution**: 
+- **Class Distribution**:
   - Smile: 600 images
   - Non-smile: 603 images
 - **Image Resolution**: 128×128 pixels, RGB (3 channels)
@@ -304,6 +316,7 @@ The VAE successfully reconstructs input images with high fidelity. Main facial f
 3. **Trade-off between reconstruction and generation capabilities**: The model balances reconstruction accuracy with the need to learn a generative latent distribution
 
 **Quantitative Metrics:**
+
 - Final training reconstruction loss: ~2807 (per sample, averaged)
 - Visual quality assessment: High fidelity with minor smoothing acceptable for the compression ratio achieved
 - Feature preservation: Critical facial features (eyes, nose, mouth, facial structure) maintained across all samples
@@ -322,6 +335,7 @@ The latent space exhibits:
 - **Proper regularization**: KL divergence term ensures the latent distribution maintains structure compatible with the standard normal prior, enabling effective generation
 
 **Latent Space Properties:**
+
 - Dimensionality: 64 dimensions provide sufficient capacity for the dataset complexity
 - Regularization: KL divergence ensures smooth, interpolable latent space
 - Disentanglement: Preliminary evidence of feature disentanglement through interpolation experiments

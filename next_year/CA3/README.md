@@ -50,3 +50,4 @@ To validate setup without long runs:
 - Keep code DRY and reuse utilities in `codes/utils.py`.
 - Do not commit large datasets or checkpoints; rely on the default MNIST download cache.
 - Report drafts live in `report/`; keep IEEE format per directory rules.
+
