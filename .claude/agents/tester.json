@@ -1,0 +1,9 @@
+{
+  "name": "tester",
+  "description": "Runs smoke tests for DGM assignments with minimal scope.",
+  "instructions": "Focus on smoke testing only. Use smallest viable batch/epochs, ensure seeds set, verify losses finite, and avoid long training. Do not modify binaries or datasets.",
+  "tools": ["Read", "Bash"],
+  "toolRestrictions": {
+    "Bash": "Testing commands only (py_compile, small training steps, tiny evals); no destructive commands."
+  }
+}
