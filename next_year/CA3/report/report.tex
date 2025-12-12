@@ -1,0 +1,95 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+
+\title{Energy-Based and Score-Based Generative Models on MNIST}
+
+\author{\IEEEauthorblockN{Student Name \quad Student Number}
+\IEEEauthorblockA{School of Electrical and Computer Engineering\\
+University of Tehran\\
+Email: student@example.com}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report implements and evaluates two generative modeling families for MNIST digits: an Energy-Based Model (EBM) trained with contrastive divergence and Langevin dynamics, and a Noise Conditional Score Network (NCSN) trained with weighted denoising score matching and annealed Langevin sampling. We describe architectures, training settings, sampling behavior, and denoising capability across multiple noise levels.
+\end{abstract}
+
+\section{Introduction}
+Energy-based models directly learn an unnormalized density through an energy function, while score-based models learn the gradient of the log-density. We follow the HW3 specification to build a convolutional EBM and an NCSN with multi-scale Gaussian noise perturbations. Both models are evaluated on unconditional generation and image denoising.
+
+\section{Methods}
+\subsection{Energy-Based Model}
+The EBM uses the convolutional stack specified in the assignment: five convolutional blocks with LeakyReLU, an adaptive average pooling layer, and a linear head producing scalar energies. Training follows maximum likelihood via contrastive divergence with a data term (pushing real energies down and fake energies up) and a quadratic regularizer to prevent energy explosion. Fake samples are obtained by Langevin dynamics initialized from uniform noise in $[0,1]$.
+
+\subsection{Score-Based Model (NCSN)}
+The NCSN adopts Gaussian Fourier feature embeddings for noise scales and FiLM-conditioned residual blocks. The encoder--decoder backbone mirrors the provided table: three downsampling stages and two upsampling stages with skip connections. The network is trained by weighted denoising score matching over a logarithmic noise ladder from $\sigma_{\text{begin}}=30$ to $\sigma_{\text{end}}=0.01$ (10 levels). Annealed Langevin Dynamics (ALD) performs sampling by gradually decreasing noise. A conditional variant adds label embeddings.
+
+\section{Experimental Setup}
+\subsection{Data and Preprocessing}
+MNIST is loaded via \texttt{torchvision}. For EBM, images remain in $[0,1]$. For NCSN, images are scaled to $[-1,1]$. All runs use fixed seeds, batch size 64, and Adam optimizer.
+
+\subsection{Hyperparameters}
+\begin{itemize}
+    \item EBM: epochs=10, learning rate $2\times10^{-4}$, $\lambda_{\text{reg}}=10^{-3}$, Langevin step size $0.1$, 60 steps.
+    \item NCSN: epochs=30, learning rate $2\times10^{-4}$, 150 Langevin steps per noise level, step size $2\times10^{-5}$ scaled per noise.
+    \item Conditional NCSN trains with digit labels embedded and added to noise embeddings.
+\end{itemize}
+
+\section{Results}
+\subsection{EBM Generation and Denoising}
+Figure~\ref{fig:ebm_samples} shows EBM samples drawn from uniform noise after training. Denoising examples via Langevin refinement of noisy digits appear in Figure~\ref{fig:ebm_denoise}. Energies for real versus fake batches remained separated, indicating stable training.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../images/ebm/ebm_samples_epoch10.png}
+    \caption{EBM samples from uniform noise after 10 epochs.}
+    \label{fig:ebm_samples}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../images/ebm/ebm_denoised_epoch10.png}
+    \caption{EBM denoising results at the end of training.}
+    \label{fig:ebm_denoise}
+\end{figure}
+
+\subsection{NCSN Sampling}
+Unconditional ALD samples across noise levels are shown in Figure~\ref{fig:ncsn_samples}. Conditional sampling (Figure~\ref{fig:ncsn_cond}) uses labels 0--9 repeated to enforce digit identity.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../images/ncsn/samples_epoch30.png}
+    \caption{Unconditional NCSN samples after 30 epochs.}
+    \label{fig:ncsn_samples}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../images/ncsn_cond/samples_epoch30.png}
+    \caption{Conditional NCSN samples (digits 0--9).}
+    \label{fig:ncsn_cond}
+\end{figure}
+
+\subsection{Denoising with ALD}
+We corrupt validation digits with Gaussian noise levels $\sigma \in \{0.2, 0.4, 0.6\}$ and run ALD using a single noise scale. Figure~\ref{fig:ncsn_denoise} overlays noisy and restored images. Lower noise levels are nearly perfectly recovered; higher noise still shows legible digits but with visible artifacts.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\linewidth]{../images/ncsn_infer/denoised_0.40.png}
+    \caption{NCSN denoising for $\sigma=0.4$. Rows: noisy inputs then restored outputs.}
+    \label{fig:ncsn_denoise}
+\end{figure}
+
+\section{Discussion}
+EBM training is sensitive to Langevin step size; overly large steps produce blurred samples, while too small steps stall mixing. The quadratic energy penalty mitigates divergence. NCSN benefits from the noise ladder: early large-$\sigma$ phases stabilize training, and ALD traverses from coarse to fine detail. Conditional sampling significantly improves digit fidelity for underrepresented classes.
+
+\section{Conclusion}
+The implemented pipelines satisfy HW3 requirements: modular Python code for EBM and NCSN, reproducible hyperparameters, logging of energies and losses, and generation/denoising demos. Future work includes longer training, FID evaluation, and faster samplers (e.g., DDIM-style for scores).
+
+\end{document}
