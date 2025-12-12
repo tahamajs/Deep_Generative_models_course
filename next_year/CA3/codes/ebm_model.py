@@ -2,6 +2,7 @@
 Convolutional Energy-Based Model for MNIST.
 Architecture follows the HW3 specification table.
 """
+
 import torch
 from torch import nn
 

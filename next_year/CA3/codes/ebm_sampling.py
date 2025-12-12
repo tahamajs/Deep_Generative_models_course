@@ -1,6 +1,7 @@
 """
 Langevin dynamics utilities for Energy-Based Models.
 """
+
 import torch
 from torch import nn
 from .config import EBMConfig

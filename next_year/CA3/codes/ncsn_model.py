@@ -2,6 +2,7 @@
 Noise Conditional Score Network for MNIST (unconditional + class-conditional).
 Implements Gaussian Fourier embeddings and FiLM-conditioned residual blocks.
 """
+
 from typing import Tuple, Optional
 import torch
 from torch import nn
@@ -30,7 +31,11 @@ class AdaptiveResBlock(nn.Module):
         self.norm2 = nn.GroupNorm(32, out_ch)
         self.conv2 = nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1)
         self.emb_proj = nn.Linear(embed_dim, out_ch * 2)
-        self.skip = nn.Conv2d(in_ch, out_ch, kernel_size=1) if in_ch != out_ch else nn.Identity()
+        self.skip = (
+            nn.Conv2d(in_ch, out_ch, kernel_size=1)
+            if in_ch != out_ch
+            else nn.Identity()
+        )
 
     def forward(self, x: torch.Tensor, emb: torch.Tensor) -> torch.Tensor:
         h = self.norm1(x)
@@ -75,7 +80,9 @@ class ScoreNet(nn.Module):
         if self.conditional:
             self.label_emb = nn.Embedding(cfg.num_classes, cfg.embed_dim)
 
-    def forward(self, x: torch.Tensor, sigma: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, sigma: torch.Tensor, y: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
         emb = self.sigma_embed(sigma)
         if self.conditional:
             if y is None:

@@ -2,6 +2,7 @@
 Central configuration dataclasses for CA3 assignments.
 All defaults align with the HW3 specification.
 """
+
 from dataclasses import dataclass, field
 from pathlib import Path
 import torch

@@ -1,6 +1,7 @@
 """
 Inference helpers for the trained EBM: generation from noise and denoising.
 """
+
 from pathlib import Path
 import torch
 

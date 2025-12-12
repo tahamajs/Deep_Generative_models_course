@@ -1,6 +1,7 @@
 """
 Sampling and denoising utilities for trained NCSN models.
 """
+
 from pathlib import Path
 from typing import Optional, Sequence
 import torch
@@ -12,7 +13,9 @@ from .ncsn_sampling import sample, annealed_langevin_dynamics
 from .utils import save_grid, ensure_dir
 
 
-def load_model(checkpoint: Path, cfg: NCSNConfig, conditional: bool = False) -> ScoreNet:
+def load_model(
+    checkpoint: Path, cfg: NCSNConfig, conditional: bool = False
+) -> ScoreNet:
     cfg.conditional = conditional
     model = ScoreNet(cfg).to(cfg.device)
     state = torch.load(checkpoint, map_location=cfg.device)
@@ -56,9 +59,17 @@ def main():
     paths = RunPaths()
     paths.ensure()
     cfg = NCSNConfig()
-    generate_and_denoise(paths.images / "ncsn" / "ncsn.pt", paths.images / "ncsn_infer", cfg, conditional=False)
     generate_and_denoise(
-        paths.images / "ncsn_cond" / "ncsn_cond.pt", paths.images / "ncsn_cond_infer", cfg, conditional=True
+        paths.images / "ncsn" / "ncsn.pt",
+        paths.images / "ncsn_infer",
+        cfg,
+        conditional=False,
+    )
+    generate_and_denoise(
+        paths.images / "ncsn_cond" / "ncsn_cond.pt",
+        paths.images / "ncsn_cond_infer",
+        cfg,
+        conditional=True,
     )
 
 

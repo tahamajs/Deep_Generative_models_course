@@ -1,6 +1,7 @@
 """
 Annealed Langevin Dynamics sampling and denoising for NCSN.
 """
+
 from typing import Optional
 import torch
 from torch import nn
@@ -9,7 +10,11 @@ from .config import NCSNConfig
 
 @torch.no_grad()
 def annealed_langevin_dynamics(
-    model: nn.Module, cfg: NCSNConfig, sigmas: torch.Tensor, x: torch.Tensor, y: Optional[torch.Tensor] = None
+    model: nn.Module,
+    cfg: NCSNConfig,
+    sigmas: torch.Tensor,
+    x: torch.Tensor,
+    y: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     for sigma in sigmas:
         step_size = cfg.step_lr * (sigma / sigmas[-1]) ** 2
@@ -22,8 +27,15 @@ def annealed_langevin_dynamics(
 
 
 @torch.no_grad()
-def sample(model: nn.Module, cfg: NCSNConfig, num_samples: int, y: Optional[torch.Tensor] = None) -> torch.Tensor:
-    x = torch.randn(num_samples, cfg.channels, cfg.image_size, cfg.image_size, device=cfg.device)
+def sample(
+    model: nn.Module,
+    cfg: NCSNConfig,
+    num_samples: int,
+    y: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
+    x = torch.randn(
+        num_samples, cfg.channels, cfg.image_size, cfg.image_size, device=cfg.device
+    )
     sigmas = cfg.sigmas
     return annealed_langevin_dynamics(model, cfg, sigmas, x, y)
 

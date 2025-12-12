@@ -2,6 +2,7 @@
 Training loop for the MNIST Energy-Based Model with Langevin sampling.
 Saves sample grids during training and checkpoints the model.
 """
+
 from pathlib import Path
 from typing import Dict, Any
 import torch
@@ -15,7 +16,9 @@ from .ebm_sampling import LangevinSampler, sample_from_noise
 from .utils import save_grid, set_seed, ensure_dir
 
 
-def train(cfg_data: DataConfig, cfg_model: EBMConfig, output_dir: Path) -> Dict[str, Any]:
+def train(
+    cfg_data: DataConfig, cfg_model: EBMConfig, output_dir: Path
+) -> Dict[str, Any]:
     set_seed(cfg_data.seed)
     train_loader, test_loader = mnist_dataloaders(cfg_data)
     device = cfg_model.device
@@ -29,7 +32,9 @@ def train(cfg_data: DataConfig, cfg_model: EBMConfig, output_dir: Path) -> Dict[
     checkpoint_path = output_dir / "ebm_ckpt.pt"
 
     for epoch in range(1, cfg_model.epochs + 1):
-        progress = tqdm(train_loader, desc=f"EBM Epoch {epoch}/{cfg_model.epochs}", leave=False)
+        progress = tqdm(
+            train_loader, desc=f"EBM Epoch {epoch}/{cfg_model.epochs}", leave=False
+        )
         for step, (x_real, _) in enumerate(progress, start=1):
             x_real = x_real.to(device)
             x_fake = sampler(torch.rand_like(x_real))
@@ -38,7 +43,9 @@ def train(cfg_data: DataConfig, cfg_model: EBMConfig, output_dir: Path) -> Dict[
             E_fake = model(x_fake)
 
             data_term = E_real.mean() - E_fake.mean()
-            reg_term = cfg_model.lambda_reg * (E_real.pow(2).mean() + E_fake.pow(2).mean())
+            reg_term = cfg_model.lambda_reg * (
+                E_real.pow(2).mean() + E_fake.pow(2).mean()
+            )
             loss = data_term + reg_term
 
             optimizer.zero_grad()
@@ -58,19 +65,28 @@ def train(cfg_data: DataConfig, cfg_model: EBMConfig, output_dir: Path) -> Dict[
 
         # Save training samples each epoch
         with torch.no_grad():
-            samples = sample_from_noise(model, cfg_model, (cfg_model.sample_grid, 1, 28, 28))
+            samples = sample_from_noise(
+                model, cfg_model, (cfg_model.sample_grid, 1, 28, 28)
+            )
             save_grid(samples, output_dir / f"ebm_samples_epoch{epoch}.png", nrow=4)
 
             # Denoising a few test digits via Langevin starting from noisy images
             x_test, _ = next(iter(test_loader))
-            x_test = x_test[:cfg_model.sample_grid].to(device)
+            x_test = x_test[: cfg_model.sample_grid].to(device)
             noise = torch.randn_like(x_test) * 0.3
             noisy = (x_test + noise).clamp(0.0, 1.0)
             denoised = sampler(noisy)
             save_grid(noisy, output_dir / f"ebm_noisy_epoch{epoch}.png", nrow=4)
             save_grid(denoised, output_dir / f"ebm_denoised_epoch{epoch}.png", nrow=4)
 
-        torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(), "epoch": epoch}, checkpoint_path)
+        torch.save(
+            {
+                "model": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "epoch": epoch,
+            },
+            checkpoint_path,
+        )
 
     return history
 
