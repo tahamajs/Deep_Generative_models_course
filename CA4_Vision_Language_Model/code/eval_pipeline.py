@@ -58,7 +58,9 @@ def load_splits(cfg: EvalConfig) -> Tuple[DatasetDict, PaliGemmaProcessor]:
     return splits, processor
 
 
-def preprocess_function(batch: Dict[str, Any], processor: PaliGemmaProcessor, cfg: EvalConfig) -> Dict[str, Any]:
+def preprocess_function(
+    batch: Dict[str, Any], processor: PaliGemmaProcessor, cfg: EvalConfig
+) -> Dict[str, Any]:
     questions = batch["problem"]
     images = batch["image"]
     answers = batch["solution"]
@@ -119,7 +121,10 @@ def to_dataloaders(
         for key in ["pixel_values", "input_ids", "labels"]:
             if key in collated_batch and collated_batch[key]:
                 collated_batch[key] = torch.stack(
-                    [item if torch.is_tensor(item) else torch.tensor(item) for item in collated_batch[key]]
+                    [
+                        item if torch.is_tensor(item) else torch.tensor(item)
+                        for item in collated_batch[key]
+                    ]
                 )
         return collated_batch
 
@@ -133,7 +138,9 @@ def to_dataloaders(
     return processed_loader, original_loader
 
 
-def load_models(cfg: EvalConfig) -> Tuple[PaliGemmaForConditionalGeneration, PaliGemmaForConditionalGeneration]:
+def load_models(
+    cfg: EvalConfig,
+) -> Tuple[PaliGemmaForConditionalGeneration, PaliGemmaForConditionalGeneration]:
     logger.info("Loading base model: %s", cfg.base_model_path)
     base_model = PaliGemmaForConditionalGeneration.from_pretrained(
         cfg.base_model_path,
@@ -190,25 +197,43 @@ def evaluate(cfg: EvalConfig) -> Dict[str, Any]:
 
             labels_list_batch = processed_batch["labels"]
             finetuned_outputs = finetuned_model.generate(
-                pixel_values=pixel_values, input_ids=input_ids, max_new_tokens=50, early_stopping=True
+                pixel_values=pixel_values,
+                input_ids=input_ids,
+                max_new_tokens=50,
+                early_stopping=True,
             )
             base_outputs = base_model.generate(
-                pixel_values=pixel_values, input_ids=input_ids, max_new_tokens=50, early_stopping=True
+                pixel_values=pixel_values,
+                input_ids=input_ids,
+                max_new_tokens=50,
+                early_stopping=True,
             )
 
-            finetuned_texts = processor.tokenizer.batch_decode(finetuned_outputs, skip_special_tokens=True)
-            base_texts = processor.tokenizer.batch_decode(base_outputs, skip_special_tokens=True)
+            finetuned_texts = processor.tokenizer.batch_decode(
+                finetuned_outputs, skip_special_tokens=True
+            )
+            base_texts = processor.tokenizer.batch_decode(
+                base_outputs, skip_special_tokens=True
+            )
 
             labels_for_decoding = labels_list_batch.clone()
-            labels_for_decoding[labels_for_decoding == -100] = processor.tokenizer.pad_token_id
-            label_texts = processor.tokenizer.batch_decode(labels_for_decoding, skip_special_tokens=True)
+            labels_for_decoding[labels_for_decoding == -100] = (
+                processor.tokenizer.pad_token_id
+            )
+            label_texts = processor.tokenizer.batch_decode(
+                labels_for_decoding, skip_special_tokens=True
+            )
 
             for i, label in enumerate(label_texts):
                 global_idx = batch_counter * cfg.batch_size + i
                 image_tensor = original_batch["image"][i]
-                image_np = (image_tensor.permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
+                image_np = (image_tensor.permute(1, 2, 0).cpu().numpy() * 255).astype(
+                    np.uint8
+                )
                 pil_image = Image.fromarray(image_np)
-                image_path = os.path.join(cfg.output_dir, f"eval_image_{global_idx}.png")
+                image_path = os.path.join(
+                    cfg.output_dir, f"eval_image_{global_idx}.png"
+                )
                 pil_image.save(image_path)
 
                 evaluation_results.append(
@@ -225,7 +250,9 @@ def evaluate(cfg: EvalConfig) -> Dict[str, Any]:
     finetuned_preds = [res["finetuned_prediction"] for res in evaluation_results]
     base_preds = [res["base_model_prediction"] for res in evaluation_results]
     labels = [res["ground_truth"] for res in evaluation_results]
-    finetuned_rouge = rouge_metric.compute(predictions=finetuned_preds, references=labels)
+    finetuned_rouge = rouge_metric.compute(
+        predictions=finetuned_preds, references=labels
+    )
     base_rouge = rouge_metric.compute(predictions=base_preds, references=labels)
     finetuned_acc = calculate_accuracy(evaluation_results, "finetuned_prediction")
     base_acc = calculate_accuracy(evaluation_results, "base_model_prediction")
@@ -243,14 +270,40 @@ def evaluate(cfg: EvalConfig) -> Dict[str, Any]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate PaliGemma fine-tuned model vs base.")
-    parser.add_argument("--dataset-split", default="train[:20%]", help='HF split string, e.g. "train[:3%]".')
-    parser.add_argument("--batch-size", type=int, default=8, help="Evaluation batch size.")
-    parser.add_argument("--max-length", type=int, default=512, help="Max sequence length.")
-    parser.add_argument("--output-dir", default="./evaluation_images_comparison", help="Where to save eval images.")
-    parser.add_argument("--output-json", default="full_evaluation_results_comparison.json", help="Results JSON path.")
-    parser.add_argument("--base-model", default="./paligemma-3b-mix-224", help="Base (pretrained) model path or ID.")
-    parser.add_argument("--finetuned-model", default="./final_merged_paligemma_model", help="Fine-tuned merged model path.")
+    parser = argparse.ArgumentParser(
+        description="Evaluate PaliGemma fine-tuned model vs base."
+    )
+    parser.add_argument(
+        "--dataset-split",
+        default="train[:20%]",
+        help='HF split string, e.g. "train[:3%]".',
+    )
+    parser.add_argument(
+        "--batch-size", type=int, default=8, help="Evaluation batch size."
+    )
+    parser.add_argument(
+        "--max-length", type=int, default=512, help="Max sequence length."
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="./evaluation_images_comparison",
+        help="Where to save eval images.",
+    )
+    parser.add_argument(
+        "--output-json",
+        default="full_evaluation_results_comparison.json",
+        help="Results JSON path.",
+    )
+    parser.add_argument(
+        "--base-model",
+        default="./paligemma-3b-mix-224",
+        help="Base (pretrained) model path or ID.",
+    )
+    parser.add_argument(
+        "--finetuned-model",
+        default="./final_merged_paligemma_model",
+        help="Fine-tuned merged model path.",
+    )
     return parser.parse_args()
 
 

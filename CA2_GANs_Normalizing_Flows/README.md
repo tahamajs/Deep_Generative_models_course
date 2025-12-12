@@ -12,6 +12,13 @@ This assignment implements two powerful generative modeling approaches: **Genera
 - Evaluate generative quality using FID scores
 - Understand adversarial training and invertible transformations
 
+## Quick Start
+
+- Create a virtual environment (Python 3.10 recommended): `python -m venv .venv && source .venv/bin/activate`
+- Install pinned dependencies: `pip install -r requirements.txt`
+- Open notebooks in Jupyter/Lab: `jupyter lab code/CA2_GANs_and_NormalizingFlows_main.ipynb`
+- Hardware: GPU recommended; CPU is suitable for smoke-level checks only.
+
 ## Results and Performance
 
 ### Training Results Summary
@@ -214,7 +221,7 @@ Based on the training results, the following improvements could be implemented:
 ### Technical Requirements
 
 - Python 3.8+
-- PyTorch 1.12+
+- PyTorch 1.12+ (2.1.2 pinned in `requirements.txt`)
 - CUDA-compatible GPU (recommended)
 - Libraries: `torchvision`, `numpy`, `matplotlib`, `scipy`, `pytorch-fid`
 
@@ -222,13 +229,11 @@ Based on the training results, the following improvements could be implemented:
 
 ```bash
 # Create virtual environment
-python -m venv dgm_env
-source dgm_env/bin/activate  # On Windows: dgm_env\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install dependencies
-pip install torch torchvision torchaudio
-pip install numpy matplotlib scipy
-pip install pytorch-fid
+# Install dependencies (CPU wheels shown; pick CUDA wheels if needed)
+pip install -r requirements.txt
 ```
 
 ## Core Concepts Explained
@@ -312,67 +317,62 @@ FID measures distribution similarity using Inception features:
 
 ### Random Seeds
 
-```python
-seed = 42
-torch.manual_seed(seed)
-torch.cuda.manual_seed_all(seed)
-np.random.seed(seed)
-```
+- Configuration cells in both notebooks set `seed=42` and enable CUDA determinism when available.
+- Keep fixed transforms and dataset splits when comparing runs.
 
 ### Hyperparameters
 
-- GAN: `latent_dim=100`, `lr=0.0002`, `batch_size=64`, `epochs=10`
-- Optimizer: Adam with `beta=(0.5, 0.999)`
+- GAN defaults: `latent_dim=100`, `lr=0.0002`, `batch_size=64`, `epochs=10`, `betas=(0.5, 0.999)`
+- Flow defaults: `batch_size=128` with RealNVP coupling layers as defined in the main notebook
 
 ### Environment
 
-- PyTorch version: 1.12+
-- CUDA version: 11.6+
-- Hardware: GPU with 4GB+ VRAM
+- Pinned in `requirements.txt` (PyTorch 2.1.2 / TorchVision 0.16.2)
+- Choose matching CUDA wheels for your driver; CPU works for smoke tests
+- Hardware: GPU with 4GB+ VRAM recommended for full training
+
+### Run Metadata
+
+- Capture commit hash for each run: `git rev-parse --short HEAD`
+- Log run hyperparameters, dataset split, and hardware in a small `run_info.json` beside outputs/checkpoints.
 
 ## Dependencies
 
-```
-torch>=1.12.0
-torchvision>=0.13.0
-numpy>=1.21.0
-matplotlib>=3.5.0
-scipy>=1.7.0
-pytorch-fid>=0.10.0
-```
+- See `requirements.txt` for pinned versions (PyTorch, TorchVision, numpy, matplotlib, scipy, pillow, tqdm, pytorch-fid, clean-fid).
 
 ## File Structure
 
 ```
-CA2/
+CA2_GANs_Normalizing_Flows/
 ├── code/
-│   ├── CA2_DGM.ipynb          # Main implementation notebook
-│   └── Q2_final_res.ipynb      # GAN training with FID evaluation
+│   ├── CA2_GANs_and_NormalizingFlows_main.ipynb   # Flows + GAN combined notebook
+│   └── CA2_question2_results.ipynb                # GAN training/FID evaluation
 ├── description/
-│   └── DGM_HW2.pdf             # Original problem statement
-├── images/
-│   ├── generated_sample_epoch_*.png  # Generated samples per epoch
-│   └── Q2_final_res_*.png            # Training visualizations
+│   └── DGM_HW2.pdf                                # Problem statement
+├── images/                                        # Generated samples and outputs
 ├── report/
-│   └── DGM_CA2_final_EN.pdf   # Implementation details and results
-└── README.md                   # This file
+│   ├── CA2_Complete_Solutions.tex                 # LaTeX source
+│   ├── DGM_CA2_final_EN.pdf                       # Rendered report
+│   └── report.pdf                                 # Additional PDF copy
+├── requirements.txt                               # Pinned dependencies
+└── README.md
 ```
 
 ## Usage Instructions
 
 ### Running GAN Training
 
-1. Open `Q2_final_res.ipynb` in Jupyter/Colab
-2. Execute cells sequentially (imports → config → data → model → training)
-3. Monitor FID scores and generated samples
-4. Adjust hyperparameters for better performance
+1. Open `code/CA2_question2_results.ipynb` (or run locally) after installing requirements.
+2. Execute cells sequentially: setup/config (seeds, device) → data → model → training → FID evaluation.
+3. Monitor FID scores and generated samples saved under `images/`.
+4. Adjust hyperparameters (`latent_dim`, `lr`, `batch_size`, `epochs`) in the config cell.
 
 ### Colab Execution
 
 - Upload notebooks to Google Colab
 - Enable GPU runtime for faster training
-- Install dependencies: `!pip install pytorch-fid`
-- Monitor training with generated image grids
+- Install dependencies: `!pip install -r requirements.txt`
+- Monitor training with generated image grids saved to `images/`
 
 ## References
 

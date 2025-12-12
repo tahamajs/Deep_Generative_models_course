@@ -13,4 +13,4 @@
 ## Safety
 
 - Avoid committing large datasets/checkpoints; keep artifacts local unless essential.
-- Preserve template integrity; document any new drafts clearly. 
+- Preserve template integrity; document any new drafts clearly.
