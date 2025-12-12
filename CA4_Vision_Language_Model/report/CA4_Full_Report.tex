@@ -40,11 +40,10 @@
 {\footnotesize Deep Generative Models Course Assignment}
 }
 
-\author{\IEEEauthorblockN{Your Name}
-\IEEEauthorblockA{\textit{Department of Computer Science} \\
-\textit{University Name}\\
-City, Country \\
-email@university.edu}
+\author{\IEEEauthorblockN{Taha Majs}
+\IEEEauthorblockA{\textit{Deep Generative Models (CA4)} \\
+\textit{Department of Computer Science} \\
+}
 }
 
 \maketitle
@@ -684,6 +683,10 @@ We use the CLEVR-COGEN-A dataset \cite{clevr2017}, a synthetic visual reasoning 
     \item Python: 3.10+
     \item CUDA: Version 11.8+
 \end{itemize}
+
+\subsection{Reproducibility Notes}
+
+All random sources (Python, NumPy, PyTorch, CUDA) are seeded with 42 and deterministic CuDNN settings are enabled. The full training and preprocessing pipeline is provided in both the structured notebook (\texttt{code/CA4\_VLM\_training.ipynb}) and a scriptable version (\texttt{code/training\_pipeline.py}). Smoke tests can be run by setting \texttt{MAX\_STEPS} to a small value; full training is triggered with \texttt{RUN\_TRAINING=true} or the script flag \texttt{--run-training}.
 
 \subsection{Training Parameters}
 
