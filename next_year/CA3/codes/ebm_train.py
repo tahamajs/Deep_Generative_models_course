@@ -3,8 +3,11 @@ Training loop for the MNIST Energy-Based Model with Langevin sampling.
 Saves sample grids during training and checkpoints the model.
 """
 
+import matplotlib.pyplot as plt
+from dataclasses import asdict
 from pathlib import Path
 from typing import Dict, Any
+
 import torch
 from torch import optim
 from tqdm import tqdm
@@ -13,7 +16,7 @@ from .config import DataConfig, EBMConfig, RunPaths
 from .data import mnist_dataloaders
 from .ebm_model import ConvEnergyModel
 from .ebm_sampling import LangevinSampler, sample_from_noise
-from .utils import save_grid, set_seed, ensure_dir
+from .utils import save_grid, set_seed, ensure_dir, write_run_info
 
 
 def train(
@@ -30,6 +33,12 @@ def train(
     history = {"loss": [], "E_real": [], "E_fake": []}
     ensure_dir(output_dir)
     checkpoint_path = output_dir / "ebm_ckpt.pt"
+    write_run_info(
+        output_dir,
+        configs={"data": asdict(cfg_data), "model": asdict(cfg_model)},
+        notes={"script": "ebm_train.py"},
+        device=str(device),
+    )
 
     for epoch in range(1, cfg_model.epochs + 1):
         progress = tqdm(
@@ -87,6 +96,32 @@ def train(
             },
             checkpoint_path,
         )
+
+    # Save simple visualizations of loss and energies
+    try:
+        plt.figure(figsize=(6, 4))
+        plt.plot(history["loss"], label="loss")
+        plt.xlabel("Step")
+        plt.ylabel("Loss")
+        plt.title("EBM Loss")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(output_dir / "ebm_loss.png")
+        plt.close()
+
+        plt.figure(figsize=(6, 4))
+        plt.plot(history["E_real"], label="E_real")
+        plt.plot(history["E_fake"], label="E_fake")
+        plt.xlabel("Step")
+        plt.ylabel("Energy")
+        plt.title("EBM Energies")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(output_dir / "ebm_energy.png")
+        plt.close()
+    except Exception:
+        # Best-effort visualization; continue even if matplotlib is unavailable.
+        pass
 
     return history
 

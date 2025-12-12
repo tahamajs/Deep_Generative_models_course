@@ -2,8 +2,11 @@
 Training pipeline for Noise Conditional Score Network (unconditional or conditional).
 """
 
+import matplotlib.pyplot as plt
+from dataclasses import asdict
 from pathlib import Path
 from typing import Dict, Any, Optional
+
 import torch
 from torch import optim
 from tqdm import tqdm
@@ -13,7 +16,7 @@ from .data import mnist_dataloaders
 from .ncsn_model import ScoreNet
 from .ncsn_loss import dsm_loss
 from .ncsn_sampling import sample
-from .utils import save_grid, set_seed, ensure_dir
+from .utils import save_grid, set_seed, ensure_dir, write_run_info
 
 
 def train(
@@ -35,6 +38,16 @@ def train(
     ensure_dir(output_dir)
     history = {"loss": []}
     checkpoint_path = output_dir / ("ncsn_cond.pt" if conditional else "ncsn.pt")
+    write_run_info(
+        output_dir,
+        configs={
+            "data": asdict(data_cfg),
+            "model": asdict(cfg),
+            "conditional": {"enabled": conditional},
+        },
+        notes={"script": "ncsn_train.py"},
+        device=str(device),
+    )
 
     for epoch in range(1, cfg.epochs + 1):
         progress = tqdm(
@@ -69,6 +82,21 @@ def train(
             },
             checkpoint_path,
         )
+
+    # Save loss visualization
+    try:
+        plt.figure(figsize=(6, 4))
+        plt.plot(history["loss"], label="DSM loss")
+        plt.xlabel("Step")
+        plt.ylabel("Loss")
+        plt.title("NCSN DSM Loss")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(output_dir / "ncsn_loss.png")
+        plt.close()
+    except Exception:
+        # Best-effort plotting
+        pass
 
     return history
 
