@@ -34,6 +34,16 @@ Images are preprocessed to 128×128 resolution with RGB channels and normalized 
 
 ---
 
+## Quick Start & Reproducibility
+
+- Notebook (structured): run `code/CA1_VAE_training_and_evaluation.ipynb` – all imports, seeds, and config are centralized at the top; default epochs=5 for a smoke test, set to 1000 for the full run.
+- Script: `python CA1_Variational_Autoencoders/code/vae_training.py --data-root CA1_Variational_Autoencoders/train --epochs 5 --out-dir CA1_Variational_Autoencoders/output` (increase epochs as needed).
+- Seeds: `set_seed(42)` sets Python/NumPy/PyTorch (with CuDNN deterministic flags when CUDA is available).
+- Splits: deterministic 80/20 train/val via a seeded `random_split`.
+- Outputs: recon/gen grids are written to `output/`; move into `images/` if you regenerate figures for the report.
+
+---
+
 ## II. Methodology
 
 ### A. VAE Architecture

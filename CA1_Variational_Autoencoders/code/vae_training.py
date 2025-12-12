@@ -58,45 +58,44 @@ class TrainConfig:
 class BetaVAE(nn.Module):
     def __init__(self, latent_dim: int = 32, dropout: float = 0.2):
         super().__init__()
-        # Encoder
+        # Encoder: 128 -> 8 (4 downsamples), channel depth grows 32 -> 64 -> 128 -> 256
         self.enc = nn.Sequential(
             nn.Conv2d(3, 32, 4, stride=2, padding=1),
             nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(dropout),
             nn.Conv2d(32, 64, 4, stride=2, padding=1),
             nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(dropout),
-            nn.Conv2d(64, 64, 4, stride=2, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 128, 4, stride=2, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(dropout),
-            nn.Conv2d(64, 64, 4, stride=2, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 256, 4, stride=2, padding=1),
+            nn.LeakyReLU(0.2, inplace=True),
         )
-        # After 4 downsamples: 128 -> 8, channels=64 => 64*8*8 = 4096
-        hidden_dim = 64 * 8 * 8
+        # After 4 downsamples: 128 -> 8, channels=256 => 256*8*8 = 16384
+        hidden_dim = 256 * 8 * 8
         self.fc_mu = nn.Linear(hidden_dim, latent_dim)
         self.fc_logvar = nn.Linear(hidden_dim, latent_dim)
 
-        # Decoder
+        # Decoder mirrors encoder
         self.fc_dec = nn.Sequential(
             nn.Linear(latent_dim, hidden_dim),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),
         )
         self.dec = nn.Sequential(
-            nn.ConvTranspose2d(64, 64, 4, stride=2, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(256, 128, 4, stride=2, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(dropout),
-            nn.ConvTranspose2d(64, 64, 4, stride=2, padding=1),
+            nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1),
             nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(dropout),
             nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.ConvTranspose2d(32, 3, 4, stride=2, padding=1),
             nn.Tanh(),
         )
@@ -107,13 +106,14 @@ class BetaVAE(nn.Module):
         return self.fc_mu(h), self.fc_logvar(h)
 
     def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
+        logvar = torch.clamp(logvar, min=-10, max=10)
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return mu + eps * std
 
     def decode(self, z: torch.Tensor) -> torch.Tensor:
         h = self.fc_dec(z)
-        h = h.view(h.size(0), 64, 8, 8)
+        h = h.view(h.size(0), 256, 8, 8)
         return self.dec(h)
 
     def forward(
@@ -186,7 +186,6 @@ def save_samples(
     with torch.no_grad():
         data = data.to(device)[:num_samples]
         recon, _, _ = model(data)
-        noise = torch.randn_like(recon)
         random_z = torch.randn(num_samples, model.fc_mu.out_features, device=device)
         gen = model.decode(random_z)
         save_image(
