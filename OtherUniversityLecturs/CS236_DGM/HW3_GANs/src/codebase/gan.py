@@ -31,8 +31,11 @@ def loss_nonsaturating(g, d, x_real, *, device):
         d_real, torch.ones_like(d_real)
     ) + F.binary_cross_entropy_with_logits(d_fake, torch.zeros_like(d_fake))
 
-    d_fake = d(x_fake)
-    g_loss = F.binary_cross_entropy_with_logits(d_fake, torch.ones_like(d_fake))
+    # use a fresh generator forward pass for generator loss to avoid reusing tensors
+    z_g = torch.randn(batch_size, g.dim_z, device=device)
+    x_fake_g = g(z_g)
+    d_fake_g = d(x_fake_g)
+    g_loss = F.binary_cross_entropy_with_logits(d_fake_g, torch.ones_like(d_fake_g))
     # YOUR CODE ENDS HERE
 
     return d_loss, g_loss
@@ -66,8 +69,11 @@ def conditional_loss_nonsaturating(g, d, x_real, y_real, *, device):
         d_real, torch.ones_like(d_real)
     ) + F.binary_cross_entropy_with_logits(d_fake, torch.zeros_like(d_fake))
 
-    d_fake = d(x_fake, y_fake)
-    g_loss = F.binary_cross_entropy_with_logits(d_fake, torch.ones_like(d_fake))
+    # fresh forward for generator loss
+    z_g = torch.randn(batch_size, g.dim_z, device=device)
+    x_fake_g = g(z_g, y_fake)
+    d_fake_g = d(x_fake_g, y_fake)
+    g_loss = F.binary_cross_entropy_with_logits(d_fake_g, torch.ones_like(d_fake_g))
     # YOUR CODE ENDS HERE
 
     return d_loss, g_loss
@@ -159,8 +165,11 @@ def loss_wasserstein_gp(g, d, x_real, *, device):
     grad_penalty = ((grad_norm - 1) ** 2).mean()
     d_loss = d_loss + 10 * grad_penalty
 
-    d_fake = d(x_fake)
-    g_loss = -torch.mean(d_fake)
+    # fresh forward for generator loss
+    z_g = torch.randn(batch_size, g.dim_z, device=device)
+    x_fake_g = g(z_g)
+    d_fake_g = d(x_fake_g)
+    g_loss = -torch.mean(d_fake_g)
     # YOUR CODE ENDS HERE
 
     return d_loss, g_loss
