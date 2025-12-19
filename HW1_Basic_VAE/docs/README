@@ -1,0 +1,11 @@
+To run:
+
+	python3 main.py
+
+
+To install requirements, run
+
+	pip3 install --user -r requirements.txt
+
+
+
