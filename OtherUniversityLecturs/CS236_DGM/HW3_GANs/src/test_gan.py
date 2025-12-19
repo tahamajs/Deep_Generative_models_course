@@ -59,16 +59,23 @@ def test_simple_gan():
 
     print("Losses computed successfully")
 
-    # Test backward passes
+    # Test backward passes - alternate updates to avoid autograd conflicts
     d_optimizer = torch.optim.Adam(d.parameters(), lr=1e-3)
     g_optimizer = torch.optim.Adam(g.parameters(), lr=1e-3)
 
+    # First update discriminator
     d_optimizer.zero_grad()
-    d_loss.backward(retain_graph=True)
+    d_loss.backward()
     d_optimizer.step()
 
+    # Then update generator (with fresh forward pass)
+    z_g2 = torch.randn(batch_size, 64)
+    x_fake_g2 = g(z_g2)
+    d_fake_g2 = d(x_fake_g2)
+    g_loss2 = F.binary_cross_entropy_with_logits(d_fake_g2, torch.ones_like(d_fake_g2))
+
     g_optimizer.zero_grad()
-    g_loss.backward()
+    g_loss2.backward()
     g_optimizer.step()
 
     print("Backward passes work fine!")

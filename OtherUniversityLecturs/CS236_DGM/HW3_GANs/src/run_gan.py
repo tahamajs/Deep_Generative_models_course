@@ -71,23 +71,20 @@ for _ in range(args.num_epochs):
         else:
             raise NotImplementedError
 
-        d_loss, g_loss = loss(g, d, x_real, device=device)
+        # Update discriminator
+        d_loss, _ = loss(g, d, x_real, device=device)
 
         d_optimizer.zero_grad()
-        # ensure discriminator is in train mode for its update (BN behaves correctly)
         d.train()
         d_loss.backward()
         d_optimizer.step()
 
-        # evaluate discriminator in eval mode during generator update to avoid
-        # updating running stats in BatchNorm between backward passes which can
-        # cause autograd view/inplace versioning errors
-        d.eval()
+        # Update generator (with fresh forward pass to avoid autograd conflicts)
+        _, g_loss = loss(g, d, x_real, device=device)
+
         g_optimizer.zero_grad()
         g_loss.backward()
         g_optimizer.step()
-        # restore discriminator training mode for next iteration
-        d.train()
 
         global_step += 1
 

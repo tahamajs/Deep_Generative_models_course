@@ -72,18 +72,20 @@ for _ in range(args.num_epochs):
         else:
             raise NotImplementedError
 
-        d_loss, g_loss = loss(g, d, x_real, y_real, device=device)
+        # Update discriminator
+        d_loss, _ = loss(g, d, x_real, y_real, device=device)
 
         d_optimizer.zero_grad()
         d.train()
         d_loss.backward()
         d_optimizer.step()
 
-        d.eval()
+        # Update generator (with fresh forward pass to avoid autograd conflicts)
+        _, g_loss = loss(g, d, x_real, y_real, device=device)
+
         g_optimizer.zero_grad()
         g_loss.backward()
         g_optimizer.step()
-        d.train()
 
         global_step += 1
 
