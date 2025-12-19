@@ -5,7 +5,8 @@ class Reshape(torch.nn.Module):
         super().__init__()
         self.shape = shape
     def forward(self, x):
-        return x.reshape(x.size(0), *self.shape)
+        # use contiguous view to avoid autograd view/inplace versioning issues
+        return x.reshape(x.size(0), *self.shape).contiguous()
 
 class Generator(torch.nn.Module):
     def __init__(self, dim_z=64, num_channels=1):
