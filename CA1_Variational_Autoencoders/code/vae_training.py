@@ -31,6 +31,7 @@ from torchvision.utils import save_image
 
 
 def set_seed(seed: int) -> None:
+    """Set random seeds for reproducibility across Python, NumPy, and PyTorch."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -42,6 +43,7 @@ def set_seed(seed: int) -> None:
 
 @dataclass
 class TrainConfig:
+    """Configuration dataclass for VAE training hyperparameters and paths."""
     data_root: Path
     out_dir: Path
     image_size: int = 128
@@ -56,6 +58,7 @@ class TrainConfig:
 
 
 class BetaVAE(nn.Module):
+    """Convolutional beta-VAE for 128x128 RGB images with configurable latent dimension and dropout."""
     def __init__(self, latent_dim: int = 32, dropout: float = 0.2):
         super().__init__()
         # Encoder: 128 -> 8 (4 downsamples), channel depth grows 32 -> 64 -> 128 -> 256
@@ -101,17 +104,20 @@ class BetaVAE(nn.Module):
         )
 
     def encode(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Encode input images to latent mean and log-variance."""
         h = self.enc(x)
         h = torch.flatten(h, start_dim=1)
         return self.fc_mu(h), self.fc_logvar(h)
 
     def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
+        """Sample latent vector z using the reparameterization trick."""
         logvar = torch.clamp(logvar, min=-10, max=10)
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return mu + eps * std
 
     def decode(self, z: torch.Tensor) -> torch.Tensor:
+        """Decode latent vector z to reconstructed image."""
         h = self.fc_dec(z)
         h = h.view(h.size(0), 256, 8, 8)
         return self.dec(h)
@@ -119,6 +125,7 @@ class BetaVAE(nn.Module):
     def forward(
         self, x: torch.Tensor
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Forward pass: returns reconstruction, mean, and log-variance."""
         mu, logvar = self.encode(x)
         z = self.reparameterize(mu, logvar)
         recon = self.decode(z)
@@ -132,15 +139,15 @@ def elbo_loss(
     logvar: torch.Tensor,
     beta: float,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    # Reconstruction loss: MSE over pixels
+    """Compute ELBO loss: reconstruction + beta-scaled KL divergence."""
     recon_loss = F.mse_loss(recon, x, reduction="sum") / x.size(0)
-    # KL divergence between q(z|x) and N(0, I)
     kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / x.size(0)
     loss = recon_loss + beta * kl
     return loss, recon_loss, kl
 
 
 def get_dataloaders(cfg: TrainConfig) -> Tuple[DataLoader, DataLoader]:
+    """Create train and validation DataLoaders with deterministic split and transforms."""
     tfm = transforms.Compose(
         [
             transforms.Resize((cfg.image_size, cfg.image_size)),
@@ -181,6 +188,7 @@ def save_samples(
     step_label: str,
     num_samples: int,
 ) -> None:
+    """Save reconstruction and generation image grids for a batch of data and random samples."""
     out_dir.mkdir(parents=True, exist_ok=True)
     model.eval()
     with torch.no_grad():
@@ -202,6 +210,7 @@ def save_samples(
 
 
 def train(cfg: TrainConfig) -> None:
+    """Run the full training loop for beta-VAE and save periodic samples/logs."""
     set_seed(cfg.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_loader, val_loader = get_dataloaders(cfg)
@@ -258,6 +267,7 @@ def train(cfg: TrainConfig) -> None:
 
 
 def parse_args() -> TrainConfig:
+    """Parse command-line arguments for training configuration."""
     parser = argparse.ArgumentParser(
         description="Train beta-VAE on face dataset (CA1)."
     )
