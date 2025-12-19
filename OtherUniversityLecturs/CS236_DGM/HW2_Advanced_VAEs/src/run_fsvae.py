@@ -1,4 +1,7 @@
 import argparse
+#!/usr/bin/env python
+# ...existing code from hw2-released/run_fsvae.py...
+import argparse
 import numpy as np
 import torch
 import tqdm
