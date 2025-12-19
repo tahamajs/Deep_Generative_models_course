@@ -139,9 +139,10 @@ def main():
     # Generate samples
     print("# Generating samples...")
     samples = []
-    for i in range(3):  # Generate fewer samples for testing
-        print(f"# Generating sample {i+1}/3")
-        sample_tokens = rnn.sample(500)  # Shorter sequences
+    for i in range(10):  # Generate 10 samples
+        if (i + 1) % 3 == 0:
+            print(f"# Generating sample {i+1}/10")
+        sample_tokens = rnn.sample(SAMPLE_SEQ_LEN)
         sample_text = ''.join([dataset.idx2char[token] for token in sample_tokens])
         samples.append(sample_text)
 
