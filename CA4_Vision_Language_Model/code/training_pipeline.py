@@ -53,6 +53,7 @@ class TrainConfig:
 
 
 def set_seed(seed: int) -> None:
+    """Set all random seeds for reproducibility."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -63,6 +64,7 @@ def set_seed(seed: int) -> None:
 
 
 def load_splits(cfg: TrainConfig) -> Tuple[DatasetDict, PaliGemmaProcessor]:
+    """Load and split the CLEVR-COGEN-A dataset, and return splits and processor."""
     raw = load_dataset("leonardPKU/clevr_cogen_a_train", split=cfg.dataset_split)
     splits = raw.train_test_split(test_size=cfg.test_size, seed=cfg.seed)
     processor = PaliGemmaProcessor.from_pretrained(cfg.model_id)
@@ -72,6 +74,7 @@ def load_splits(cfg: TrainConfig) -> Tuple[DatasetDict, PaliGemmaProcessor]:
 def preprocess_function(
     batch: Dict[str, Any], processor: PaliGemmaProcessor, cfg: TrainConfig
 ) -> Dict[str, Any]:
+    """Preprocess a batch: resize images, format prompts, and tokenize."""
     questions = batch["problem"]
     images = batch["image"]
     answers = batch["solution"]
@@ -115,6 +118,7 @@ def preprocess_function(
 
 
 def build_model(cfg: TrainConfig) -> PaliGemmaForConditionalGeneration:
+    """Build and return a quantized PaliGemma model with LoRA adapters."""
     bnb_config = BitsAndBytesConfig(load_in_8bit=True, llm_int8_threshold=6.0)
     model = PaliGemmaForConditionalGeneration.from_pretrained(
         cfg.model_id,
@@ -227,7 +231,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+
 def main() -> None:
+    """Main entry point for training pipeline."""
     logging.basicConfig(level=logging.INFO)
     args = parse_args()
     cfg = TrainConfig(max_steps=args.max_steps if args.max_steps is not None else -1)
@@ -243,7 +249,7 @@ def main() -> None:
         trainer.train()
         trainer.save_model(cfg.output_dir)
         metrics = trainer.evaluate()
-        logger.info("Evaluation metrics:\\n%s", json.dumps(metrics, indent=2))
+        logger.info("Evaluation metrics:\n%s", json.dumps(metrics, indent=2))
     else:
         logger.info("Dry run completed. Use --run-training to start training.")
 

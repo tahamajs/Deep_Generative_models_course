@@ -43,7 +43,7 @@ import torch.nn.functional as F
 import numpy as np
 
 class MaskedLinear(nn.Module):
-    def __init__(self, in_features, out_features, mask):
+    def __init__(self, in_features, out_features, mask) -> None:
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
         self.register_buffer('mask', mask)
@@ -66,7 +66,7 @@ def create_masks(input_dim, hidden_dims, output_dim):
     mask = (m_input.unsqueeze(1) <= m_hidden[0].unsqueeze(0)).float()
     masks.append(mask)
 
-    for i in range(len(hidden_dims) - 1):
+    for i: int in range(len(hidden_dims) - 1):
         mask = (m_hidden[i].unsqueeze(1) <= m_hidden[i+1].unsqueeze(0)).float()
         masks.append(mask)
 
@@ -76,17 +76,17 @@ def create_masks(input_dim, hidden_dims, output_dim):
     return masks
 
 class MADE(nn.Module):
-    def __init__(self, input_dim, hidden_dims, output_dim):
+    def __init__(self, input_dim, hidden_dims, output_dim) -> None:
         super().__init__()
-        self.input_dim = input_dim
-        self.output_dim = output_dim
+        self.input_dim: Any = input_dim
+        self.output_dim: Any = output_dim
 
         masks = create_masks(input_dim, hidden_dims, output_dim)
 
         self.layers = nn.ModuleList()
-        dims = [input_dim] + hidden_dims + [output_dim]
+        dims: list[Any] = [input_dim] + hidden_dims + [output_dim]
 
-        for i in range(len(dims) - 1):
+        for i: int in range(len(dims) - 1):
             self.layers.append(MaskedLinear(dims[i], dims[i+1], masks[i]))
 
     def forward(self, x):
@@ -102,10 +102,10 @@ class MADE(nn.Module):
 
 
 class MAFBlock(nn.Module):
-    def __init__(self, input_dim, hidden_dims=[512, 512]):
+    def __init__(self, input_dim, hidden_dims=[512, 512]) -> None:
         super().__init__()
-        self.input_dim = input_dim
-        self.made = MADE(input_dim, hidden_dims, 2 * input_dim)
+        self.input_dim: Any = input_dim
+        self.made: MADE = MADE(input_dim, hidden_dims, 2 * input_dim)
 
     def forward(self, x):
         batch_size = x.shape[0]
@@ -126,7 +126,7 @@ class MAFBlock(nn.Module):
         batch_size = z.shape[0]
         x = torch.zeros_like(z)
 
-        for i in range(self.input_dim):
+        for i: int in range(self.input_dim):
             s_and_t = self.made(x)
             s, t = s_and_t.chunk(2, dim=1)
             s = torch.sigmoid(s + 2.0)
@@ -137,7 +137,7 @@ class MAFBlock(nn.Module):
 
 
 class MaskedLinear(nn.Module):
-    def __init__(self, in_features, out_features, mask):
+    def __init__(self, in_features, out_features, mask) -> None:
         super().__init__()
         self.linear = nn.Linear(in_features, out_features)
         self.register_buffer('mask', mask)
@@ -147,15 +147,15 @@ class MaskedLinear(nn.Module):
         return F.linear(x, masked_weight, self.linear.bias)
 
 class MADE(nn.Module):
-    def __init__(self, input_dim, hidden_dims, output_dim):
+    def __init__(self, input_dim, hidden_dims, output_dim) -> None:
         super().__init__()
-        self.input_dim = input_dim
+        self.input_dim: Any = input_dim
 
         # Create masks for autoregressive property
         self.masks = self.create_masks(input_dim, hidden_dims, output_dim)
 
         layers = []
-        in_dim = input_dim
+        in_dim: Any = input_dim
         mask_idx = 0
         for h_dim in hidden_dims:
             layers.append(MaskedLinear(in_dim, h_dim, self.masks[mask_idx]))
@@ -174,16 +174,16 @@ class MADE(nn.Module):
         in_dim = input_dim
         out_dim = hidden_dims[0]
         m = torch.zeros(out_dim, in_dim)
-        for d in range(out_dim):
+        for d: int in range(out_dim):
             m[d, :min(d+1, in_dim)] = 1
         masks.append(m)
 
         # Hidden to hidden
-        for i in range(len(hidden_dims) - 1):
+        for i: int in range(len(hidden_dims) - 1):
             in_dim = hidden_dims[i]
             out_dim = hidden_dims[i+1]
             m = torch.zeros(out_dim, in_dim)
-            for d in range(out_dim):
+            for d: int in range(out_dim):
                 m[d, :min(d+1, in_dim)] = 1
             masks.append(m)
 
@@ -191,7 +191,7 @@ class MADE(nn.Module):
         in_dim = hidden_dims[-1]
         out_dim = output_dim
         m = torch.zeros(out_dim, in_dim)
-        for d in range(out_dim):
+        for d: int in range(out_dim):
             m[d, :min(d+1, in_dim)] = 1
         masks.append(m)
 
@@ -201,13 +201,13 @@ class MADE(nn.Module):
         return self.net(x)
 
 class MAF(nn.Module):
-    def __init__(self, input_dim, num_blocks=7, hidden_dims=[512, 512]):
+    def __init__(self, input_dim, num_blocks=7, hidden_dims=[512, 512]) -> None:
         super().__init__()
-        self.input_dim = input_dim
-        self.num_blocks = num_blocks
+        self.input_dim: Any = input_dim
+        self.num_blocks: int = num_blocks
 
         self.blocks = nn.ModuleList()
-        for _ in range(num_blocks):
+        for _: int in range(num_blocks):
             self.blocks.append(MAFBlock(input_dim, hidden_dims))
 
         self.base_dist = torch.distributions.Normal(0, 1)
@@ -242,22 +242,22 @@ class MAF(nn.Module):
 
 
 class CapsuleDataset(Dataset):
-    def __init__(self, root_dir, transform=None, img_size=128):
-        self.root_dir = root_dir
+    def __init__(self, root_dir, transform=None, img_size=128) -> None:
+        self.root_dir: Any = root_dir
         self.transform = transform
-        self.img_size = img_size
+        self.img_size: int = img_size
         self.images = []
 
-        for fname in os.listdir(root_dir):
+        for fname: str in os.listdir(root_dir):
             if fname.endswith(('.png', '.jpg', '.jpeg')):
                 self.images.append(os.path.join(root_dir, fname))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.images)
 
     def __getitem__(self, idx):
         img_path = self.images[idx]
-        image = Image.open(img_path).convert('RGB')
+        image: Image.Image = Image.open(img_path).convert('RGB')
 
         if self.transform:
             image = self.transform(image)
@@ -270,7 +270,7 @@ def train_maf(model, train_loader, num_epochs=100, lr=0.0001, device='cpu'):
 
     losses = []
 
-    for epoch in range(num_epochs):
+    for epoch: int in range(num_epochs):
         model.train()
         epoch_loss = 0
 
@@ -296,7 +296,7 @@ def train_maf(model, train_loader, num_epochs=100, lr=0.0001, device='cpu'):
 def generate_images_maf(model, num_images=5, img_size=128, device='cpu'):
     model.eval()
 
-    start_time = time.time()
+    start_time: float = time.time()
 
     with torch.no_grad():
         samples = model.generate(num_images, device=device)
@@ -304,7 +304,7 @@ def generate_images_maf(model, num_images=5, img_size=128, device='cpu'):
         samples = torch.clamp(samples, -1, 1)
         samples = (samples + 1) / 2
 
-    generation_time = time.time() - start_time
+    generation_time: float = time.time() - start_time
 
     return samples, generation_time
 
@@ -348,7 +348,7 @@ def discriminator_loss(D, real_image, fake_image):
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, channels):
+    def __init__(self, channels) -> None:
         super().__init__()
 
         self.block = nn.Sequential(
@@ -366,7 +366,7 @@ class ResidualBlock(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, input_nc=3, output_nc=3, ngf=64, num_residual_blocks=9):
+    def __init__(self, input_nc=3, output_nc=3, ngf=64, num_residual_blocks=9) -> None:
         super().__init__()
 
         model = []
@@ -390,7 +390,7 @@ class Generator(nn.Module):
             nn.ReLU(inplace=True)
         ]
 
-        for _ in range(num_residual_blocks):
+        for _: int in range(num_residual_blocks):
             model += [ResidualBlock(ngf * 4)]
 
         model += [
@@ -417,7 +417,7 @@ class Generator(nn.Module):
         return self.model(x)
 
 class Discriminator(nn.Module):
-    def __init__(self, input_nc=3, ndf=64):
+    def __init__(self, input_nc=3, ndf=64) -> None:
         super().__init__()
 
         model = [
@@ -454,11 +454,10 @@ class Discriminator(nn.Module):
 
 
 import random
-from collections import deque
 
 class ImagePool:
-    def __init__(self, pool_size=50):
-        self.pool_size = pool_size
+    def __init__(self, pool_size=50) -> None:
+        self.pool_size: int = pool_size
         self.images = []
 
     def query(self, images):
@@ -475,7 +474,7 @@ class ImagePool:
                 return_images.append(image)
             else:
                 if random.uniform(0, 1) > 0.5:
-                    random_id = random.randint(0, self.pool_size - 1)
+                    random_id: int = random.randint(0, self.pool_size - 1)
                     return_images.append(self.images[random_id].clone())
                     self.images[random_id] = image
                 else:
@@ -522,7 +521,7 @@ def train_cyclegan(G_AB, G_BA, D_A, D_B, train_loader_A, train_loader_B,
         'identity_loss': []
     }
 
-    for epoch in range(num_epochs):
+    for epoch: int in range(num_epochs):
         G_AB.train()
         G_BA.train()
         D_A.train()
@@ -537,10 +536,10 @@ def train_cyclegan(G_AB, G_BA, D_A, D_B, train_loader_A, train_loader_B,
         data_iter_A = iter(train_loader_A)
         data_iter_B = iter(train_loader_B)
 
-        num_batches = min(len(train_loader_A), len(train_loader_B))
-        pbar = tqdm(range(num_batches), desc=f'Epoch {epoch+1}/{num_epochs}')
+        num_batches: int = min(len(train_loader_A), len(train_loader_B))
+        pbar: tqdm[int] = tqdm(range(num_batches), desc=f'Epoch {epoch+1}/{num_epochs}')
 
-        for i in pbar:
+        for i: int in pbar:
             try:
                 real_A = next(data_iter_A).to(device)
                 real_B = next(data_iter_B).to(device)
@@ -622,23 +621,23 @@ def train_cyclegan(G_AB, G_BA, D_A, D_B, train_loader_A, train_loader_B,
 
 
 class ImageDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
-        self.root_dir = root_dir
+    def __init__(self, root_dir, transform=None) -> None:
+        self.root_dir: Any = root_dir
         self.transform = transform
         self.images = []
 
-        for fname in os.listdir(root_dir):
+        for fname: str in os.listdir(root_dir):
             if fname.endswith(('.png', '.jpg', '.jpeg', '.bmp')):
                 self.images.append(os.path.join(root_dir, fname))
 
         print(f"Loaded {len(self.images)} images from {root_dir}")
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.images)
 
     def __getitem__(self, idx):
         img_path = self.images[idx % len(self.images)]
-        image = Image.open(img_path).convert('RGB')
+        image: Image.Image = Image.open(img_path).convert('RGB')
 
         if self.transform:
             image = self.transform(image)
@@ -653,8 +652,8 @@ cyclegan_transform = transforms.Compose([
 ])
 
 
-def visualize_samples(images, titles=None, figsize=(15, 5), fig=None, axes=None):
-    n = len(images)
+def visualize_samples(images, titles=None, figsize=(15, 5), fig=None, axes=None) -> None:
+    n: int = len(images)
     if fig is None or axes is None:
         fig, axes = plt.subplots(1, n, figsize=figsize)
 
@@ -678,7 +677,7 @@ def visualize_samples(images, titles=None, figsize=(15, 5), fig=None, axes=None)
     plt.tight_layout()
 
 
-def test_cyclegan(G_AB, G_BA, test_loader_A, test_loader_B, device='cpu', num_samples=5):
+def test_cyclegan(G_AB, G_BA, test_loader_A, test_loader_B, device='cpu', num_samples=5) -> None:
     G_AB.eval()
     G_BA.eval()
 
@@ -691,19 +690,19 @@ def test_cyclegan(G_AB, G_BA, test_loader_A, test_loader_B, device='cpu', num_sa
         fake_A = G_BA(real_B)
         recovered_B = G_AB(fake_A)
 
-    for i in range(num_samples):
+    for i: int in range(num_samples):
         visualize_samples(
             [real_A[i], fake_B[i], recovered_A[i]],
             titles=['Real A', 'Fake B', 'Recovered A']
         )
 
-    for i in range(num_samples):
+    for i: int in range(num_samples):
         visualize_samples(
             [real_B[i], fake_A[i], recovered_B[i]],
             titles=['Real B', 'Fake A', 'Recovered B']
         )
 
-def plot_training_history(history):
+def plot_training_history(history) -> None:
     fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 
     axes[0, 0].plot(history['G_loss'])
@@ -736,20 +735,20 @@ def plot_training_history(history):
     plt.show()
 
 
-def evaluate_anomaly_detection(normal_scores, anomaly_scores):
-    y_true = np.concatenate([
+def evaluate_anomaly_detection(normal_scores, anomaly_scores) -> tuple[float | floating[_16Bit] | floating[_32Bit] | float64, ndarray[tuple[Any, ...], dtype[Any]], ndarray[tuple[Any, ...], dtype[Any]]]:
+    y_true: np.ndarray[tuple[Any, ...], np.dtype[np.float64]] = np.concatenate([
         np.zeros(len(normal_scores)),
         np.ones(len(anomaly_scores))
     ])
 
     y_scores = np.concatenate([normal_scores, anomaly_scores])
 
-    auroc = roc_auc_score(y_true, y_scores)
+    auroc: float | np.floating[np._16Bit] | np.floating[np._32Bit] | np.float64 = roc_auc_score(y_true, y_scores)
     fpr, tpr, thresholds = roc_curve(y_true, y_scores)
 
     return auroc, fpr, tpr
 
-def plot_roc_curve(fpr, tpr, auroc):
+def plot_roc_curve(fpr, tpr, auroc) -> None:
     plt.figure(figsize=(8, 6))
     plt.plot(fpr, tpr, label=f'ROC Curve (AUROC = {auroc:.4f})')
     plt.plot([0, 1], [0, 1], 'k--', label='Random Classifier')
@@ -760,7 +759,7 @@ def plot_roc_curve(fpr, tpr, auroc):
     plt.grid(True)
     plt.show()
 
-def plot_score_distributions(normal_scores, anomaly_scores):
+def plot_score_distributions(normal_scores, anomaly_scores) -> None:
     plt.figure(figsize=(10, 6))
     plt.hist(normal_scores, bins=50, alpha=0.6, label='Normal', density=True)
     plt.hist(anomaly_scores, bins=50, alpha=0.6, label='Anomaly', density=True)
@@ -788,20 +787,20 @@ def calculate_anomaly_scores(model, test_loader, device='cpu'):
 
     return np.array(anomaly_scores)
 
-def evaluate_anomaly_detection(normal_scores, anomaly_scores):
-    y_true = np.concatenate([
+def evaluate_anomaly_detection(normal_scores, anomaly_scores) -> tuple[float | floating[_16Bit] | floating[_32Bit] | float64, ndarray[tuple[Any, ...], dtype[Any]], ndarray[tuple[Any, ...], dtype[Any]]]:
+    y_true: np.ndarray[tuple[Any, ...], np.dtype[np.float64]] = np.concatenate([
         np.zeros(len(normal_scores)),
         np.ones(len(anomaly_scores))
     ])
 
     y_scores = np.concatenate([normal_scores, anomaly_scores])
 
-    auroc = roc_auc_score(y_true, y_scores)
+    auroc: float | np.floating[np._16Bit] | np.floating[np._32Bit] | np.float64 = roc_auc_score(y_true, y_scores)
     fpr, tpr, thresholds = roc_curve(y_true, y_scores)
 
     return auroc, fpr, tpr
 
-def plot_roc_curve(fpr, tpr, auroc):
+def plot_roc_curve(fpr, tpr, auroc) -> None:
     plt.figure(figsize=(8, 6))
     plt.plot(fpr, tpr, label=f'ROC Curve (AUROC = {auroc:.4f})')
     plt.plot([0, 1], [0, 1], 'k--', label='Random Classifier')
@@ -812,7 +811,7 @@ def plot_roc_curve(fpr, tpr, auroc):
     plt.grid(True)
     plt.show()
 
-def plot_score_distributions(normal_scores, anomaly_scores):
+def plot_score_distributions(normal_scores, anomaly_scores) -> None:
     plt.figure(figsize=(10, 6))
     plt.hist(normal_scores, bins=50, alpha=0.6, label='Normal', density=True)
     plt.hist(anomaly_scores, bins=50, alpha=0.6, label='Anomaly', density=True)
@@ -829,22 +828,22 @@ from PIL import Image
 import os
 
 class CapsuleDataset(Dataset):
-    def __init__(self, root_dir, transform=None, img_size=128):
-        self.root_dir = root_dir
+    def __init__(self, root_dir, transform=None, img_size=128) -> None:
+        self.root_dir: Any = root_dir
         self.transform = transform
-        self.img_size = img_size
+        self.img_size: int = img_size
         self.images = []
 
-        for fname in os.listdir(root_dir):
+        for fname: str in os.listdir(root_dir):
             if fname.endswith(('.png', '.jpg', '.jpeg')):
                 self.images.append(os.path.join(root_dir, fname))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.images)
 
     def __getitem__(self, idx):
         img_path = self.images[idx]
-        image = Image.open(img_path).convert('RGB')
+        image: Image.Image = Image.open(img_path).convert('RGB')
 
         if self.transform:
             image = self.transform(image)
@@ -869,7 +868,7 @@ if not os.path.isdir(dataset_path):
     download_path = kagglehub.dataset_download("ipythonx/mvtec-ad")
     print(f"✓ Dataset downloaded to: {download_path}")
 
-    capsule_source = os.path.join(download_path, 'capsule')
+    capsule_source: str = os.path.join(download_path, 'capsule')
     if os.path.exists(capsule_source):
         shutil.copytree(capsule_source, 'capsule')
         print("✓ Capsule dataset copied to working directory")
@@ -877,7 +876,7 @@ if not os.path.isdir(dataset_path):
         print(f"Searching for capsule folder in {download_path}...")
         for root, dirs, files in os.walk(download_path):
             if 'capsule' in dirs:
-                capsule_path = os.path.join(root, 'capsule')
+                capsule_path: str = os.path.join(root, 'capsule')
                 shutil.copytree(capsule_path, 'capsule')
                 print(f"✓ Found and copied capsule dataset from {capsule_path}")
                 break
@@ -897,7 +896,7 @@ transform = transforms.Compose([
 ])
 
 
-train_dataset = CapsuleDataset(
+train_dataset: CapsuleDataset = CapsuleDataset(
     root_dir='capsule/train/good',
     transform=transform,
     img_size=128
@@ -914,7 +913,7 @@ train_loader = DataLoader(
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 input_dim = 128 * 128 * 3
-maf_model = MAF(
+maf_model: MAF = MAF(
     input_dim=input_dim,
     num_blocks=7,
     hidden_dims=[512, 512]
@@ -977,20 +976,20 @@ def calculate_anomaly_scores(model, data_loader, device):
     return np.array(scores)
 
 
-def evaluate_anomaly_detection(normal_scores, anomaly_scores):
+def evaluate_anomaly_detection(normal_scores, anomaly_scores) -> tuple[float | floating[_16Bit] | floating[_32Bit] | float64, ndarray[tuple[Any, ...], dtype[Any]], ndarray[tuple[Any, ...], dtype[Any]]]:
     """Evaluate anomaly detection performance using AUROC."""
     from sklearn.metrics import roc_auc_score, roc_curve
 
-    y_true = np.concatenate([np.zeros(len(normal_scores)), np.ones(len(anomaly_scores))])
+    y_true: np.ndarray[tuple[Any, ...], np.dtype[np.float64]] = np.concatenate([np.zeros(len(normal_scores)), np.ones(len(anomaly_scores))])
     y_scores = np.concatenate([normal_scores, anomaly_scores])
 
-    auroc = roc_auc_score(y_true, y_scores)
+    auroc: float | np.floating[np._16Bit] | np.floating[np._32Bit] | np.float64 = roc_auc_score(y_true, y_scores)
     fpr, tpr, _ = roc_curve(y_true, y_scores)
 
     return auroc, fpr, tpr
 
 
-def plot_roc_curve(fpr, tpr, auroc):
+def plot_roc_curve(fpr, tpr, auroc) -> None:
     """Plot ROC curve for anomaly detection evaluation."""
     plt.figure(figsize=(8, 6))
     plt.plot(fpr, tpr, label=f'ROC Curve (AUROC = {auroc:.4f})', linewidth=2)
@@ -1004,7 +1003,7 @@ def plot_roc_curve(fpr, tpr, auroc):
     plt.show()
 
 
-def plot_score_distributions(normal_scores, anomaly_scores):
+def plot_score_distributions(normal_scores, anomaly_scores) -> None:
     """Plot distributions of anomaly scores for normal vs anomalous samples."""
     plt.figure(figsize=(10, 6))
     plt.hist(normal_scores, bins=50, alpha=0.7, label='Normal Samples',
@@ -1020,12 +1019,12 @@ def plot_score_distributions(normal_scores, anomaly_scores):
     plt.show()
 
 
-def visualize_samples(images, titles=None, fig=None, axes=None):
+def visualize_samples(images, titles=None, fig=None, axes=None) -> None:
     """Visualize a batch of images."""
     if fig is None or axes is None:
-        n_images = len(images)
-        cols = min(5, n_images)
-        rows = (n_images + cols - 1) // cols
+        n_images: int = len(images)
+        cols: int = min(5, n_images)
+        rows: int = (n_images + cols - 1) // cols
         fig, axes = plt.subplots(rows, cols, figsize=(3*cols, 3*rows))
 
         if rows == 1:
@@ -1056,7 +1055,7 @@ def visualize_samples(images, titles=None, fig=None, axes=None):
                 cmap = None
         else:
             img = img.squeeze() if img.ndim > 2 else img
-            cmap = 'gray' if img.ndim == 2 else None
+            cmap: None | str = 'gray' if img.ndim == 2 else None
 
         axes[row, col].imshow(img, cmap=cmap)
         axes[row, col].axis('off')
@@ -1064,7 +1063,7 @@ def visualize_samples(images, titles=None, fig=None, axes=None):
         if titles and i < len(titles):
             axes[row, col].set_title(titles[i], fontsize=10)
 
-    for i in range(len(images), len(axes.flat)):
+    for i: int in range(len(images), len(axes.flat)):
         row, col = divmod(i, axes.shape[1]) if len(axes.shape) > 1 else (0, i)
         axes[row, col].axis('off')
 
@@ -1073,13 +1072,13 @@ def visualize_samples(images, titles=None, fig=None, axes=None):
         plt.show()
 
 
-test_normal_dataset = CapsuleDataset(
+test_normal_dataset: CapsuleDataset = CapsuleDataset(
     root_dir='capsule/test/good',
     transform=transform,
     img_size=128
 )
 
-test_anomaly_dataset = CapsuleDataset(
+test_anomaly_dataset: CapsuleDataset = CapsuleDataset(
     root_dir='capsule/test/crack',
     transform=transform,
     img_size=128
@@ -1109,22 +1108,22 @@ print(f"Anomaly images - Mean score: {anomaly_scores.mean():.4f}, Std: {anomaly_
 !wget https://efrosgans.eecs.berkeley.edu/cyclegan/datasets/horse2zebra.zip
 !unzip horse2zebra.zip
 
-train_dataset_A = ImageDataset(
+train_dataset_A: ImageDataset = ImageDataset(
     root_dir='horse2zebra/trainA',
     transform=cyclegan_transform
 )
 
-train_dataset_B = ImageDataset(
+train_dataset_B: ImageDataset = ImageDataset(
     root_dir='horse2zebra/trainB',
     transform=cyclegan_transform
 )
 
-test_dataset_A = ImageDataset(
+test_dataset_A: ImageDataset = ImageDataset(
     root_dir='horse2zebra/testA',
     transform=cyclegan_transform
 )
 
-test_dataset_B = ImageDataset(
+test_dataset_B: ImageDataset = ImageDataset(
     root_dir='horse2zebra/testB',
     transform=cyclegan_transform
 )
@@ -1187,7 +1186,7 @@ import matplotlib.pyplot as plt
 import os
 
 def visualize_training_progression(epochs_to_check, dataloader_A, dataloader_B,
-                                   device, checkpoint_dir='checkpoints'):
+                                   device, checkpoint_dir='checkpoints') -> None:
     """
     Visualizes generation quality at specific epochs (Early, Mid, Late).
 
@@ -1249,5 +1248,5 @@ def visualize_training_progression(epochs_to_check, dataloader_A, dataloader_B,
     plt.tight_layout()
     plt.show()
 
-epochs_list = [1, 10, 20]
+epochs_list: list[int] = [1, 10, 20]
 visualize_training_progression(epochs_list, train_loader_A, train_loader_B, device)

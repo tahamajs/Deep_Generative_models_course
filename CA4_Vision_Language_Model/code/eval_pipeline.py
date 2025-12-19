@@ -42,6 +42,7 @@ class EvalConfig:
 
 
 def set_seed(seed: int) -> None:
+    """Set all random seeds for reproducibility."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -52,6 +53,7 @@ def set_seed(seed: int) -> None:
 
 
 def load_splits(cfg: EvalConfig) -> Tuple[DatasetDict, PaliGemmaProcessor]:
+    """Load and split the CLEVR-COGEN-A dataset, and return splits and processor."""
     raw = load_dataset("leonardPKU/clevr_cogen_a_train", split=cfg.dataset_split)
     splits = raw.train_test_split(test_size=cfg.test_size, seed=cfg.seed)
     processor = PaliGemmaProcessor.from_pretrained(cfg.base_model_path)
@@ -61,6 +63,7 @@ def load_splits(cfg: EvalConfig) -> Tuple[DatasetDict, PaliGemmaProcessor]:
 def preprocess_function(
     batch: Dict[str, Any], processor: PaliGemmaProcessor, cfg: EvalConfig
 ) -> Dict[str, Any]:
+    """Preprocess a batch: resize images, format prompts, and tokenize."""
     questions = batch["problem"]
     images = batch["image"]
     answers = batch["solution"]
@@ -141,14 +144,15 @@ def to_dataloaders(
 def load_models(
     cfg: EvalConfig,
 ) -> Tuple[PaliGemmaForConditionalGeneration, PaliGemmaForConditionalGeneration]:
-    logger.info("Loading base model: %s", cfg.base_model_path)
+    """Load base and fine-tuned models for evaluation."""
+    logger.info(f"Loading base model from: {cfg.base_model_path}")
     base_model = PaliGemmaForConditionalGeneration.from_pretrained(
         cfg.base_model_path,
         torch_dtype=torch.bfloat16,
         device_map="auto",
     )
 
-    logger.info("Loading fine-tuned (merged) model: %s", cfg.finetuned_model_path)
+    logger.info(f"Loading fine-tuned (merged) model from: {cfg.finetuned_model_path}")
     finetuned_model = PaliGemmaForConditionalGeneration.from_pretrained(
         cfg.finetuned_model_path,
         torch_dtype=torch.bfloat16,
@@ -307,7 +311,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+
 def main() -> None:
+    """Main entry point for evaluation pipeline."""
     logging.basicConfig(level=logging.INFO)
     args = parse_args()
     cfg = EvalConfig(
@@ -324,4 +330,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-ص
