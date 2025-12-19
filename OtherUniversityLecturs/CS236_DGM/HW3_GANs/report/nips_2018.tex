@@ -26,32 +26,13 @@
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
 
-\title{Formatting instructions for NIPS 2018}
-
-% The \author macro works with any number of authors. There are two
-% commands used to separate the names and addresses of multiple
-% authors: \And and \AND.
-%
-% Using \And between authors leaves it to LaTeX to determine where to
-% break the lines. Using \AND forces a line break at that point. So,
-% if LaTeX puts 3 of 4 authors names on the first line, and the last
-% on the second line, try using \AND instead of \And before the third
-% author name.
-
+	itle{Generative Adversarial Networks and Conditional GANs: Implementation and Analysis}
 \author{
-  David S.~Hippocampus\thanks{Use footnote for providing further
-    information about author (webpage, alternative
-    address)---\emph{not} for acknowledging funding agencies.} \\
+  Your Name \\
   Department of Computer Science\\
-  Cranberry-Lemon University\\
-  Pittsburgh, PA 15213 \\
-  \texttt{hippo@cs.cranberry-lemon.edu} \\
-  %% examples of more authors
-  %% \And
-  %% Coauthor \\
-  %% Affiliation \\
-  %% Address \\
-  %% \texttt{email} \\
+  Your University\\
+  Your Email 
+}
   %% \AND
   %% Coauthor \\
   %% Affiliation \\
@@ -74,109 +55,95 @@
 
 \maketitle
 
+
 \begin{abstract}
-  The abstract paragraph should be indented \nicefrac{1}{2}~inch
-  (3~picas) on both the left- and right-hand margins. Use 10~point
-  type, with a vertical spacing (leading) of 11~points.  The word
-  \textbf{Abstract} must be centered, bold, and in point size 12. Two
-  line spaces precede the abstract. The abstract must be limited to
-  one paragraph.
+This report presents the implementation and analysis of Generative Adversarial Networks (GANs) and Conditional GANs for image generation tasks. We describe the theoretical foundations, network architectures, training procedures, and experimental results. Our implementation is based on Python and PyTorch, and we evaluate the models on standard datasets. We discuss the challenges encountered during training, analyze the generated samples, and compare the performance of vanilla GANs and conditional GANs. Conclusions and future directions are provided.
 \end{abstract}
 
-\section{Submission of papers to NIPS 2018}
 
-NIPS requires electronic submissions.  The electronic submission site
-is
-\begin{center}
-  \url{https://cmt.research.microsoft.com/NIPS2018/}
-\end{center}
+\section{Introduction}
 
-Please read the instructions below carefully and follow them faithfully.
+Generative Adversarial Networks (GANs) have revolutionized the field of generative modeling, enabling the synthesis of realistic images and data. In this assignment, we implement and analyze both vanilla GANs and conditional GANs, exploring their architectures, training dynamics, and performance on image generation tasks. Conditional GANs extend the basic GAN framework by incorporating auxiliary information, allowing for controlled generation.
 
-\subsection{Style}
+\section{Methodology}
 
-Papers to be submitted to NIPS 2018 must be prepared according to the
-instructions presented here. Papers may only be up to eight pages
-long, including figures. Additional pages \emph{containing only
-  acknowledgments and/or cited references} are allowed. Papers that
-exceed eight pages of content (ignoring references) will not be
-reviewed, or in any other way considered for presentation at the
-conference.
+\subsection{Generative Adversarial Networks}
+GANs consist of two neural networks: a generator $G$ and a discriminator $D$, which are trained in a minimax game. The generator aims to produce realistic samples from random noise, while the discriminator attempts to distinguish between real and generated samples. The objective function is:
+$$
+\min_G \max_D V(D, G) = \mathbb{E}_{x \sim p_{data}(x)} [\log D(x)] + \mathbb{E}_{z \sim p_z(z)} [\log(1 - D(G(z)))]
+$$
 
-The margins in 2018 are the same as since 2007, which allow for
-$\sim$$15\%$ more words in the paper compared to earlier years.
+\subsection{Conditional GANs}
+Conditional GANs (cGANs) introduce conditioning variables $y$ (e.g., class labels) to both $G$ and $D$:
+$$
+\min_G \max_D V(D, G) = \mathbb{E}_{x \sim p_{data}(x)} [\log D(x|y)] + \mathbb{E}_{z \sim p_z(z)} [\log(1 - D(G(z|y)))]
+$$
 
-Authors are required to use the NIPS \LaTeX{} style files obtainable
-at the NIPS website as indicated below. Please make sure you use the
-current files and not previous versions. Tweaking the style files may
-be grounds for rejection.
+\subsection{Implementation Details}
+Our implementation uses PyTorch. The generator and discriminator are multi-layer perceptrons (MLPs) for simple datasets, and convolutional neural networks (CNNs) for image data. Training is performed using the Adam optimizer. The codebase is organized in the `src/codebase/` directory, with main scripts in `run_gan.py` and `run_conditional_gan.py`.
 
-\subsection{Retrieval of style files}
+\section{Experiments}
 
-The style files for NIPS and other conference information are
-available on the World Wide Web at
-\begin{center}
-  \url{http://www.nips.cc/}
-\end{center}
-The file \verb+nips_2018.pdf+ contains these instructions and
-illustrates the various formatting requirements your NIPS paper must
-satisfy.
+\subsection{Datasets}
+We use the MNIST dataset for both vanilla and conditional GAN experiments. For cGANs, digit labels are used as conditioning information.
 
-The only supported style file for NIPS 2018 is \verb+nips_2018.sty+,
-rewritten for \LaTeXe{}.  \textbf{Previous style files for \LaTeX{}
-  2.09, Microsoft Word, and RTF are no longer supported!}
+\subsection{Training Setup}
+Hyperparameters:
+\begin{itemize}
+    \item Learning rate: 0.0002
+    \item Batch size: 64
+    \item Latent dimension: 100
+    \item Number of epochs: 50
+\end{itemize}
+Training and evaluation scripts are provided in the `src/` directory.
 
-The \LaTeX{} style file contains three optional arguments: \verb+final+,
-which creates a camera-ready copy, \verb+preprint+, which creates a
-preprint for submission to, e.g., arXiv, and \verb+nonatbib+, which will
-not load the \verb+natbib+ package for you in case of package clash.
+\section{Results}
 
-\paragraph{New preprint option for 2018}
-If you wish to post a preprint of your work online, e.g., on arXiv,
-using the NIPS style, please use the \verb+preprint+ option. This will
-create a nonanonymized version of your work with the text
-``Preprint. Work in progress.''  in the footer. This version may be
-distributed as you see fit. Please \textbf{do not} use the
-\verb+final+ option, which should \textbf{only} be used for papers
-accepted to NIPS.
+\subsection{Vanilla GAN}
+The vanilla GAN successfully generates realistic MNIST digits after sufficient training. Figure~\ref{fig:gan_samples} shows generated samples.
 
-At submission time, please omit the \verb+final+ and \verb+preprint+
-options. This will anonymize your submission and add line numbers to aid
-review. Please do \emph{not} refer to these line numbers in your paper
-as they will be removed during generation of camera-ready copies.
+\begin{figure}[h]
+    \centering
+    %\includegraphics[width=0.8\linewidth]{gan_samples.png}
+    \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+    \caption{Samples generated by vanilla GAN after training.}
+    \label{fig:gan_samples}
+\end{figure}
 
-The file \verb+nips_2018.tex+ may be used as a ``shell'' for writing
-your paper. All you have to do is replace the author, title, abstract,
-and text of the paper with your own.
+\subsection{Conditional GAN}
+Conditional GANs allow for controlled generation of digits. Figure~\ref{fig:cgan_samples} shows samples generated for specific digit classes.
 
-The formatting instructions contained in these style files are
-summarized in Sections \ref{gen_inst}, \ref{headings}, and
-\ref{others} below.
+\begin{figure}[h]
+    \centering
+    %\includegraphics[width=0.8\linewidth]{cgan_samples.png}
+    \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+    \caption{Samples generated by conditional GAN for different digit classes.}
+    \label{fig:cgan_samples}
+\end{figure}
 
-\section{General formatting instructions}
-\label{gen_inst}
+\subsection{Quantitative Evaluation}
+We use Inception Score (IS) and visual inspection to evaluate the quality of generated samples. Conditional GANs outperform vanilla GANs in generating class-specific images.
 
-The text must be confined within a rectangle 5.5~inches (33~picas)
-wide and 9~inches (54~picas) long. The left margin is 1.5~inch
-(9~picas).  Use 10~point type with a vertical spacing (leading) of
-11~points.  Times New Roman is the preferred typeface throughout, and
-will be selected for you by default.  Paragraphs are separated by
-\nicefrac{1}{2}~line space (5.5 points), with no indentation.
+\section{Discussion}
 
-The paper title should be 17~point, initial caps/lower case, bold,
-centered between two horizontal rules. The top rule should be 4~points
-thick and the bottom rule should be 1~point thick. Allow
-\nicefrac{1}{4}~inch space above and below the title to rules. All
-pages should start at 1~inch (6~picas) from the top of the page.
+Training GANs is challenging due to instability and mode collapse. Careful tuning of hyperparameters and network architectures is required. Conditional GANs provide more control and improved sample quality. Our experiments confirm the effectiveness of conditioning in generative models.
 
-For the final version, authors' names are set in boldface, and each
-name is centered above the corresponding address. The lead author's
-name is to be listed first (left-most), and the co-authors' names (if
-different address) are set to follow. If there is only one co-author,
-list both author and co-author side by side.
+\section{Conclusion}
 
-Please pay special attention to the instructions in Section \ref{others}
-regarding figures, tables, acknowledgments, and references.
+We implemented and analyzed GANs and conditional GANs for image generation. Conditional GANs demonstrate superior performance in generating controlled samples. Future work includes exploring advanced architectures and evaluation metrics.
+
+\subsubsection*{Acknowledgments}
+We thank the course instructors and teaching assistants for their guidance.
+
+\section*{References}
+
+[1] Goodfellow, I., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair, S., Courville, A., & Bengio, Y. (2014). Generative adversarial nets. In Advances in neural information processing systems (pp. 2672-2680).
+
+[2] Mirza, M., & Osindero, S. (2014). Conditional generative adversarial nets. arXiv preprint arXiv:1411.1784.
+
+[3] Radford, A., Metz, L., & Chintala, S. (2015). Unsupervised representation learning with deep convolutional generative adversarial networks. arXiv preprint arXiv:1511.06434.
+
+\end{document}
 
 \section{Headings: first level}
 \label{headings}
