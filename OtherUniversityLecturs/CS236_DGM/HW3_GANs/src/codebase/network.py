@@ -7,8 +7,8 @@ class Reshape(torch.nn.Module):
         self.shape = shape
 
     def forward(self, x):
-        # use contiguous view to avoid autograd view/inplace versioning issues
-        return x.reshape(x.size(0), *self.shape).contiguous()
+        # clone to avoid autograd view/inplace versioning issues
+        return x.view(x.size(0), *self.shape).clone()
 
 
 class Generator(torch.nn.Module):
@@ -50,7 +50,7 @@ class Discriminator(torch.nn.Module):
             torch.nn.GroupNorm(1, 512),  # replace BatchNorm with GroupNorm
             torch.nn.LeakyReLU(0.1, inplace=False),
             torch.nn.Linear(512, 1),
-            Reshape(),
+            torch.nn.Flatten(),
         )
 
     def forward(self, x):
