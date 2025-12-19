@@ -36,6 +36,30 @@ class FSVAE(nn.Module):
         # Outputs should all be scalar
         ################################################################################
 
+        # Encode x,y to get q(z|x,y) parameters
+        qm, qv = self.enc.encode(x, y)
+
+        # Sample z from q(z|x,y)
+        z = ut.sample_gaussian(qm, qv)
+
+        # Decode to get mean of p(x|z,y)
+        mu = self.dec.decode(z, y)  # (batch, dim)
+
+        # Reconstruction loss: -log p(x|z,y)
+        # p(x|z,y) = N(x|mu, sigma^2 I) with sigma^2 = 1/10
+        sigma_squared = 1.0 / 10.0
+        # log p(x|z,y) = -0.5 * dim * log(2π * σ^2) - 0.5/σ^2 * ||x - mu||^2
+        dim = x.size(1)
+        log_px_zy = -0.5 * dim * torch.log(2 * torch.pi * sigma_squared) - 0.5 / sigma_squared * ((x - mu) ** 2).sum(1)
+        rec = -log_px_zy.mean()  # Average over batch
+
+        # KL divergence: DKL(q(z|x,y) || p(z))
+        kl_z = ut.kl_normal(qm, qv, self.z_prior_m.expand_as(qm), self.z_prior_v.expand_as(qv))
+        kl_z = kl_z.mean()  # Average over batch
+
+        # Negative ELBO = KL + Reconstruction
+        nelbo = kl_z + rec
+
         ################################################################################
         # End of code modification
         ################################################################################

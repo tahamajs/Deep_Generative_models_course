@@ -42,6 +42,27 @@ class VAE(nn.Module):
         # Outputs should all be scalar
         ################################################################################
 
+        # Encode x to get q(z|x) parameters
+        qm, qv = self.enc.encode(x)
+
+        # Sample z from q(z|x)
+        z = ut.sample_gaussian(qm, qv)
+
+        # Decode z to get reconstruction logits
+        logits = self.dec.decode(z)
+
+        # Compute reconstruction loss: -log p(x|z) ≈ -log Bern(x|σ(logits))
+        # Since x is binary, this is -log_bernoulli_with_logits
+        rec = -ut.log_bernoulli_with_logits(x, logits)
+        rec = rec.mean()  # Average over batch
+
+        # Compute KL divergence: KL(q(z|x) || p(z))
+        kl = ut.kl_normal(qm, qv, self.z_prior_m.expand_as(qm), self.z_prior_v.expand_as(qv))
+        kl = kl.mean()  # Average over batch
+
+        # Negative ELBO = KL + Reconstruction
+        nelbo = kl + rec
+
         ################################################################################
         # End of code modification
         ################################################################################
@@ -68,6 +89,53 @@ class VAE(nn.Module):
         #
         # Outputs should all be scalar
         ################################################################################
+
+        # Encode x to get q(z|x) parameters
+        qm, qv = self.enc.encode(x)
+
+        # Duplicate x and parameters for iw samples
+        x_dup = ut.duplicate(x, iw)  # (batch * iw, dim)
+        qm_dup = ut.duplicate(qm, iw)  # (batch * iw, z_dim)
+        qv_dup = ut.duplicate(qv, iw)  # (batch * iw, z_dim)
+
+        # Sample z from q(z|x) - iw samples per batch element
+        z = ut.sample_gaussian(qm_dup, qv_dup)  # (batch * iw, z_dim)
+
+        # Decode z to get reconstruction logits
+        logits = self.dec.decode(z)  # (batch * iw, dim)
+
+        # Compute log p(x|z) for each sample
+        log_px_z = ut.log_bernoulli_with_logits(x_dup, logits)  # (batch * iw,)
+
+        # Compute log p(z) for each sample
+        log_pz = ut.log_normal(z, self.z_prior_m.expand_as(z), self.z_prior_v.expand_as(z))  # (batch * iw,)
+
+        # Compute log q(z|x) for each sample
+        log_qz_x = ut.log_normal(z, qm_dup, qv_dup)  # (batch * iw,)
+
+        # Compute log p(x,z) = log p(x|z) + log p(z)
+        log_pxz = log_px_z + log_pz  # (batch * iw,)
+
+        # Compute log weights: log p(x,z) - log q(z|x)
+        log_weights = log_pxz - log_qz_x  # (batch * iw,)
+
+        # Reshape to (batch, iw) for log_mean_exp
+        log_weights = log_weights.view(x.size(0), iw)
+
+        # Compute IWAE bound: log(1/iw * sum_i exp(log p(x,z^(i)) - log q(z^(i)|x)))
+        # = log_mean_exp(log p(x,z^(i)) - log q(z^(i)|x))
+        iwae = ut.log_mean_exp(log_weights, dim=1)  # (batch,)
+        niwae = -iwae.mean()  # Negative IWAE, averaged over batch
+
+        # For KL and Rec, use single sample (ELBO decomposition)
+        z_single = z[:x.size(0)]  # Take first sample per batch element
+        logits_single = self.dec.decode(z_single)
+
+        rec = -ut.log_bernoulli_with_logits(x, logits_single)
+        rec = rec.mean()
+
+        kl = ut.kl_normal(qm, qv, self.z_prior_m.expand_as(qm), self.z_prior_v.expand_as(qv))
+        kl = kl.mean()
 
         ################################################################################
         # End of code modification

@@ -37,7 +37,8 @@ def sample_gaussian(m, v):
     # TODO: Modify/complete the code here
     # Sample z
     ################################################################################
-
+    epsilon = torch.randn_like(m)
+    z = m + torch.sqrt(v) * epsilon
     ################################################################################
     # End of code modification
     ################################################################################
@@ -64,7 +65,10 @@ def log_normal(x, m, v):
     # Compute element-wise log probability of normal and remember to sum over
     # the last dimension
     ################################################################################
-
+    # Log probability of multivariate Gaussian: -0.5 * (d*log(2π) + sum(log(v)) + sum((x-m)^2/v))
+    # Since we sum over last dimension, the d*log(2π) becomes dim*log(2π)
+    dim = x.size(-1)
+    log_prob = -0.5 * (dim * torch.log(2 * torch.tensor(torch.pi)) + torch.log(v).sum(-1) + ((x - m).pow(2) / v).sum(-1))
     ################################################################################
     # End of code modification
     ################################################################################
@@ -88,7 +92,20 @@ def log_normal_mixture(z, m, v):
     # Compute the uniformly-weighted mixture of Gaussians density for each sample
     # in the batch
     ################################################################################
+    # z: (batch, dim)
+    # m: (batch, mix, dim)
+    # v: (batch, mix, dim)
 
+    # Expand z to match mixture dimensions: (batch, 1, dim)
+    z_expanded = z.unsqueeze(1)
+
+    # Compute log probabilities for each mixture component: (batch, mix)
+    log_probs = log_normal(z_expanded, m, v)
+
+    # Log-sum-exp over mixture components and subtract log(number of mixtures)
+    # for uniform weighting
+    num_mixtures = m.size(1)
+    log_prob = log_sum_exp(log_probs, dim=1) - torch.log(torch.tensor(float(num_mixtures)))
     ################################################################################
     # End of code modification
     ################################################################################

@@ -36,7 +36,8 @@ class SSVAE(nn.Module):
 
         Returns:
             nelbo: tensor: (): Negative evidence lower bound
-            kl: tensor: (): ELBO KL divergence to prior
+            kl_z: tensor: (): ELBO KL divergence for z
+            kl_y: tensor: (): ELBO KL divergence for y
             rec: tensor: (): ELBO Reconstruction term
         """
         ################################################################################
@@ -59,6 +60,51 @@ class SSVAE(nn.Module):
         y = np.repeat(np.arange(self.y_dim), x.size(0))
         y = x.new(np.eye(self.y_dim)[y])
         x = ut.duplicate(x, self.y_dim)
+
+        # Encode to get q(z|x,y) parameters for each (x,y) pair
+        qm, qv = self.enc.encode(x, y)  # (batch * y_dim, z_dim)
+
+        # Sample z from q(z|x,y) for each (x,y) pair
+        z = ut.sample_gaussian(qm, qv)  # (batch * y_dim, z_dim)
+
+        # Decode to get reconstruction logits p(x|z,y)
+        logits = self.dec.decode(z, y)  # (batch * y_dim, dim)
+
+        # Compute reconstruction loss: -log p(x|z,y)
+        # Reshape for proper computation: (batch, y_dim, dim)
+        x_reshaped = x.view(x.size(0) // self.y_dim, self.y_dim, -1)
+        logits_reshaped = logits.view(x.size(0) // self.y_dim, self.y_dim, -1)
+
+        # Compute log p(x|z,y) for each (x,y,z) triple
+        log_px_zy = ut.log_bernoulli_with_logits(x_reshaped, logits_reshaped)  # (batch, y_dim)
+
+        # Weight by q(y|x) and sum over y: E_{q(y|x)}[-log p(x|z,y)]
+        rec = -(y_prob * log_px_zy).sum(1).mean()  # Average over batch
+
+        # KL for y: DKL(q(y|x) || p(y)) where p(y) is uniform
+        # p(y) has uniform probability 1/y_dim
+        log_py = torch.log(torch.tensor(1.0 / self.y_dim))
+        kl_y = ut.kl_cat(y_prob, y_logprob, log_py.expand_as(y_prob))
+        kl_y = kl_y.mean()  # Average over batch
+
+        # KL for z: E_{q(y|x)}[DKL(q(z|x,y) || p(z))]
+        # Reshape q parameters: (batch, y_dim, z_dim)
+        qm_reshaped = qm.view(x.size(0) // self.y_dim, self.y_dim, -1)
+        qv_reshaped = qv.view(x.size(0) // self.y_dim, self.y_dim, -1)
+
+        # Sample one z per (x,y) pair for Monte Carlo
+        z_reshaped = z.view(x.size(0) // self.y_dim, self.y_dim, -1)  # (batch, y_dim, z_dim)
+
+        # Compute log q(z|x,y) and log p(z)
+        log_qz_xy = ut.log_normal(z_reshaped, qm_reshaped, qv_reshaped)  # (batch, y_dim)
+        log_pz = ut.log_normal(z_reshaped, self.z_prior_m.expand_as(z_reshaped), self.z_prior_v.expand_as(z_reshaped))  # (batch, y_dim)
+
+        # KL_z = E_{q(y|x)}[log q(z|x,y) - log p(z)]
+        kl_z_per_y = log_qz_xy - log_pz  # (batch, y_dim)
+        kl_z = (y_prob * kl_z_per_y).sum(1).mean()  # Average over batch
+
+        # Negative ELBO = KL_y + KL_z + Reconstruction
+        nelbo = kl_y + kl_z + rec
         ################################################################################
         # End of code modification
         ################################################################################
