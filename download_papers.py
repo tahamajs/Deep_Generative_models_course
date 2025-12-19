@@ -18,7 +18,6 @@ PAPERS = {
     "Mixture-of-Experts_(MoE)_in_Qwen2": "2410.02760",
     "Chain-of-Thought_Empowers_LLMs_to_Solve_Math": "2501.12268",
     "Buffet_of_Thoughts": "2406.08479",
-
     # Vision Papers
     "SAM_2_Segment_Anything_in_Images_and_Videos": "2408.00714",
     "Visual_Autoregressive_Modeling_(VAR)": "2406.05245",
@@ -30,7 +29,6 @@ PAPERS = {
     "4D_Gaussian_Splatting": "2312.00735",
     "V-JEPA": "2409.01896",
     "Lumina-T2X": "2406.07125",
-
     # Generative Models & Efficiency
     "Mamba_Linear-Time_Sequence_Modeling": "2312.00752",
     "Flow_Matching_for_Generative_Modeling": "2210.02747",
@@ -42,7 +40,6 @@ PAPERS = {
     "The_AdEMAMix_Optimizer": "2409.07440",
     "Sparse_Attention_by_DeepSeek": "2407.10969",
     "Token_Merging_for_Training-Free_Binding": "2406.12057",
-
     # AI4Science
     "AlphaFold_3": "2401.13859",
     "The_AI_Scientist": "2408.06292",
@@ -53,15 +50,61 @@ PAPERS = {
     "Graph_Neural_Networks_for_Weather_Forecasting": "2306.06079",
     "Foundation_Models_for_Material_Science_(GNoME)": "2407.10775",
     "DAGER_Exact_Gradient_Inversion": "2406.07284",
-    "Neural_PDE_Solvers": "2406.14585"
+    "Neural_PDE_Solvers": "2406.14585",
 }
 
 FOLDERS = {
-    "LLM": ["DeepSeek-R1", "Llama_3_Herd_of_Models", "Kimi_K1.5", "Quiet-STaR", "Gemma_2_Technical_Report", "Phi-3_Technical_Report", "Direct_Language_Model_Alignment_from_Online_AI_Feedback", "BitNet_b1.58", "Mixture-of-Experts_(MoE)_in_Qwen2", "Chain-of-Thought_Empowers_LLMs_to_Solve_Math", "Buffet_of_Thoughts"],
-    "Vision": ["SAM_2_Segment_Anything_in_Images_and_Videos", "Visual_Autoregressive_Modeling_(VAR)", "Sora_Video_Generation_as_World_Simulators", "Depth_Anything", "Vision_Transformers_Need_Registers", "DeepSeek-VL", "CogAgent", "4D_Gaussian_Splatting", "V-JEPA", "Lumina-T2X"],
-    "Generative": ["Mamba_Linear-Time_Sequence_Modeling", "Flow_Matching_for_Generative_Modeling", "Phased_Consistency_Models_(PCM)", "KAN_Kolmogorov-Arnold_Networks", "Rectified_Flow_Transformers", "Vision_Mamba_(Vim)", "Jamba", "The_AdEMAMix_Optimizer", "Sparse_Attention_by_DeepSeek", "Token_Merging_for_Training-Free_Binding"],
-    "AI4Science": ["AlphaFold_3", "The_AI_Scientist", "Equivariant_Neural_Diffusion_for_Molecule_Generation", "Generative_Modeling_of_Molecular_Dynamics", "IgGM_Generative_Model_for_Antibody_Design", "Deep_Genomics", "Graph_Neural_Networks_for_Weather_Forecasting", "Foundation_Models_for_Material_Science_(GNoME)", "DAGER_Exact_Gradient_Inversion", "Neural_PDE_Solvers"]
+    "LLM": [
+        "DeepSeek-R1",
+        "Llama_3_Herd_of_Models",
+        "Kimi_K1.5",
+        "Quiet-STaR",
+        "Gemma_2_Technical_Report",
+        "Phi-3_Technical_Report",
+        "Direct_Language_Model_Alignment_from_Online_AI_Feedback",
+        "BitNet_b1.58",
+        "Mixture-of-Experts_(MoE)_in_Qwen2",
+        "Chain-of-Thought_Empowers_LLMs_to_Solve_Math",
+        "Buffet_of_Thoughts",
+    ],
+    "Vision": [
+        "SAM_2_Segment_Anything_in_Images_and_Videos",
+        "Visual_Autoregressive_Modeling_(VAR)",
+        "Sora_Video_Generation_as_World_Simulators",
+        "Depth_Anything",
+        "Vision_Transformers_Need_Registers",
+        "DeepSeek-VL",
+        "CogAgent",
+        "4D_Gaussian_Splatting",
+        "V-JEPA",
+        "Lumina-T2X",
+    ],
+    "Generative": [
+        "Mamba_Linear-Time_Sequence_Modeling",
+        "Flow_Matching_for_Generative_Modeling",
+        "Phased_Consistency_Models_(PCM)",
+        "KAN_Kolmogorov-Arnold_Networks",
+        "Rectified_Flow_Transformers",
+        "Vision_Mamba_(Vim)",
+        "Jamba",
+        "The_AdEMAMix_Optimizer",
+        "Sparse_Attention_by_DeepSeek",
+        "Token_Merging_for_Training-Free_Binding",
+    ],
+    "AI4Science": [
+        "AlphaFold_3",
+        "The_AI_Scientist",
+        "Equivariant_Neural_Diffusion_for_Molecule_Generation",
+        "Generative_Modeling_of_Molecular_Dynamics",
+        "IgGM_Generative_Model_for_Antibody_Design",
+        "Deep_Genomics",
+        "Graph_Neural_Networks_for_Weather_Forecasting",
+        "Foundation_Models_for_Material_Science_(GNoME)",
+        "DAGER_Exact_Gradient_Inversion",
+        "Neural_PDE_Solvers",
+    ],
 }
+
 
 def download_paper(paper_name, arxiv_id, folder):
     """Download a single paper from arXiv"""
@@ -80,7 +123,7 @@ def download_paper(paper_name, arxiv_id, folder):
         response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
 
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
 
@@ -89,6 +132,7 @@ def download_paper(paper_name, arxiv_id, folder):
     except Exception as e:
         print(f"✗ Failed to download {paper_name}: {e}")
         return False
+
 
 def main():
     """Download all papers"""
@@ -104,7 +148,9 @@ def main():
         for folder, papers in FOLDERS.items():
             for paper in papers:
                 if paper in PAPERS:
-                    future = executor.submit(download_paper, paper, PAPERS[paper], folder)
+                    future = executor.submit(
+                        download_paper, paper, PAPERS[paper], folder
+                    )
                     futures.append(future)
                     total_papers += 1
 
@@ -113,7 +159,10 @@ def main():
             if future.result():
                 successful_downloads += 1
 
-    print(f"\nDownload complete! {successful_downloads}/{total_papers} papers downloaded successfully.")
+    print(
+        f"\nDownload complete! {successful_downloads}/{total_papers} papers downloaded successfully."
+    )
+
 
 if __name__ == "__main__":
     main()
