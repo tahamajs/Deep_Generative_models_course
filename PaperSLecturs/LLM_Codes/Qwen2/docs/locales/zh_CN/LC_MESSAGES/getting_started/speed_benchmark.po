@@ -1,0 +1,1579 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024, Qwen Team
+# This file is distributed under the same license as the Qwen package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Qwen \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-20 17:08+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/getting_started/speed_benchmark.md:1
+#: d7da8abe501c46e99fee28d56435b08b
+msgid "Speed Benchmark"
+msgstr "效率评估"
+
+#: ../../source/getting_started/speed_benchmark.md:3
+#: 478eb0d956db47ccafda9ec05e9c7253
+msgid "We report the speed performance of bfloat16 models and quantized models (including FP8, GPTQ, AWQ) of the Qwen3 series.  Specifically, we report the inference speed (tokens/s) as well as memory footprint (GB) under different context lengths."
+msgstr "本部分介绍 Qwen3 系列模型（原始模型和量化模型）的效率测试结果，包括推理速度(tokens/s)与不同上下文长度时的显存占用(GB)。"
+
+#: ../../source/getting_started/speed_benchmark.md:6
+#: c3e1ab9d5f8b4a54bff5d5a56ea6a2bb
+msgid "Environments"
+msgstr "环境配置"
+
+#: ../../source/getting_started/speed_benchmark.md:8
+#: 6b7764c599eb4693be742f161daf5cc4
+msgid "Hugging Face Transformers"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:10
+#: ../../source/getting_started/speed_benchmark.md:25
+#: aa80ee8b1abd4be1b0a9a88cff496938 c43bf971a253469c832f5e874eda86a9
+msgid "**Hardware**:"
+msgstr "**硬件**:"
+
+#: ../../source/getting_started/speed_benchmark.md:11
+#: ../../source/getting_started/speed_benchmark.md:26
+#: 471dbb8bd26c41a58f485dabf6643aa0
+msgid "NVIDIA H20 96GB"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:12
+#: 04347c8d74a44a18af8fb11cbf47bb42
+msgid "**Software for Non-AutoAWQ**:"
+msgstr "**非AutoAWQ的软件环境**:"
+
+#: ../../source/getting_started/speed_benchmark.md:13
+#: 5bf39b332ff04657838c29c627a0e3a6
+msgid "PyTorch 2.6.0"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:14
+#: e1ca0b138a5248a59f6fb59331ff09c1
+msgid "Flash Attention 2.7.4"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:15
+#: ../../source/getting_started/speed_benchmark.md:19
+#: ../../source/getting_started/speed_benchmark.md:29
+#: c763f81c0b2443d594f7b7c6c1cacce0
+msgid "Transformers 4.51.3"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:16
+#: 07c9d4a46b1446d9a334ad590b23ae8c
+msgid "GPTQModel 2.2.0+cu128torch2.6"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:17
+#: a13e8f4aa82f4693af93c20cda549afe
+msgid "**Software for AutoAWQ**:"
+msgstr "**AutoAWQ的软件环境**:"
+
+#: ../../source/getting_started/speed_benchmark.md:18
+#: ../../source/getting_started/speed_benchmark.md:28
+#: 14b90e1a69ce40f6a1edc3eb0fbf92b3
+msgid "PyTorch 2.6.0+cu124"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:20
+#: c8709c79343448838e2e6423ae888b6e
+msgid "AutoAWQ 0.2.9"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:21
+#: c8bd3eae4c8e497197bd3da6e79ded0a
+msgid "AutoAWQ_kernels 0.0.9"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:24
+#: cc0dad54e88d4e13857f3a45888b6030
+msgid "SGLang"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:27
+#: 931979d5babc4459940b65cc29f091b3
+msgid "**Software**:"
+msgstr "**软件环境**:"
+
+#: ../../source/getting_started/speed_benchmark.md:30
+#: 23713b47351b4b82949d982019a725b1
+msgid "SGLang 0.4.6.post1"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:31
+#: 8a1e4b407a5e46748b9fcbd29b7624ef
+msgid "SGL-kernel 0.1.0"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:32
+#: bc8a5ce98be34cd3987b015f51b607a1
+msgid "vLLM 0.7.2 (Required by SGLang for AWQ quantization)"
+msgstr "vLLM 0.7.2 (被SGLang AWQ量化依赖)"
+
+#: ../../source/getting_started/speed_benchmark.md:34
+#: 1b5176a8dd9647738f81c3f726f9e9dd
+msgid "Notes"
+msgstr "备注"
+
+#: ../../source/getting_started/speed_benchmark.md:36
+#: 5b67ede5b69845158d7de45576b5f511
+msgid "**Inference Speed (tokens/s)** is calculated as:"
+msgstr "**推理速度（tokens/s）** 的计算公式为："
+
+#: ../../source/getting_started/speed_benchmark.md:38
+#: 8d9cad9e886e4ba09e3a9907eecdc85e
+msgid "\\text{Speed} = \\frac{\\text{tokens}_{\\text{prompt}} + \\text{tokens}_{\\text{generation}}}{\\text{time}}"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:42
+#: 5e23850b08f54a5b93ca312f77ad16cb
+msgid "We use a **batch size of 1** and the **minimum number of GPUs** possible for evaluation."
+msgstr "batch size 设置为1，使用 GPU 数量尽可能少"
+
+#: ../../source/getting_started/speed_benchmark.md:44
+#: 25f5f831928e428a857e76cb66be39dc
+msgid "We test the **speed and memory usage** when generating **2048 tokens**, with input lengths of `1`, `6144`, `14336`, `30720`, `63488`, and `129024` tokens."
+msgstr "我们测试生成2048 tokens时的速度与显存占用，输入长度分别为1、6144、14336、30720、63488、129024 tokens（如受模型支持）。"
+
+#: ../../source/getting_started/speed_benchmark.md:47
+#: 11a1e0c5d8ec462987503d3eddf02e93
+msgid "**For SGLang**:"
+msgstr "**对于SGLang**:"
+
+#: ../../source/getting_started/speed_benchmark.md:48
+#: 39a19fc71e414215bfefe47fabd4f103
+msgid "**Memory usage** is not reported because SGLang pre-allocates all GPU memory.   By default, we set `mem_fraction_static=0.85`."
+msgstr "**内存使用情况**未报告，因为 SGLang 会预先分配所有 GPU 内存。默认情况下，我们设置 `mem_fraction_static=0.85`。"
+
+#: ../../source/getting_started/speed_benchmark.md:50
+#: 4dc120620fe04f8d929eb9a49e162384
+msgid "We configure `context_length=140000` and enable `enable_mixed_chunk=True`."
+msgstr "我们配置了 `context_length=140000` 并启用了 `enable_mixed_chunk=True`。"
+
+#: ../../source/getting_started/speed_benchmark.md:51
+#: f1912315cef646d885132a95c1bbfe61
+msgid "For **AWQ quantization**, we use the **awq_marlin** backend."
+msgstr "对于 **AWQ 量化**，我们使用 **awq_marlin** 后端。"
+
+#: ../../source/getting_started/speed_benchmark.md:52
+#: b71d9ac6ac2a4007b1bf5bcbbcc0a583
+msgid "We set `skip_tokenizer_init=True` and perform generation using `input_ids` instead of raw text prompts."
+msgstr "我们设置 `skip_tokenizer_init=True` 并使用 `input_ids` 进行生成，而不是使用原始文本提示。"
+
+#: ../../source/getting_started/speed_benchmark.md:54
+#: 68e13ce181df472fb7ac447baccccd5f
+msgid "**FP8 Performance in Transformers**: The inference speed of Transformers in FP8 mode is currently not optimal and requires further optimization."
+msgstr "**Transformers 中的 FP8 性能**：Transformers 在 FP8 模式下的推理速度目前不够理想，还需要进一步优化。"
+
+#: ../../source/getting_started/speed_benchmark.md:56
+#: eba091d7757241eba26249e3b4481358
+msgid "**GPTQ-INT4 Performance in SGLang**: The performance of GPTQ-INT4 in SGLang also needs improvement, and we are actively working with the team to enhance it."
+msgstr "**SGLang 中 GPTQ-INT4 的性能**：SGLang 中 GPTQ-INT4 的性能也需要改进，SGLang团队正提升其表现。"
+
+#: ../../source/getting_started/speed_benchmark.md:58
+#: 378478a6059142c4baa00ef74101c7f5
+msgid "Results"
+msgstr "结果"
+
+#: ../../source/getting_started/speed_benchmark.md:60
+#: e70ceb3f7c51413a9f385a49a32a5f53
+msgid "Qwen3-0.6B (SGLang)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:114
+#: 48d34c54a6f84a679798b6d6e10b9258
+msgid "Qwen3-0.6B (Transformers)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:169
+#: 6bbf0e62079c420ea3466b988c613429
+msgid "Qwen3-1.7B (SGLang)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:225
+#: d0b2aba9331646b28d3a8b2d75385d6c
+msgid "Qwen3-1.7B (Transformers)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:279
+#: 74e433c4044d4a06930966868db14258
+msgid "Qwen3-4B (SGLang)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:351
+#: 0fa507ce71d846688e57481c96114d58
+msgid "Qwen3-4B (Transformers)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:405
+#: dbffaaf4c5274194a1eb1ff640e86dea
+msgid "Qwen3-8B (SGLang)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:478
+#: f3be6cabb6db49769fd4d7f64e16391f
+msgid "Qwen3-8B (Transformers)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:533
+#: d08b7dfd146a4853a4d47c8f2a028cc4
+msgid "Qwen3-14B (SGLang)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:606
+#: 0fa507ce71d846688e57481c96114d58
+msgid "Qwen3-14B (Transformers)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:661
+#: 245c24c8822b4b95aa59bc31d3798e3b
+msgid "Qwen3-32B (SGLang)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:735
+#: f3be6cabb6db49769fd4d7f64e16391f
+msgid "Qwen3-32B (Transformers)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:789
+#: 35fe65bc8eac4fde92b4614a2875c78d
+msgid "Qwen3-30B-A3B (SGLang)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:861
+#: 31c35c93d04143bc9af6b4966beb6d1b
+msgid "Qwen3-30B-A3B (Transformers)"
+msgstr ""
+
+#: ../../source/getting_started/speed_benchmark.md:916
+#: c6f3063607fe403284c5aae77059b415
+msgid "Qwen3-235B-A22B (SGLang)"
+msgstr ""
+
+#~ msgid "To be updated for Qwen3."
+#~ msgstr "仍需为Qwen3更新。"
+
+#~ msgid "The environment of the evaluation with huggingface transformers is:"
+#~ msgstr "测试HuggingFace ``transformers`` 时的环境配置："
+
+#~ msgid "NVIDIA A100 80GB"
+#~ msgstr ""
+
+#~ msgid "CUDA 12.1"
+#~ msgstr ""
+
+#~ msgid "Pytorch 2.3.1"
+#~ msgstr ""
+
+#~ msgid "Flash Attention 2.5.8"
+#~ msgstr ""
+
+#~ msgid "Transformers 4.46.0"
+#~ msgstr ""
+
+#~ msgid "AutoGPTQ 0.7.1+cu121 (Compiled from source code)"
+#~ msgstr ""
+
+#~ msgid "AutoAWQ 0.2.6"
+#~ msgstr ""
+
+#~ msgid "The environment of the evaluation with vLLM is:"
+#~ msgstr "测试vLLM时的环境配置："
+
+#~ msgid "vLLM 0.6.3"
+#~ msgstr ""
+
+#~ msgid "Pytorch 2.4.0"
+#~ msgstr ""
+
+#~ msgid "Flash Attention 2.6.3"
+#~ msgstr ""
+
+#~ msgid "For vLLM, the memory usage is not reported because it pre-allocates all GPU memory. We use ``gpu_memory_utilization=0.9 max_model_len=32768 enforce_eager=False`` by default."
+#~ msgstr "对于vLLM，由于GPU显存预分配，实际显存使用难以评估。默认情况下，统一设定为``gpu_memory_utilization=0.9 max_model_len=32768 enforce_eager=False``。"
+
+#~ msgid "0.5B (Transformer)"
+#~ msgstr ""
+
+#~ msgid "Model"
+#~ msgstr "模型"
+
+#~ msgid "Input Length"
+#~ msgstr "输入长度"
+
+#~ msgid "Quantization"
+#~ msgstr "量化"
+
+#~ msgid "GPU Num"
+#~ msgstr "GPU数量"
+
+#~ msgid "Speed(tokens/s)"
+#~ msgstr "速度 (tokens/s)"
+
+#~ msgid "GPU Memory(GB)"
+#~ msgstr "显存占用 (GB)"
+
+#~ msgid "Note"
+#~ msgstr "注意："
+
+#~ msgid "Qwen2.5-0.5B-Instruct"
+#~ msgstr ""
+
+#~ msgid "1"
+#~ msgstr ""
+
+#~ msgid "BF16"
+#~ msgstr ""
+
+#~ msgid "47.40"
+#~ msgstr ""
+
+#~ msgid "0.97"
+#~ msgstr ""
+
+#~ msgid "GPTQ-Int8"
+#~ msgstr ""
+
+#~ msgid "35.17"
+#~ msgstr ""
+
+#~ msgid "0.64"
+#~ msgstr ""
+
+#~ msgid "auto_gptq==0.6.0+cu1210"
+#~ msgstr ""
+
+#~ msgid "GPTQ-Int4"
+#~ msgstr ""
+
+#~ msgid "50.60"
+#~ msgstr ""
+
+#~ msgid "0.48"
+#~ msgstr ""
+
+#~ msgid "AWQ"
+#~ msgstr ""
+
+#~ msgid "37.09"
+#~ msgstr ""
+
+#~ msgid "0.68"
+#~ msgstr ""
+
+#~ msgid "6144"
+#~ msgstr ""
+
+#~ msgid "47.45"
+#~ msgstr ""
+
+#~ msgid "1.23"
+#~ msgstr ""
+
+#~ msgid "36.47"
+#~ msgstr ""
+
+#~ msgid "0.90"
+#~ msgstr ""
+
+#~ msgid "48.89"
+#~ msgstr ""
+
+#~ msgid "0.73"
+#~ msgstr ""
+
+#~ msgid "37.04"
+#~ msgstr ""
+
+#~ msgid "0.72"
+#~ msgstr ""
+
+#~ msgid "14336"
+#~ msgstr ""
+
+#~ msgid "47.11"
+#~ msgstr ""
+
+#~ msgid "1.60"
+#~ msgstr ""
+
+#~ msgid "35.44"
+#~ msgstr ""
+
+#~ msgid "1.26"
+#~ msgstr ""
+
+#~ msgid "48.26"
+#~ msgstr ""
+
+#~ msgid "1.10"
+#~ msgstr ""
+
+#~ msgid "37.14"
+#~ msgstr ""
+
+#~ msgid "30720"
+#~ msgstr ""
+
+#~ msgid "47.16"
+#~ msgstr ""
+
+#~ msgid "2.34"
+#~ msgstr ""
+
+#~ msgid "36.25"
+#~ msgstr ""
+
+#~ msgid "2.01"
+#~ msgstr ""
+
+#~ msgid "49.22"
+#~ msgstr ""
+
+#~ msgid "1.85"
+#~ msgstr ""
+
+#~ msgid "36.90"
+#~ msgstr ""
+
+#~ msgid "1.84"
+#~ msgstr ""
+
+#~ msgid "0.5B (vLLM)"
+#~ msgstr ""
+
+#~ msgid "311.55"
+#~ msgstr ""
+
+#~ msgid "257.07"
+#~ msgstr ""
+
+#~ msgid "260.93"
+#~ msgstr ""
+
+#~ msgid "261.95"
+#~ msgstr ""
+
+#~ msgid "304.79"
+#~ msgstr ""
+
+#~ msgid "254.10"
+#~ msgstr ""
+
+#~ msgid "257.33"
+#~ msgstr ""
+
+#~ msgid "259.80"
+#~ msgstr ""
+
+#~ msgid "290.28"
+#~ msgstr ""
+
+#~ msgid "243.69"
+#~ msgstr ""
+
+#~ msgid "247.01"
+#~ msgstr ""
+
+#~ msgid "249.58"
+#~ msgstr ""
+
+#~ msgid "264.51"
+#~ msgstr ""
+
+#~ msgid "223.86"
+#~ msgstr ""
+
+#~ msgid "226.50"
+#~ msgstr ""
+
+#~ msgid "229.84"
+#~ msgstr ""
+
+#~ msgid "1.5B (Transformer)"
+#~ msgstr ""
+
+#~ msgid "Qwen2.5-1.5B-Instruct"
+#~ msgstr ""
+
+#~ msgid "39.68"
+#~ msgstr ""
+
+#~ msgid "2.95"
+#~ msgstr ""
+
+#~ msgid "32.62"
+#~ msgstr ""
+
+#~ msgid "1.82"
+#~ msgstr ""
+
+#~ msgid "43.33"
+#~ msgstr ""
+
+#~ msgid "1.18"
+#~ msgstr ""
+
+#~ msgid "31.70"
+#~ msgstr ""
+
+#~ msgid "1.51"
+#~ msgstr ""
+
+#~ msgid "40.88"
+#~ msgstr ""
+
+#~ msgid "3.43"
+#~ msgstr ""
+
+#~ msgid "31.46"
+#~ msgstr ""
+
+#~ msgid "2.30"
+#~ msgstr ""
+
+#~ msgid "43.96"
+#~ msgstr ""
+
+#~ msgid "1.66"
+#~ msgstr ""
+
+#~ msgid "32.30"
+#~ msgstr ""
+
+#~ msgid "1.63"
+#~ msgstr ""
+
+#~ msgid "40.43"
+#~ msgstr ""
+
+#~ msgid "4.16"
+#~ msgstr ""
+
+#~ msgid "31.06"
+#~ msgstr ""
+
+#~ msgid "3.03"
+#~ msgstr ""
+
+#~ msgid "43.66"
+#~ msgstr ""
+
+#~ msgid "2.39"
+#~ msgstr ""
+
+#~ msgid "32.39"
+#~ msgstr ""
+
+#~ msgid "2.36"
+#~ msgstr ""
+
+#~ msgid "38.59"
+#~ msgstr ""
+
+#~ msgid "5.62"
+#~ msgstr ""
+
+#~ msgid "31.04"
+#~ msgstr ""
+
+#~ msgid "4.49"
+#~ msgstr ""
+
+#~ msgid "35.68"
+#~ msgstr ""
+
+#~ msgid "3.85"
+#~ msgstr ""
+
+#~ msgid "31.95"
+#~ msgstr ""
+
+#~ msgid "3.82"
+#~ msgstr ""
+
+#~ msgid "1.5B (vLLM)"
+#~ msgstr ""
+
+#~ msgid "183.33"
+#~ msgstr ""
+
+#~ msgid "201.67"
+#~ msgstr ""
+
+#~ msgid "217.03"
+#~ msgstr ""
+
+#~ msgid "213.74"
+#~ msgstr ""
+
+#~ msgid "176.68"
+#~ msgstr ""
+
+#~ msgid "192.83"
+#~ msgstr ""
+
+#~ msgid "206.63"
+#~ msgstr ""
+
+#~ msgid "203.64"
+#~ msgstr ""
+
+#~ msgid "168.69"
+#~ msgstr ""
+
+#~ msgid "183.69"
+#~ msgstr ""
+
+#~ msgid "195.88"
+#~ msgstr ""
+
+#~ msgid "192.64"
+#~ msgstr ""
+
+#~ msgid "152.04"
+#~ msgstr ""
+
+#~ msgid "162.82"
+#~ msgstr ""
+
+#~ msgid "173.57"
+#~ msgstr ""
+
+#~ msgid "170.20"
+#~ msgstr ""
+
+#~ msgid "3B (Transformer)"
+#~ msgstr ""
+
+#~ msgid "Qwen2.5-3B-Instruct"
+#~ msgstr ""
+
+#~ msgid "30.80"
+#~ msgstr ""
+
+#~ msgid "5.95"
+#~ msgstr ""
+
+#~ msgid "25.69"
+#~ msgstr ""
+
+#~ msgid "3.38"
+#~ msgstr ""
+
+#~ msgid "35.21"
+#~ msgstr ""
+
+#~ msgid "2.06"
+#~ msgstr ""
+
+#~ msgid "25.29"
+#~ msgstr ""
+
+#~ msgid "2.50"
+#~ msgstr ""
+
+#~ msgid "32.20"
+#~ msgstr ""
+
+#~ msgid "6.59"
+#~ msgstr ""
+
+#~ msgid "24.69"
+#~ msgstr ""
+
+#~ msgid "3.98"
+#~ msgstr ""
+
+#~ msgid "34.47"
+#~ msgstr ""
+
+#~ msgid "2.67"
+#~ msgstr ""
+
+#~ msgid "24.86"
+#~ msgstr ""
+
+#~ msgid "2.62"
+#~ msgstr ""
+
+#~ msgid "31.72"
+#~ msgstr ""
+
+#~ msgid "7.47"
+#~ msgstr ""
+
+#~ msgid "24.70"
+#~ msgstr ""
+
+#~ msgid "4.89"
+#~ msgstr ""
+
+#~ msgid "34.36"
+#~ msgstr ""
+
+#~ msgid "3.58"
+#~ msgstr ""
+
+#~ msgid "25.19"
+#~ msgstr ""
+
+#~ msgid "3.54"
+#~ msgstr ""
+
+#~ msgid "25.37"
+#~ msgstr ""
+
+#~ msgid "9.30"
+#~ msgstr ""
+
+#~ msgid "21.67"
+#~ msgstr ""
+
+#~ msgid "6.72"
+#~ msgstr ""
+
+#~ msgid "23.60"
+#~ msgstr ""
+
+#~ msgid "5.41"
+#~ msgstr ""
+
+#~ msgid "24.56"
+#~ msgstr ""
+
+#~ msgid "5.37"
+#~ msgstr ""
+
+#~ msgid "3B (vLLM)"
+#~ msgstr ""
+
+#~ msgid "127.61"
+#~ msgstr ""
+
+#~ msgid "150.02"
+#~ msgstr ""
+
+#~ msgid "168.20"
+#~ msgstr ""
+
+#~ msgid "165.50"
+#~ msgstr ""
+
+#~ msgid "123.15"
+#~ msgstr ""
+
+#~ msgid "143.09"
+#~ msgstr ""
+
+#~ msgid "159.85"
+#~ msgstr ""
+
+#~ msgid "156.38"
+#~ msgstr ""
+
+#~ msgid "117.35"
+#~ msgstr ""
+
+#~ msgid "135.50"
+#~ msgstr ""
+
+#~ msgid "149.35"
+#~ msgstr ""
+
+#~ msgid "147.75"
+#~ msgstr ""
+
+#~ msgid "105.88"
+#~ msgstr ""
+
+#~ msgid "118.38"
+#~ msgstr ""
+
+#~ msgid "129.28"
+#~ msgstr ""
+
+#~ msgid "127.19"
+#~ msgstr ""
+
+#~ msgid "7B (Transformer)"
+#~ msgstr ""
+
+#~ msgid "Qwen2.5-7B-Instruct"
+#~ msgstr ""
+
+#~ msgid "40.38"
+#~ msgstr ""
+
+#~ msgid "14.38"
+#~ msgstr ""
+
+#~ msgid "31.55"
+#~ msgstr ""
+
+#~ msgid "8.42"
+#~ msgstr ""
+
+#~ msgid "43.10"
+#~ msgstr ""
+
+#~ msgid "5.52"
+#~ msgstr ""
+
+#~ msgid "32.03"
+#~ msgstr ""
+
+#~ msgid "5.39"
+#~ msgstr ""
+
+#~ msgid "38.76"
+#~ msgstr ""
+
+#~ msgid "15.38"
+#~ msgstr ""
+
+#~ msgid "31.26"
+#~ msgstr ""
+
+#~ msgid "9.43"
+#~ msgstr ""
+
+#~ msgid "38.27"
+#~ msgstr ""
+
+#~ msgid "6.52"
+#~ msgstr ""
+
+#~ msgid "32.37"
+#~ msgstr ""
+
+#~ msgid "6.39"
+#~ msgstr ""
+
+#~ msgid "29.78"
+#~ msgstr ""
+
+#~ msgid "16.91"
+#~ msgstr ""
+
+#~ msgid "26.86"
+#~ msgstr ""
+
+#~ msgid "10.96"
+#~ msgstr ""
+
+#~ msgid "28.70"
+#~ msgstr ""
+
+#~ msgid "8.05"
+#~ msgstr ""
+
+#~ msgid "30.23"
+#~ msgstr ""
+
+#~ msgid "7.92"
+#~ msgstr ""
+
+#~ msgid "18.83"
+#~ msgstr ""
+
+#~ msgid "19.97"
+#~ msgstr ""
+
+#~ msgid "17.59"
+#~ msgstr ""
+
+#~ msgid "14.01"
+#~ msgstr ""
+
+#~ msgid "18.45"
+#~ msgstr ""
+
+#~ msgid "11.11"
+#~ msgstr ""
+
+#~ msgid "19.11"
+#~ msgstr ""
+
+#~ msgid "10.98"
+#~ msgstr ""
+
+#~ msgid "7B (vLLM)"
+#~ msgstr ""
+
+#~ msgid "84.28"
+#~ msgstr ""
+
+#~ msgid "122.01"
+#~ msgstr ""
+
+#~ msgid "154.05"
+#~ msgstr ""
+
+#~ msgid "148.10"
+#~ msgstr ""
+
+#~ msgid "80.70"
+#~ msgstr ""
+
+#~ msgid "112.38"
+#~ msgstr ""
+
+#~ msgid "141.98"
+#~ msgstr ""
+
+#~ msgid "137.64"
+#~ msgstr ""
+
+#~ msgid "77.69"
+#~ msgstr ""
+
+#~ msgid "105.25"
+#~ msgstr ""
+
+#~ msgid "129.35"
+#~ msgstr ""
+
+#~ msgid "124.91"
+#~ msgstr ""
+
+#~ msgid "70.33"
+#~ msgstr ""
+
+#~ msgid "90.71"
+#~ msgstr ""
+
+#~ msgid "108.30"
+#~ msgstr ""
+
+#~ msgid "104.66"
+#~ msgstr ""
+
+#~ msgid "63488"
+#~ msgstr ""
+
+#~ msgid "50.86"
+#~ msgstr ""
+
+#~ msgid "setting-64k"
+#~ msgstr "[设定3]"
+
+#~ msgid "60.52"
+#~ msgstr ""
+
+#~ msgid "67.97"
+#~ msgstr ""
+
+#~ msgid "66.42"
+#~ msgstr ""
+
+#~ msgid "129024"
+#~ msgstr ""
+
+#~ msgid "28.94"
+#~ msgstr ""
+
+#~ msgid "vllm==0.6.2, new sample config"
+#~ msgstr ""
+
+#~ msgid "25.97"
+#~ msgstr ""
+
+#~ msgid "26.37"
+#~ msgstr ""
+
+#~ msgid "26.57"
+#~ msgstr ""
+
+#~ msgid "[Setting-64k]=(gpu_memory_utilization=0.9 max_model_len=65536 enforce_eager=False)"
+#~ msgstr "[默认设定]=(gpu_memory_utilization=0.9 max_model_len=32768 enforce_eager=False)"
+
+#~ msgid "[new sample config]: for vLLM, set the following sampling parameters: SamplingParams(temperature=0.7,top_p=0.8,top_k=20,repetition_penalty=1,presence_penalty=0,frequency_penalty=0,max_tokens=out_length)"
+#~ msgstr ""
+
+#~ msgid "14B (Transformer)"
+#~ msgstr ""
+
+#~ msgid "Qwen2.5-14B-Instruct"
+#~ msgstr ""
+
+#~ msgid "24.74"
+#~ msgstr ""
+
+#~ msgid "28.08"
+#~ msgstr ""
+
+#~ msgid "18.84"
+#~ msgstr ""
+
+#~ msgid "16.11"
+#~ msgstr ""
+
+#~ msgid "25.89"
+#~ msgstr ""
+
+#~ msgid "9.94"
+#~ msgstr ""
+
+#~ msgid "19.23"
+#~ msgstr ""
+
+#~ msgid "9.79"
+#~ msgstr ""
+
+#~ msgid "20.51"
+#~ msgstr ""
+
+#~ msgid "29.50"
+#~ msgstr ""
+
+#~ msgid "17.80"
+#~ msgstr ""
+
+#~ msgid "17.61"
+#~ msgstr ""
+
+#~ msgid "20.06"
+#~ msgstr ""
+
+#~ msgid "11.36"
+#~ msgstr ""
+
+#~ msgid "19.21"
+#~ msgstr ""
+
+#~ msgid "11.22"
+#~ msgstr ""
+
+#~ msgid "13.92"
+#~ msgstr ""
+
+#~ msgid "12.66"
+#~ msgstr ""
+
+#~ msgid "19.98"
+#~ msgstr ""
+
+#~ msgid "13.79"
+#~ msgstr ""
+
+#~ msgid "13.81"
+#~ msgstr ""
+
+#~ msgid "14.17"
+#~ msgstr ""
+
+#~ msgid "13.67"
+#~ msgstr ""
+
+#~ msgid "8.20"
+#~ msgstr ""
+
+#~ msgid "36.85"
+#~ msgstr ""
+
+#~ msgid "7.77"
+#~ msgstr ""
+
+#~ msgid "24.88"
+#~ msgstr ""
+
+#~ msgid "8.14"
+#~ msgstr ""
+
+#~ msgid "18.71"
+#~ msgstr ""
+
+#~ msgid "8.31"
+#~ msgstr ""
+
+#~ msgid "18.57"
+#~ msgstr ""
+
+#~ msgid "14B (vLLM)"
+#~ msgstr ""
+
+#~ msgid "46.30"
+#~ msgstr ""
+
+#~ msgid "70.40"
+#~ msgstr ""
+
+#~ msgid "98.02"
+#~ msgstr ""
+
+#~ msgid "92.66"
+#~ msgstr ""
+
+#~ msgid "43.83"
+#~ msgstr ""
+
+#~ msgid "64.33"
+#~ msgstr ""
+
+#~ msgid "86.10"
+#~ msgstr ""
+
+#~ msgid "83.11"
+#~ msgstr ""
+
+#~ msgid "41.91"
+#~ msgstr ""
+
+#~ msgid "59.21"
+#~ msgstr ""
+
+#~ msgid "76.85"
+#~ msgstr ""
+
+#~ msgid "74.03"
+#~ msgstr ""
+
+#~ msgid "37.18"
+#~ msgstr ""
+
+#~ msgid "49.23"
+#~ msgstr ""
+
+#~ msgid "60.91"
+#~ msgstr ""
+
+#~ msgid "59.01"
+#~ msgstr ""
+
+#~ msgid "26.85"
+#~ msgstr ""
+
+#~ msgid "32.83"
+#~ msgstr ""
+
+#~ msgid "37.67"
+#~ msgstr ""
+
+#~ msgid "36.71"
+#~ msgstr ""
+
+#~ msgid "14.53"
+#~ msgstr ""
+
+#~ msgid "15.10"
+#~ msgstr ""
+
+#~ msgid "15.13"
+#~ msgstr ""
+
+#~ msgid "15.25"
+#~ msgstr ""
+
+#~ msgid "32B (Transformer)"
+#~ msgstr ""
+
+#~ msgid "Qwen2.5-32B-Instruct"
+#~ msgstr ""
+
+#~ msgid "17.54"
+#~ msgstr ""
+
+#~ msgid "61.58"
+#~ msgstr ""
+
+#~ msgid "14.52"
+#~ msgstr ""
+
+#~ msgid "33.56"
+#~ msgstr ""
+
+#~ msgid "19.20"
+#~ msgstr ""
+
+#~ msgid "18.94"
+#~ msgstr ""
+
+#~ msgid "14.60"
+#~ msgstr ""
+
+#~ msgid "18.67"
+#~ msgstr ""
+
+#~ msgid "12.49"
+#~ msgstr ""
+
+#~ msgid "63.72"
+#~ msgstr ""
+
+#~ msgid "11.61"
+#~ msgstr ""
+
+#~ msgid "35.86"
+#~ msgstr ""
+
+#~ msgid "13.42"
+#~ msgstr ""
+
+#~ msgid "21.09"
+#~ msgstr ""
+
+#~ msgid "20.81"
+#~ msgstr ""
+
+#~ msgid "8.95"
+#~ msgstr ""
+
+#~ msgid "67.31"
+#~ msgstr ""
+
+#~ msgid "8.53"
+#~ msgstr ""
+
+#~ msgid "39.28"
+#~ msgstr ""
+
+#~ msgid "9.48"
+#~ msgstr ""
+
+#~ msgid "24.67"
+#~ msgstr ""
+
+#~ msgid "9.71"
+#~ msgstr ""
+
+#~ msgid "24.39"
+#~ msgstr ""
+
+#~ msgid "5.59"
+#~ msgstr ""
+
+#~ msgid "74.47"
+#~ msgstr ""
+
+#~ msgid "5.42"
+#~ msgstr ""
+
+#~ msgid "46.45"
+#~ msgstr ""
+
+#~ msgid "5.79"
+#~ msgstr ""
+
+#~ msgid "31.84"
+#~ msgstr ""
+
+#~ msgid "5.85"
+#~ msgstr ""
+
+#~ msgid "31.56"
+#~ msgstr ""
+
+#~ msgid "32B (vLLM)"
+#~ msgstr ""
+
+#~ msgid "22.13"
+#~ msgstr ""
+
+#~ msgid "setting1"
+#~ msgstr "[设定3]"
+
+#~ msgid "37.57"
+#~ msgstr ""
+
+#~ msgid "55.83"
+#~ msgstr ""
+
+#~ msgid "51.92"
+#~ msgstr ""
+
+#~ msgid "21.05"
+#~ msgstr ""
+
+#~ msgid "34.67"
+#~ msgstr ""
+
+#~ msgid "49.96"
+#~ msgstr ""
+
+#~ msgid "46.68"
+#~ msgstr ""
+
+#~ msgid "19.91"
+#~ msgstr ""
+
+#~ msgid "31.89"
+#~ msgstr ""
+
+#~ msgid "44.79"
+#~ msgstr ""
+
+#~ msgid "41.83"
+#~ msgstr ""
+
+#~ msgid "2"
+#~ msgstr ""
+
+#~ msgid "31.82"
+#~ msgstr ""
+
+#~ msgid "26.88"
+#~ msgstr ""
+
+#~ msgid "35.66"
+#~ msgstr ""
+
+#~ msgid "33.75"
+#~ msgstr ""
+
+#~ msgid "24.45"
+#~ msgstr ""
+
+#~ msgid "18.60"
+#~ msgstr ""
+
+#~ msgid "22.72"
+#~ msgstr ""
+
+#~ msgid "21.79"
+#~ msgstr ""
+
+#~ msgid "14.31"
+#~ msgstr ""
+
+#~ msgid "9.77"
+#~ msgstr ""
+
+#~ msgid "10.39"
+#~ msgstr ""
+
+#~ msgid "10.34"
+#~ msgstr ""
+
+#~ msgid "For context length 129024, the model needs to be predicted with the following config: \"model_max_length\"=131072"
+#~ msgstr ""
+
+#~ msgid "[Default Setting]=(gpu_memory_utilization=0.9 max_model_len=32768 enforce_eager=False)"
+#~ msgstr "[默认设定]=(gpu_memory_utilization=0.9 max_model_len=32768 enforce_eager=False)"
+
+#~ msgid "[Setting 1]=(gpu_memory_utilization=1.0 max_model_len=32768 enforce_eager=True)"
+#~ msgstr "[设定 3]=(gpu_memory_utilization=1.0 max_model_len=8192 enforce_eager=True)"
+
+#~ msgid "72B (Transformer)"
+#~ msgstr ""
+
+#~ msgid "Qwen2.5-72B-Instruct"
+#~ msgstr ""
+
+#~ msgid "8.73"
+#~ msgstr ""
+
+#~ msgid "136.20"
+#~ msgstr ""
+
+#~ msgid "8.66"
+#~ msgstr ""
+
+#~ msgid "72.61"
+#~ msgstr ""
+
+#~ msgid "11.07"
+#~ msgstr ""
+
+#~ msgid "39.91"
+#~ msgstr ""
+
+#~ msgid "11.50"
+#~ msgstr ""
+
+#~ msgid "39.44"
+#~ msgstr ""
+
+#~ msgid "140.00"
+#~ msgstr ""
+
+#~ msgid "77.81"
+#~ msgstr ""
+
+#~ msgid "7.56"
+#~ msgstr ""
+
+#~ msgid "42.50"
+#~ msgstr ""
+
+#~ msgid "8.17"
+#~ msgstr ""
+
+#~ msgid "42.13"
+#~ msgstr ""
+
+#~ msgid "3"
+#~ msgstr ""
+
+#~ msgid "4.25"
+#~ msgstr ""
+
+#~ msgid "149.14"
+#~ msgstr ""
+
+#~ msgid "4.66"
+#~ msgstr ""
+
+#~ msgid "82.55"
+#~ msgstr ""
+
+#~ msgid "5.27"
+#~ msgstr ""
+
+#~ msgid "46.86"
+#~ msgstr ""
+
+#~ msgid "5.57"
+#~ msgstr ""
+
+#~ msgid "46.38"
+#~ msgstr ""
+
+#~ msgid "2.94"
+#~ msgstr ""
+
+#~ msgid "164.79"
+#~ msgstr ""
+
+#~ msgid "94.75"
+#~ msgstr ""
+
+#~ msgid "3.14"
+#~ msgstr ""
+
+#~ msgid "62.57"
+#~ msgstr ""
+
+#~ msgid "3.23"
+#~ msgstr ""
+
+#~ msgid "61.64"
+#~ msgstr ""
+
+#~ msgid "72B (vLLM)"
+#~ msgstr ""
+
+#~ msgid "18.19"
+#~ msgstr ""
+
+#~ msgid "Setting 1"
+#~ msgstr "[设定3]"
+
+#~ msgid "4"
+#~ msgstr ""
+
+#~ msgid "31.37"
+#~ msgstr ""
+
+#~ msgid "Default"
+#~ msgstr ""
+
+#~ msgid "31.40"
+#~ msgstr ""
+
+#~ msgid "16.47"
+#~ msgstr ""
+
+#~ msgid "Setting 2"
+#~ msgstr "[设定2]"
+
+#~ msgid "44.30"
+#~ msgstr ""
+
+#~ msgid "29.90"
+#~ msgstr ""
+
+#~ msgid "29.37"
+#~ msgstr ""
+
+#~ msgid "13.88"
+#~ msgstr ""
+
+#~ msgid "Setting 3"
+#~ msgstr "[设定3]"
+
+#~ msgid "40.67"
+#~ msgstr ""
+
+#~ msgid "30.10"
+#~ msgstr ""
+
+#~ msgid "27.20"
+#~ msgstr ""
+
+#~ msgid "38.10"
+#~ msgstr ""
+
+#~ msgid "36.63"
+#~ msgstr ""
+
+#~ msgid "27.53"
+#~ msgstr ""
+
+#~ msgid "23.32"
+#~ msgstr ""
+
+#~ msgid "30.98"
+#~ msgstr ""
+
+#~ msgid "30.02"
+#~ msgstr ""
+
+#~ msgid "20.74"
+#~ msgstr ""
+
+#~ msgid "Setting 4"
+#~ msgstr "[设定3]"
+
+#~ msgid "16.27"
+#~ msgstr ""
+
+#~ msgid "19.84"
+#~ msgstr ""
+
+#~ msgid "19.32"
+#~ msgstr ""
+
+#~ msgid "12.68"
+#~ msgstr ""
+
+#~ msgid "Setting 5"
+#~ msgstr "[设定3]"
+
+#~ msgid "14.11"
+#~ msgstr ""
+
+#~ msgid "10.11"
+#~ msgstr ""
+
+#~ msgid "9.88"
+#~ msgstr ""
+
+#~ msgid "[Setting 1]=(gpu_memory_utilization=0.98 max_model_len=4096 enforce_eager=True)"
+#~ msgstr "[设定 1]=(gpu_memory_utilization=0.98 max_model_len=4096 enforce_eager=True)"
+
+#~ msgid "[Setting 2]=(gpu_memory_utilization=1.0 max_model_len=4096 enforce_eager=True)"
+#~ msgstr "[设定 2]=(gpu_memory_utilization=1.0 max_model_len=4096 enforce_eager=True)"
+
+#~ msgid "[Setting 3]=(gpu_memory_utilization=1.0 max_model_len=8192 enforce_eager=True)"
+#~ msgstr "[设定 3]=(gpu_memory_utilization=1.0 max_model_len=8192 enforce_eager=True)"
+
+#~ msgid "[Setting 4]=(gpu_memory_utilization=0.9 max_model_len=65536 enforce_eager=False)"
+#~ msgstr "[默认设定]=(gpu_memory_utilization=0.9 max_model_len=32768 enforce_eager=False)"
+
+#~ msgid "[Setting 5]=(gpu_memory_utilization=0.9 max_model_len=131072 enforce_eager=False)"
+#~ msgstr "[默认设定]=(gpu_memory_utilization=0.9 max_model_len=32768 enforce_eager=False)"
+
