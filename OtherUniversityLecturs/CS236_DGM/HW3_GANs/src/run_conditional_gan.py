@@ -75,13 +75,15 @@ for _ in range(args.num_epochs):
         d_loss, g_loss = loss(g, d, x_real, y_real, device=device)
 
         d_optimizer.zero_grad()
-        # no need to retain the graph: generator backward uses a fresh forward pass
+        d.train()
         d_loss.backward()
         d_optimizer.step()
 
+        d.eval()
         g_optimizer.zero_grad()
         g_loss.backward()
         g_optimizer.step()
+        d.train()
 
         global_step += 1
 

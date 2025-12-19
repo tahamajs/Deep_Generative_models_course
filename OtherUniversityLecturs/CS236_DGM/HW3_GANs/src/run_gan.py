@@ -62,13 +62,20 @@ for _ in range(args.num_epochs):
         d_loss, g_loss = loss(g, d, x_real, device=device)
 
         d_optimizer.zero_grad()
-        # no need to retain the graph: generator backward uses a fresh forward pass
+        # ensure discriminator is in train mode for its update (BN behaves correctly)
+        d.train()
         d_loss.backward()
         d_optimizer.step()
 
+        # evaluate discriminator in eval mode during generator update to avoid
+        # updating running stats in BatchNorm between backward passes which can
+        # cause autograd view/inplace versioning errors
+        d.eval()
         g_optimizer.zero_grad()
         g_loss.backward()
         g_optimizer.step()
+        # restore discriminator training mode for next iteration
+        d.train()
 
         global_step += 1
 
