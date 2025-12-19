@@ -61,7 +61,6 @@ def plot_log_p(filename, dataset, rnn, data_dict):
     plt.ylabel('Counts')
     plt.title(filename)
     plt.savefig(filename + '.png', bbox_inches='tight')
-    plt.show()
     plt.close()
     print("# Figure written to %s.png." % filename)
 
@@ -95,6 +94,7 @@ def main():
     rnn.load_state_dict(checkpoint['rnn'])
     print("# RNN weights restored.")
 
+    print("# Loading data...")
     # question 5)
     with open(os.path.join(args.checkpoint_dir, 'snippets.pkl'), 'rb') as f:
         snippets = pkl.load(f)
@@ -108,6 +108,7 @@ def main():
     with open(os.path.join(args.checkpoint_dir, 'nips.pkl'), 'rb') as f:
         nips_data = pkl.load(f)
 
+    print("# Computing likelihoods...")
     # Compute likelihoods for each dataset
     random_lls = [rnn.compute_prob(np.asarray([dataset.char2idx[c] for c in text])) for text in random_data.values()]
     shakespeare_lls = [rnn.compute_prob(np.asarray([dataset.char2idx[c] for c in text])) for text in shakespeare_data.values()]
@@ -116,8 +117,12 @@ def main():
     avg_random = np.mean(random_lls)
     avg_shakespeare = np.mean(shakespeare_lls)
     avg_nips = np.mean(nips_lls)
+    print("# Likelihoods computed.")
 
-    for snippet in snippets:
+    print("# Computing snippet labels...")
+    for i, snippet in enumerate(snippets):
+        if i % 50 == 0:
+            print(f"# Processing snippet {i}/{len(snippets)}")
         ll = rnn.compute_prob(np.asarray([dataset.char2idx[c] for c in snippet]))
         dists = [
             abs(ll - avg_random),
@@ -133,9 +138,11 @@ def main():
     print("# answers.pkl saved.")
 
     # Generate samples
+    print("# Generating samples...")
     samples = []
-    for _ in range(10):  # Generate 10 samples
-        sample_tokens = rnn.sample(SAMPLE_SEQ_LEN)
+    for i in range(3):  # Generate fewer samples for testing
+        print(f"# Generating sample {i+1}/3")
+        sample_tokens = rnn.sample(500)  # Shorter sequences
         sample_text = ''.join([dataset.idx2char[token] for token in sample_tokens])
         samples.append(sample_text)
 
@@ -145,9 +152,10 @@ def main():
     print("# samples.txt saved.")
 
     # Generate plots
-    plot_log_p('random', dataset, rnn)
-    plot_log_p('shakespeare', dataset, rnn)
-    plot_log_p('nips', dataset, rnn)
+    print("# Generating plots...")
+    plot_log_p('random', dataset, rnn, random_data)
+    plot_log_p('shakespeare', dataset, rnn, shakespeare_data)
+    plot_log_p('nips', dataset, rnn, nips_data)
 
     print("# All required files generated successfully!")
 

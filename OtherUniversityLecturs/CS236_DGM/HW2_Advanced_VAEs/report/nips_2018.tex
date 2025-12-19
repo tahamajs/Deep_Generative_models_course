@@ -288,6 +288,833 @@ This package was used to typeset Table~\ref{sample-table}.
   \end{tabular}
 \end{table}
 
+\section{Mathematical Notation and Equations}
+
+\subsection{Basic Mathematical Formatting}
+
+Mathematical expressions should be formatted using \LaTeX{}'s math mode.
+Inline mathematics should be enclosed in single dollar signs (\verb+$+),
+while displayed equations should be enclosed in double dollar signs
+(\verb+$$+) or use the \verb+\[+\ and \verb+\]+ delimiters.
+
+For example, the quadratic formula $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$
+can be displayed as:
+\[
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+\]
+
+\subsection{Commonly Used Symbols}
+
+Here are some commonly used mathematical symbols in NIPS papers:
+
+\begin{itemize}
+\item Sets and spaces: $\mathbb{R}$, $\mathbb{N}$, $\mathbb{C}$, $\mathcal{X}$, $\mathcal{Y}$
+\item Operators: $\nabla$, $\partial$, $\Delta$, $\div$, $\curl$
+\item Probability: $\mathbb{P}$, $\mathbb{E}$, $\mathcal{N}$, $\mu$, $\sigma^2$
+\item Information theory: $H(X)$, $I(X;Y)$, $D_{KL}(p||q)$
+\item Linear algebra: $\mathbf{x}$, $\mathbf{W}$, $\mathbf{b}$, $\mathbf{A}^\top$
+\end{itemize}
+
+\subsection{Theorem Environments}
+
+Theorems, lemmas, propositions, and corollaries should be formatted using
+the appropriate environments:
+
+\begin{theorem}
+Let $f: \mathbb{R}^n \to \mathbb{R}$ be a differentiable function. Then
+the gradient $\nabla f(\mathbf{x})$ points in the direction of steepest
+ascent of $f$ at $\mathbf{x}$.
+\end{theorem}
+
+\begin{proof}
+The proof follows directly from the definition of the directional
+derivative and the Cauchy-Schwarz inequality.
+\end{proof}
+
+\begin{lemma}
+If $\mathbf{A}$ is a symmetric positive definite matrix, then there
+exists a unique Cholesky decomposition $\mathbf{A} = \mathbf{L}\mathbf{L}^\top$
+where $\mathbf{L}$ is lower triangular with positive diagonal elements.
+\end{lemma}
+
+\subsection{Algorithm Formatting}
+
+Algorithms should be formatted using the algorithmic package or similar
+environments. Here's an example:
+
+\begin{algorithmic}[1]
+\Procedure{GradientDescent}{$\mathbf{x}_0, \eta, T$}
+    \State $\mathbf{x} \gets \mathbf{x}_0$
+    \For{$t = 1$ \textbf{to} $T$}
+        \State $\mathbf{x} \gets \mathbf{x} - \eta \nabla f(\mathbf{x})$
+    \EndFor
+    \State \textbf{return} $\mathbf{x}$
+\EndProcedure
+\end{algorithmic}
+
+\section{Machine Learning Concepts}
+
+\subsection{Supervised Learning}
+
+In supervised learning, we aim to learn a mapping from input features
+$\mathbf{x} \in \mathcal{X}$ to output labels $y \in \mathcal{Y}$ using
+a training dataset $\mathcal{D} = \{(\mathbf{x}_i, y_i)\}_{i=1}^n$.
+
+The general supervised learning objective is to minimize the expected
+risk:
+\[
+\mathcal{R}(h) = \mathbb{E}_{(\mathbf{x},y) \sim \mathcal{P}}[\ell(h(\mathbf{x}), y)]
+\]
+where $\ell$ is a loss function and $h$ is the hypothesis.
+
+\subsection{Unsupervised Learning}
+
+Unsupervised learning deals with data $\mathbf{x} \in \mathcal{X}$ without
+corresponding labels. Common approaches include:
+
+\begin{enumerate}
+\item \textbf{Clustering}: Partition data into groups with similar properties
+\item \textbf{Dimensionality Reduction}: Find lower-dimensional representations
+\item \textbf{Density Estimation}: Model the underlying data distribution $p(\mathbf{x})$
+\item \textbf{Generative Modeling}: Learn to generate new samples from $p(\mathbf{x})$
+\end{enumerate}
+
+\subsection{Deep Learning Architectures}
+
+\subsubsection{Convolutional Neural Networks}
+
+Convolutional Neural Networks (CNNs) are particularly effective for
+processing grid-structured data such as images. A convolutional layer
+computes:
+\[
+\mathbf{y}_{i,j,k} = \sum_{m=1}^M \sum_{p=0}^{P-1} \sum_{q=0}^{Q-1}
+\mathbf{x}_{i+p,j+q,m} \mathbf{w}_{p,q,m,k} + b_k
+\]
+
+\subsubsection{Recurrent Neural Networks}
+
+Recurrent Neural Networks (RNNs) are designed for sequential data.
+The basic RNN update is:
+\[
+\mathbf{h}_t = \tanh(\mathbf{W}_{xh} \mathbf{x}_t + \mathbf{W}_{hh} \mathbf{h}_{t-1} + \mathbf{b}_h)
+\]
+\[
+\mathbf{y}_t = \mathbf{W}_{hy} \mathbf{h}_t + \mathbf{b}_y
+\]
+
+\subsubsection{Attention Mechanisms}
+
+Attention mechanisms allow models to focus on relevant parts of the input:
+\[
+\alpha_{i,j} = \frac{\exp(e_{i,j})}{\sum_{k=1}^L \exp(e_{i,k})}
+\]
+\[
+\mathbf{c}_i = \sum_{j=1}^L \alpha_{i,j} \mathbf{h}_j
+\]
+
+\subsection{Optimization Algorithms}
+
+\subsubsection{Gradient Descent Variants}
+
+\begin{itemize}
+\item \textbf{Batch Gradient Descent}: Uses entire dataset
+\[
+\mathbf{w} \leftarrow \mathbf{w} - \eta \frac{1}{n} \sum_{i=1}^n \nabla_\mathbf{w} \ell(\mathbf{w}; \mathbf{x}_i, y_i)
+\]
+
+\item \textbf{Stochastic Gradient Descent}: Uses single example
+\[
+\mathbf{w} \leftarrow \mathbf{w} - \eta \nabla_\mathbf{w} \ell(\mathbf{w}; \mathbf{x}_i, y_i)
+\]
+
+\item \textbf{Mini-batch Gradient Descent}: Uses small batches
+\[
+\mathbf{w} \leftarrow \mathbf{w} - \eta \frac{1}{B} \sum_{i=1}^B \nabla_\mathbf{w} \ell(\mathbf{w}; \mathbf{x}_{i+b}, y_{i+b})
+\]
+\end{itemize}
+
+\subsubsection{Adaptive Optimization}
+
+Adam combines momentum and RMSProp:
+\[
+\mathbf{m}_t = \beta_1 \mathbf{m}_{t-1} + (1 - \beta_1) \mathbf{g}_t
+\]
+\[
+\mathbf{v}_t = \beta_2 \mathbf{v}_{t-1} + (1 - \beta_2) \mathbf{g}_t^2
+\]
+\[
+\hat{\mathbf{m}}_t = \frac{\mathbf{m}_t}{1 - \beta_1^t}, \quad
+\hat{\mathbf{v}}_t = \frac{\mathbf{v}_t}{1 - \beta_2^t}
+\]
+\[
+\mathbf{w}_{t+1} = \mathbf{w}_t - \eta \frac{\hat{\mathbf{m}}_t}{\sqrt{\hat{\mathbf{v}}_t} + \epsilon}
+\]
+
+\section{Statistical Methods}
+
+\subsection{Bayesian Inference}
+
+Bayesian inference provides a framework for updating beliefs about
+parameters given data. The posterior distribution is:
+\[
+p(\theta|\mathcal{D}) = \frac{p(\mathcal{D}|\theta) p(\theta)}{p(\mathcal{D})}
+\]
+
+\subsubsection{Conjugate Priors}
+
+For certain likelihood-prior combinations, the posterior has the same
+functional form as the prior:
+
+\begin{itemize}
+\item Beta-Binomial: $p(\theta) = \Beta(\alpha, \beta)$
+\item Normal-Normal: $p(\theta) = \mathcal{N}(\mu_0, \sigma_0^2)$
+\item Gamma-Poisson: $p(\theta) = \Gamma(\alpha, \beta)$
+\end{itemize}
+
+\subsubsection{Markov Chain Monte Carlo}
+
+MCMC methods generate samples from complex distributions. The Metropolis-Hastings
+algorithm:
+
+\begin{enumerate}
+\item Sample $\theta' \sim q(\theta'|\theta^{(t)})$
+\item Compute acceptance probability:
+\[
+\alpha = \min\left(1, \frac{p(\theta'|\mathcal{D}) q(\theta^{(t)}|\theta')}{p(\theta^{(t)}|\mathcal{D}) q(\theta'|\theta^{(t)})}\right)
+\]
+\item Set $\theta^{(t+1)} = \theta'$ with probability $\alpha$, otherwise $\theta^{(t+1)} = \theta^{(t)}$
+\end{enumerate}
+
+\subsection{Hypothesis Testing}
+
+\subsubsection{p-values and Confidence Intervals}
+
+A p-value is the probability of observing data at least as extreme as
+the observed data, assuming the null hypothesis is true:
+\[
+p\text{-value} = \mathbb{P}(T \geq t|\mathcal{H}_0)
+\]
+
+For a 95\% confidence interval:
+\[
+\hat{\theta} \pm 1.96 \cdot \SE(\hat{\theta})
+\]
+
+\subsubsection{Multiple Testing Correction}
+
+When performing multiple hypothesis tests, we need to control the
+family-wise error rate or false discovery rate.
+
+Bonferroni correction: $\alpha' = \alpha / m$
+
+\subsubsection{Power Analysis}
+
+The power of a test is the probability of correctly rejecting a false
+null hypothesis:
+\[
+\text{Power} = \mathbb{P}(\text{reject } \mathcal{H}_0 | \mathcal{H}_1 \text{ is true})
+\]
+
+\section{Information Theory}
+
+\subsection{Entropy and Mutual Information}
+
+The entropy of a discrete random variable $X$ is:
+\[
+H(X) = -\sum_{x} p(x) \log p(x)
+\]
+
+The mutual information between $X$ and $Y$ is:
+\[
+I(X;Y) = H(X) + H(Y) - H(X,Y)
+\]
+
+\subsection{Kullback-Leibler Divergence}
+
+The KL divergence measures the difference between two distributions:
+\[
+D_{KL}(p||q) = \sum_x p(x) \log \frac{p(x)}{q(x)}
+\]
+
+Properties of KL divergence:
+\begin{itemize}
+\item $D_{KL}(p||q) \geq 0$
+\item $D_{KL}(p||q) = 0$ iff $p = q$
+\item Not symmetric: $D_{KL}(p||q) \neq D_{KL}(q||p)$
+\end{itemize}
+
+\subsection{Cross-Entropy Loss}
+
+Cross-entropy loss is commonly used for classification:
+\[
+\ell(\hat{y}, y) = -\sum_{k=1}^K y_k \log \hat{y}_k
+\]
+
+For binary classification, this reduces to:
+\[
+\ell(\hat{y}, y) = -[y \log \hat{y} + (1-y) \log (1-\hat{y})]
+\]
+
+\section{Linear Algebra Review}
+
+\subsection{Vector and Matrix Operations}
+
+\subsubsection{Inner Products and Norms}
+
+The inner product between vectors $\mathbf{u}, \mathbf{v} \in \mathbb{R}^n$:
+\[
+\langle \mathbf{u}, \mathbf{v} \rangle = \mathbf{u}^\top \mathbf{v} = \sum_{i=1}^n u_i v_i
+\]
+
+The $\ell_2$ norm:
+\[
+\|\mathbf{v}\|_2 = \sqrt{\langle \mathbf{v}, \mathbf{v} \rangle} = \sqrt{\sum_{i=1}^n v_i^2}
+\]
+
+\subsubsection{Matrix Decompositions}
+
+Singular Value Decomposition (SVD):
+\[
+\mathbf{A} = \mathbf{U} \mathbf{\Sigma} \mathbf{V}^\top
+\]
+where $\mathbf{U}$ and $\mathbf{V}$ are orthogonal matrices, and
+$\mathbf{\Sigma}$ is diagonal with singular values.
+
+Eigenvalue decomposition for symmetric matrices:
+\[
+\mathbf{A} = \mathbf{Q} \mathbf{\Lambda} \mathbf{Q}^\top
+\]
+
+\subsubsection{Matrix Derivatives}
+
+Useful derivatives for optimization:
+
+\begin{align*}
+\frac{\partial}{\partial \mathbf{x}} (\mathbf{x}^\top \mathbf{A} \mathbf{x}) &= 2\mathbf{A} \mathbf{x} \\
+\frac{\partial}{\partial \mathbf{A}} \|\mathbf{A} \mathbf{x} - \mathbf{b}\|_2^2 &= 2(\mathbf{A} \mathbf{x} - \mathbf{b}) \mathbf{x}^\top \\
+\frac{\partial}{\partial \mathbf{W}} \log \det(\mathbf{W}) &= (\mathbf{W}^{-1})^\top
+\end{align*}
+
+\section{Probability Distributions}
+
+\subsection{Common Distributions}
+
+\subsubsection{Gaussian Distribution}
+
+The multivariate Gaussian distribution:
+\[
+\mathcal{N}(\mathbf{x}; \boldsymbol{\mu}, \boldsymbol{\Sigma}) =
+\frac{1}{(2\pi)^{d/2} |\boldsymbol{\Sigma}|^{1/2}}
+\exp\left( -\frac{1}{2} (\mathbf{x} - \boldsymbol{\mu})^\top \boldsymbol{\Sigma}^{-1} (\mathbf{x} - \boldsymbol{\mu}) \right)
+\]
+
+\subsubsection{Bernoulli Distribution}
+
+For binary random variables:
+\[
+\text{Bern}(x; p) = p^x (1-p)^{1-x}
+\]
+
+\subsubsection{Categorical Distribution}
+
+For discrete random variables with $K$ categories:
+\[
+\text{Cat}(\mathbf{x}; \mathbf{p}) = \prod_{k=1}^K p_k^{x_k}
+\]
+
+\subsection{Convergence Concepts}
+
+\subsubsection{Laws of Large Numbers}
+
+Weak Law of Large Numbers: For i.i.d. random variables with finite mean $\mu$:
+\[
+\frac{1}{n} \sum_{i=1}^n X_i \xrightarrow{P} \mu
+\]
+
+Strong Law of Large Numbers:
+\[
+\frac{1}{n} \sum_{i=1}^n X_i \xrightarrow{a.s.} \mu
+\]
+
+\subsubsection{Central Limit Theorem}
+
+For i.i.d. random variables with finite mean $\mu$ and variance $\sigma^2$:
+\[
+\sqrt{n} \left( \frac{1}{n} \sum_{i=1}^n X_i - \mu \right) \xrightarrow{D} \mathcal{N}(0, \sigma^2)
+\]
+
+\subsection{Concentration Inequalities}
+
+\subsubsection{Chebyshev's Inequality}
+
+For any random variable $X$ with finite variance:
+\[
+\mathbb{P}(|X - \mathbb{E}[X]| \geq t) \leq \frac{\Var(X)}{t^2}
+\]
+
+\subsubsection{Hoeffding's Inequality}
+
+For bounded independent random variables $X_i \in [a_i, b_i]$:
+\[
+\mathbb{P}\left( \left| \frac{1}{n} \sum_{i=1}^n X_i - \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^n X_i\right] \right| \geq t \right) \leq 2\exp\left( -\frac{2n^2 t^2}{\sum_{i=1}^n (b_i - a_i)^2} \right)
+\]
+
+\section{Computational Complexity}
+
+\subsection{Time Complexity}
+
+Common time complexity classes:
+\begin{itemize}
+\item $\mathcal{O}(1)$: Constant time
+\item $\mathcal{O}(\log n)$: Logarithmic time
+\item $\mathcal{O}(n)$: Linear time
+\item $\mathcal{O}(n \log n)$: Linearithmic time
+\item $\mathcal{O}(n^2)$: Quadratic time
+\item $\mathcal{O}(2^n)$: Exponential time
+\end{itemize}
+
+\subsection{Space Complexity}
+
+Space complexity measures the amount of memory required by an algorithm.
+
+\subsubsection{In-place Algorithms}
+
+Algorithms that use $\mathcal{O}(1)$ additional space beyond the input.
+
+\subsubsection{Memoization}
+
+Dynamic programming technique that stores results of expensive function calls:
+\[
+T(n) = \begin{cases}
+\Theta(1) & \text{if } n \in \mathcal{B} \\
+\Theta(n) + \sum_{i=1}^k T(n_i) & \text{otherwise}
+\end{cases}
+\]
+
+\section{Advanced Topics}
+
+\subsection{Variational Inference}
+
+Variational inference approximates complex posterior distributions with
+simpler distributions from a family $\mathcal{Q}$:
+\[
+p(\theta|\mathcal{D}) \approx q(\theta) = \arg\min_{q \in \mathcal{Q}} D_{KL}(q(\theta)||p(\theta|\mathcal{D}))
+\]
+
+The Evidence Lower Bound (ELBO):
+\[
+\log p(\mathcal{D}) \geq \mathbb{E}_{q(\theta)}[\log p(\mathcal{D},\theta)] - \mathbb{E}_{q(\theta)}[\log q(\theta)]
+\]
+
+\subsection{Generative Adversarial Networks}
+
+GANs consist of a generator $G$ and discriminator $D$:
+\[
+\min_G \max_D \mathbb{E}_{x \sim p_{data}}[\log D(x)] + \mathbb{E}_{z \sim p_z}[\log (1 - D(G(z)))]
+\]
+
+The optimal discriminator is:
+\[
+D^*(x) = \frac{p_{data}(x)}{p_{data}(x) + p_g(x)}
+\]
+
+\subsection{Reinforcement Learning}
+
+The Bellman equation for value functions:
+\[
+V^\pi(s) = \mathbb{E}_\pi [r(s,a) + \gamma V^\pi(s')]
+\]
+
+Q-learning update:
+\[
+Q(s,a) \leftarrow Q(s,a) + \alpha \left( r + \gamma \max_{a'} Q(s',a') - Q(s,a) \right)
+\]
+
+\section{Additional Examples}
+
+\subsection{More Figure Examples}
+
+\begin{figure}[h]
+\centering
+\subfigure[Training Loss]{
+\begin{minipage}[b]{0.45\textwidth}
+\centering
+\fbox{\rule[-.5cm]{0cm}{3cm} \rule[-.5cm]{3cm}{0cm}}
+\caption{Training loss over epochs}
+\label{fig:train_loss}
+\end{minipage}
+}
+\subfigure[Validation Accuracy]{
+\begin{minipage}[b]{0.45\textwidth}
+\centering
+\fbox{\rule[-.5cm]{0cm}{3cm} \rule[-.5cm]{3cm}{0cm}}
+\caption{Validation accuracy over epochs}
+\label{fig:val_acc}
+\end{minipage}
+}
+\caption{Training curves for a neural network model}
+\label{fig:training_curves}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+\caption{Architecture diagram of a convolutional neural network}
+\label{fig:cnn_arch}
+\end{figure}
+
+\subsection{More Table Examples}
+
+\begin{table}[h]
+\caption{Comparison of optimization algorithms}
+\label{tab:opt_comparison}
+\centering
+\begin{tabular}{@{}llll@{}}
+\toprule
+Algorithm & Convergence Rate & Memory Usage & Adaptive Learning Rate \\
+\midrule
+SGD & $\mathcal{O}(1/\sqrt{T})$ & $\mathcal{O}(d)$ & No \\
+Momentum & $\mathcal{O}(1/\sqrt{T})$ & $\mathcal{O}(d)$ & No \\
+Adagrad & $\mathcal{O}(1/\sqrt{T})$ & $\mathcal{O}(d)$ & Yes \\
+RMSProp & $\mathcal{O}(1/\sqrt{T})$ & $\mathcal{O}(d)$ & Yes \\
+Adam & $\mathcal{O}(1/\sqrt{T})$ & $\mathcal{O}(d)$ & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\caption{Hyperparameter search results}
+\label{tab:hyperparams}
+\centering
+\begin{tabular}{@{}llll@{}}
+\toprule
+Learning Rate & Batch Size & Hidden Units & Validation Accuracy \\
+\midrule
+0.001 & 32 & 128 & 85.2\% \\
+0.001 & 64 & 128 & 86.1\% \\
+0.001 & 32 & 256 & 87.3\% \\
+0.001 & 64 & 256 & 88.7\% \\
+0.01 & 32 & 128 & 82.1\% \\
+0.01 & 64 & 128 & 83.9\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Code Examples}
+
+\subsection{Python Code for Neural Networks}
+
+\begin{verbatim}
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class SimpleCNN(nn.Module):
+    def __init__(self, num_classes=10):
+        super(SimpleCNN, self).__init__()
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.fc1 = nn.Linear(64 * 8 * 8, 512)
+        self.fc2 = nn.Linear(512, num_classes)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.max_pool2d(x, 2)
+        x = F.relu(self.conv2(x))
+        x = F.max_pool2d(x, 2)
+        x = x.view(-1, 64 * 8 * 8)
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return x
+\end{verbatim}
+
+\subsection{Mathematical Derivations}
+
+\subsubsection{Backpropagation}
+
+The backpropagation algorithm computes gradients through the chain rule:
+
+For a loss function $\ell$ and network $f(\mathbf{x}; \theta)$, the gradient
+with respect to parameters $\theta$ is:
+\[
+\frac{\partial \ell}{\partial \theta} = \frac{\partial \ell}{\partial f} \cdot \frac{\partial f}{\partial \theta}
+\]
+
+For a multi-layer network:
+\[
+\frac{\partial \ell}{\partial \mathbf{W}^{(L)}} = \delta^{(L)} (\mathbf{h}^{(L-1)})^\top
+\]
+\[
+\delta^{(l)} = (\mathbf{W}^{(l+1)})^\top \delta^{(l+1)} \odot \sigma'(\mathbf{z}^{(l)})
+\]
+
+\subsubsection{Batch Normalization}
+
+Batch normalization normalizes layer inputs to have zero mean and unit variance:
+\[
+\hat{\mathbf{x}}^{(k)} = \frac{\mathbf{x}^{(k)} - \mathbb{E}[\mathbf{x}^{(k)}]}{\sqrt{\Var(\mathbf{x}^{(k)}) + \epsilon}}
+\]
+\[
+\mathbf{y}^{(k)} = \gamma^{(k)} \hat{\mathbf{x}}^{(k)} + \beta^{(k)}
+\]
+
+During inference, running statistics are used:
+\[
+\hat{\mathbf{x}}^{(k)} = \frac{\mathbf{x}^{(k)} - \hat{\mu}^{(k)}}{\sqrt{\hat{\sigma}^{2(k)} + \epsilon}}
+\]
+
+\section{Experimental Methodology}
+
+\subsection{Cross-Validation}
+
+\subsubsection{k-Fold Cross-Validation}
+
+In k-fold cross-validation, the dataset is divided into k equal parts.
+For each fold:
+
+\begin{enumerate}
+\item Use fold i as test set
+\item Use remaining k-1 folds as training set
+\item Train model and evaluate on test set
+\item Repeat for all k folds
+\item Average performance across all folds
+\end{enumerate}
+
+\subsubsection{Stratified k-Fold}
+
+For imbalanced datasets, stratified k-fold ensures each fold has the
+same proportion of each class as the original dataset.
+
+\subsection{Baseline Methods}
+
+Always compare against appropriate baselines:
+
+\begin{itemize}
+\item \textbf{Random baseline}: Random predictions
+\item \textbf{Majority class}: Always predict most frequent class
+\item \textbf{Simple models}: Logistic regression, decision trees
+\item \textbf{Domain-specific}: State-of-the-art methods for the task
+\end{itemize}
+
+\subsection{Evaluation Metrics}
+
+\subsubsection{Classification Metrics}
+
+For binary classification:
+\begin{align*}
+\text{Accuracy} &= \frac{TP + TN}{TP + TN + FP + FN} \\
+\text{Precision} &= \frac{TP}{TP + FP} \\
+\text{Recall} &= \frac{TP}{TP + FN} \\
+F_1 &= 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
+\end{align*}
+
+\subsubsection{Regression Metrics}
+
+Common regression metrics:
+\begin{align*}
+\text{MSE} &= \frac{1}{n} \sum_{i=1}^n (y_i - \hat{y}_i)^2 \\
+\text{MAE} &= \frac{1}{n} \sum_{i=1}^n |y_i - \hat{y}_i| \\
+R^2 &= 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}
+\end{align*}
+
+\subsection{Statistical Significance Testing}
+
+\subsubsection{Paired t-test}
+
+For comparing two models on the same test set:
+\[
+t = \frac{\bar{d}}{s_d / \sqrt{n}}
+\]
+where $d_i = \text{performance}_i^A - \text{performance}_i^B$
+
+\subsubsection{McNemar's Test}
+
+For comparing classification accuracy on the same instances:
+\[
+\chi^2 = \frac{(|n_{01} - n_{10}| - 1)^2}{n_{01} + n_{10}}
+\]
+
+\section{Practical Considerations}
+
+\subsection{Data Preprocessing}
+
+\subsubsection{Feature Scaling}
+
+Standardization (z-score normalization):
+\[
+\mathbf{x}' = \frac{\mathbf{x} - \mu}{\sigma}
+\]
+
+Min-max normalization:
+\[
+\mathbf{x}' = \frac{\mathbf{x} - \min(\mathbf{x})}{\max(\mathbf{x}) - \min(\mathbf{x})}
+\]
+
+\subsubsection{Handling Missing Data}
+
+Common strategies:
+\begin{itemize}
+\item \textbf{Deletion}: Remove instances with missing values
+\item \textbf{Imputation}: Fill missing values with mean, median, or mode
+\item \textbf{Model-based}: Use algorithms that handle missing data
+\end{itemize}
+
+\subsection{Regularization Techniques}
+
+\subsubsection{L2 Regularization}
+
+Adds penalty term to loss function:
+\[
+\ell'(\theta) = \ell(\theta) + \lambda \|\theta\|_2^2
+\]
+
+The gradient becomes:
+\[
+\frac{\partial \ell'}{\partial \theta} = \frac{\partial \ell}{\partial \theta} + 2\lambda \theta
+\]
+
+\subsubsection{Dropout}
+
+Randomly sets activations to zero during training:
+\[
+\mathbf{h}' = \mathbf{h} \odot \mathbf{m}
+\]
+where $\mathbf{m} \sim \text{Bernoulli}(p)$
+
+\subsection{Hyperparameter Optimization}
+
+\subsubsection{Grid Search}
+
+Exhaustive search over hyperparameter combinations:
+\[
+\mathcal{H} = \{\eta, \lambda, d\} \times \{0.001, 0.01, 0.1\} \times \{0.0001, 0.001, 0.01\} \times \{64, 128, 256\}
+\]
+
+\subsubsection{Random Search}
+
+Sample hyperparameters randomly from distributions:
+\[
+\eta \sim \log\mathcal{U}(10^{-4}, 10^{-1})
+\]
+\[
+\lambda \sim \log\mathcal{U}(10^{-5}, 10^{-3})
+\]
+
+\subsubsection{Bayesian Optimization}
+
+Use Gaussian processes to model the objective function and select
+next hyperparameters to evaluate.
+
+\section{Ethical Considerations}
+
+\subsection{Bias and Fairness}
+
+\subsubsection{Dataset Bias}
+
+Models can inherit biases from training data:
+\begin{itemize}
+\item \textbf{Selection bias}: Non-representative training data
+\item \textbf{Label bias}: Incorrect or biased annotations
+\item \textbf{Measurement bias}: Systematic measurement errors
+\end{itemize}
+
+\subsubsection{Fairness Metrics}
+
+Demographic parity:
+\[
+\mathbb{P}(\hat{y} = 1 | A = a) = \mathbb{P}(\hat{y} = 1 | A = b)
+\]
+
+Equal opportunity:
+\[
+\mathbb{P}(\hat{y} = 1 | A = a, Y = 1) = \mathbb{P}(\hat{y} = 1 | A = b, Y = 1)
+\]
+
+\subsection{Privacy and Security}
+
+\subsubsection{Differential Privacy}
+
+A mechanism $\mathcal{M}$ is $(\epsilon, \delta)$-differentially private if:
+\[
+\mathbb{P}(\mathcal{M}(D) \in S) \leq e^\epsilon \mathbb{P}(\mathcal{M}(D') \in S) + \delta
+\]
+for all neighboring datasets $D, D'$ and all $S \subseteq \text{Range}(\mathcal{M})$
+
+\subsubsection{Adversarial Examples}
+
+Small perturbations that can fool neural networks:
+\[
+\mathbf{x}' = \mathbf{x} + \epsilon \cdot \sign(\nabla_\mathbf{x} \ell(f(\mathbf{x}), y))
+\]
+
+\subsection{Interpretability}
+
+\subsubsection{Feature Importance}
+
+Permutation feature importance:
+\begin{enumerate}
+\item Train model on original data
+\item For each feature, permute its values across instances
+\item Measure decrease in model performance
+\item Feature importance = original performance - permuted performance
+\end{enumerate}
+
+\subsubsection{SHAP Values}
+
+Shapley Additive Explanations assign each feature an importance value:
+\[
+\phi_i = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|! (|N| - |S| - 1)!}{|N|!}
+\left[ f(S \cup \{i\}) - f(S) \right]
+\]
+
+\section{Advanced LaTeX Features}
+
+\subsection{Custom Commands}
+
+You can define custom commands for frequently used expressions:
+
+\begin{verbatim}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\end{verbatim}
+
+\subsection{Bibliography Management}
+
+Use BibTeX for managing references. Example bib entry:
+
+\begin{verbatim}
+@article{smith2020deep,
+  title={Deep Learning for Natural Language Processing},
+  author={Smith, John and Doe, Jane},
+  journal={Journal of Machine Learning},
+  volume={15},
+  number={2},
+  pages={123--145},
+  year={2020},
+  publisher={ML Press}
+}
+\end{verbatim}
+
+\subsection{Acronyms and Glossaries}
+
+Define acronyms for technical terms:
+
+\begin{verbatim}
+\usepackage{acronym}
+\begin{acronym}
+  \acro{ML}{Machine Learning}
+  \acro{DL}{Deep Learning}
+  \acro{NN}{Neural Network}
+  \acro{CNN}{Convolutional Neural Network}
+  \acro{RNN}{Recurrent Neural Network}
+\end{acronym}
+\end{verbatim}
+
+Use in text: \ac{ML}, \acf{DL} (first use), \acp{CNN} (plural).
+
 \section{Final instructions}
 
 Do not change any aspects of the formatting parameters in the style
