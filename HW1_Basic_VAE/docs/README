@@ -8,4 +8,3 @@ To install requirements, run
 	pip3 install --user -r requirements.txt
 
 
-
