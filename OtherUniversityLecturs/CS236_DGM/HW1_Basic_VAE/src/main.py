@@ -10,8 +10,7 @@ from dataset import NIPS2015Dataset
 from model import RNN
 
 import matplotlib
-if os.environ.get('DISPLAY', '') == '':
-    matplotlib.use('Agg')
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 
 SAMPLE_SEQ_LEN = 1000
@@ -121,8 +120,8 @@ def main():
 
     print("# Computing snippet labels...")
     for i, snippet in enumerate(snippets):
-        if i % 50 == 0:
-            print(f"# Processing snippet {i}/{len(snippets)}")
+        if (i + 1) % 50 == 0:
+            print(f"# Processing snippet {i+1}/{len(snippets)}")
         ll = rnn.compute_prob(np.asarray([dataset.char2idx[c] for c in snippet]))
         dists = [
             abs(ll - avg_random),

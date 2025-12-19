@@ -780,6 +780,474 @@ The implementations serve as a solid foundation for further research in generati
 
 The assignment successfully demonstrates both theoretical understanding and practical implementation skills in advanced machine learning techniques.
 
+\section{Appendix: Complete Implementation Details}
+
+\subsection{Neural Network Architectures}
+
+\subsubsection{MNIST Encoder (v1.py)}
+
+\begin{verbatim}
+class Encoder(nn.Module):
+    def __init__(self, z_dim, y_dim=0):
+        super().__init__()
+        self.z_dim = z_dim
+        self.y_dim = y_dim
+        self.net = nn.Sequential(
+            nn.Linear(784 + y_dim, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 2 * z_dim),
+        )
+
+    def encode(self, x, y=None):
+        xy = x if y is None else torch.cat((x, y), dim=1)
+        h = self.net(xy)
+        m, v = ut.gaussian_parameters(h, dim=1)
+        return m, v
+\end{verbatim}
+
+\subsubsection{MNIST Decoder (v1.py)}
+
+\begin{verbatim}
+class Decoder(nn.Module):
+    def __init__(self, z_dim, y_dim=0):
+        super().__init__()
+        self.z_dim = z_dim
+        self.y_dim = y_dim
+        self.net = nn.Sequential(
+            nn.Linear(z_dim + y_dim, 300),
+            nn.ELU(),
+            nn.Linear(300, 300),
+            nn.ELU(),
+            nn.Linear(300, 784)
+        )
+
+    def decode(self, z, y=None):
+        zy = z if y is None else torch.cat((z, y), dim=1)
+        return self.net(zy)
+\end{verbatim}
+
+\subsubsection{SVHN Encoder (v2.py)}
+
+\begin{verbatim}
+class Encoder(nn.Module):
+    def __init__(self, z_dim, y_dim=0):
+        super().__init__()
+        self.z_dim = z_dim
+        self.y_dim = y_dim
+        self.net = nn.Sequential(
+            nn.Linear(3072 + y_dim, 500),
+            nn.ELU(),
+            nn.Linear(500, 500),
+            nn.ELU(),
+            nn.Linear(500, 2 * z_dim),
+        )
+
+    def encode(self, x, y=None):
+        xy = x if y is None else torch.cat((x, y), dim=1)
+        h = self.net(xy)
+        m, v = ut.gaussian_parameters(h, dim=1)
+        return m, v
+\end{verbatim}
+
+\subsubsection{Classifier Network}
+
+\begin{verbatim}
+class Classifier(nn.Module):
+    def __init__(self, y_dim):
+        super().__init__()
+        self.y_dim = y_dim
+        self.net = nn.Sequential(
+            nn.Linear(784, 300),
+            nn.ReLU(),
+            nn.Linear(300, 300),
+            nn.ReLU(),
+            nn.Linear(300, y_dim)
+        )
+
+    def classify(self, x):
+        return self.net(x)
+\end{verbatim}
+
+\subsection{Training Loop Implementation}
+
+The training loop in \texttt{train.py} handles different model types and supervision settings:
+
+\begin{verbatim}
+def train(model, train_loader, labeled_subset, device, tqdm, writer,
+          iter_max=np.inf, iter_save=np.inf,
+          model_name='model', y_status='none', reinitialize=False):
+    if reinitialize:
+        model.apply(ut.reset_weights)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    i = 0
+    with tqdm(total=iter_max) as pbar:
+        while True:
+            for batch_idx, (xu, yu) in enumerate(train_loader):
+                i += 1
+                optimizer.zero_grad()
+
+                if y_status == 'none':
+                    xu = torch.bernoulli(xu.to(device).reshape(xu.size(0), -1))
+                    yu = yu.new(np.eye(10)[yu]).to(device).float()
+                    loss, summaries = model.loss(xu)
+
+                elif y_status == 'semisup':
+                    xu = torch.bernoulli(xu.to(device).reshape(xu.size(0), -1))
+                    yu = yu.new(np.eye(10)[yu]).to(device).float()
+                    xl, yl = labeled_subset
+                    xl = torch.bernoulli(xl)
+                    loss, summaries = model.loss(xu, xl, yl)
+
+                    pred = model.cls.classify(xu).argmax(1)
+                    true = yu.argmax(1)
+                    acc = (pred == true).float().mean()
+                    summaries['class/acc'] = acc
+
+                elif y_status == 'fullsup':
+                    xu = xu.to(device).reshape(xu.size(0), -1)
+                    yu = yu.new(np.eye(10)[yu]).to(device).float()
+                    loss, summaries = model.loss(xu, yu)
+
+                loss.backward()
+                optimizer.step()
+
+                if i % 50 == 0:
+                    ut.log_summaries(writer, summaries, i)
+
+                if i % iter_save == 0:
+                    ut.save_model_by_name(model, i)
+
+                if i == iter_max:
+                    return
+\end{verbatim}
+
+\subsection{Evaluation Functions}
+
+\subsubsection{Lower Bound Evaluation}
+
+\begin{verbatim}
+def evaluate_lower_bound(model, labeled_test_subset, run_iwae=True):
+    check_model = isinstance(model, VAE) or isinstance(model, GMVAE)
+    assert check_model, "This function is only intended for VAE and GMVAE"
+
+    print('*' * 80)
+    print("LOG-LIKELIHOOD LOWER BOUNDS ON TEST SUBSET")
+    print('*' * 80)
+
+    xl, _ = labeled_test_subset
+    torch.manual_seed(0)
+    xl = torch.bernoulli(xl)
+
+    def compute_metrics(fn, repeat):
+        metrics = [0, 0, 0]
+        for _ in range(repeat):
+            niwae, kl, rec = detach_torch_tuple(fn(xl))
+            metrics[0] += niwae / repeat
+            metrics[1] += kl / repeat
+            metrics[2] += rec / repeat
+        return metrics
+
+    nelbo, kl, rec = compute_metrics(model.negative_elbo_bound, 100)
+    print("NELBO: {}. KL: {}. Rec: {}".format(nelbo, kl, rec))
+
+    if run_iwae:
+        for iw in [1, 10, 100, 1000]:
+            repeat = max(100 // iw, 1)
+            fn = lambda x: model.negative_iwae_bound(x, iw)
+            niwae, kl, rec = compute_metrics(fn, repeat)
+            print("Negative IWAE-{}: {}".format(iw, niwae))
+\end{verbatim}
+
+\subsubsection{Classification Evaluation}
+
+\begin{verbatim}
+def evaluate_classifier(model, test_set):
+    check_model = isinstance(model, SSVAE)
+    assert check_model, "This function is only intended for SSVAE"
+
+    print('*' * 80)
+    print("CLASSIFICATION EVALUATION ON ENTIRE TEST SET")
+    print('*' * 80)
+
+    X, y = test_set
+    pred = model.cls.classify(X)
+    accuracy = (pred.argmax(1) == y).float().mean()
+    print("Test set classification accuracy: {}".format(accuracy))
+\end{verbatim}
+
+\subsection{Data Loading and Preprocessing}
+
+\subsubsection{MNIST Data Loading}
+
+\begin{verbatim}
+def get_mnist_data(device, use_test_subset=True):
+    preprocess = transforms.ToTensor()
+    train_loader = torch.utils.data.DataLoader(
+        datasets.MNIST('data', train=True, download=True, transform=preprocess),
+        batch_size=100,
+        shuffle=True)
+    test_loader = torch.utils.data.DataLoader(
+        datasets.MNIST('data', train=False, download=True, transform=preprocess),
+        batch_size=100,
+        shuffle=True)
+
+    X_train = train_loader.dataset.train_data.to(device).reshape(-1, 784).float() / 255
+    y_train = train_loader.dataset.train_labels.to(device)
+    X_test = test_loader.dataset.test_data.to(device).reshape(-1, 784).float() / 255
+    y_test = test_loader.dataset.test_labels.to(device)
+
+    X = X_test if use_test_subset else X_train
+    y = y_test if use_test_subset else y_train
+
+    xl, yl = [], []
+    for i in range(10):
+        idx = y == i
+        idx_choice = get_mnist_index(i, test=use_test_subset)
+        xl += [X[idx][idx_choice]]
+        yl += [y[idx][idx_choice]]
+    xl = torch.cat(xl).to(device)
+    yl = torch.cat(yl).to(device)
+    yl = yl.new(np.eye(10)[yl])
+    labeled_subset = (xl, yl)
+
+    return train_loader, labeled_subset, (X_test, y_test)
+\end{verbatim}
+
+\subsection{Utility Functions Implementation}
+
+\subsubsection{Gaussian Sampling}
+
+\begin{verbatim}
+def sample_gaussian(m, v):
+    """
+    Element-wise application reparameterization trick to sample from Gaussian
+
+    Args:
+        m: tensor: (batch, ...): Mean
+        v: tensor: (batch, ...): Variance
+
+    Return:
+        z: tensor: (batch, ...): Samples
+    """
+    epsilon = torch.randn_like(m)
+    z = m + torch.sqrt(v) * epsilon
+    return z
+\end{verbatim}
+
+\subsubsection{Log Normal Probability}
+
+\begin{verbatim}
+def log_normal(x, m, v):
+    """
+    Computes the elem-wise log probability of a Gaussian and then sum over the
+    last dim.
+
+    Args:
+        x: tensor: (batch_1, batch_2, ..., batch_k, dim): Observation
+        m: tensor: (batch_1, batch_2, ..., batch_k, dim): Mean
+        v: tensor: (batch_1, batch_2, ..., batch_k, dim): Variance
+
+    Return:
+        log_prob: tensor: (batch_1, batch_2, ..., batch_k): log probability of
+            each sample. Note that the summation dimension is not kept
+    """
+    dim = x.size(-1)
+    log_prob = -0.5 * (dim * torch.log(2 * torch.tensor(torch.pi)) +
+                      torch.log(v).sum(-1) + ((x - m).pow(2) / v).sum(-1))
+    return log_prob
+\end{verbatim}
+
+\subsubsection{Log Normal Mixture}
+
+\begin{verbatim}
+def log_normal_mixture(z, m, v):
+    """
+    Computes log probability of a uniformly-weighted Gaussian mixture.
+
+    Args:
+        z: tensor: (batch, dim): Observations
+        m: tensor: (batch, mix, dim): Mixture means
+        v: tensor: (batch, mix, dim): Mixture variances
+
+    Return:
+        log_prob: tensor: (batch,): log probability of each sample
+    """
+    z_expanded = z.unsqueeze(1)
+    log_probs = log_normal(z_expanded, m, v)
+    num_mixtures = m.size(1)
+    log_prob = log_sum_exp(log_probs, dim=1) - torch.log(torch.tensor(float(num_mixtures)))
+    return log_prob
+\end{verbatim}
+
+\subsection{Model Instantiation Scripts}
+
+\subsubsection{VAE Training Script}
+
+\begin{verbatim}
+import argparse
+import numpy as np
+import torch
+import tqdm
+from codebase import utils as ut
+from codebase.models.vae import VAE
+from codebase.train import train
+from pprint import pprint
+
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--z', type=int, default=10, help="Number of latent dimensions")
+parser.add_argument('--iter_max', type=int, default=20000, help="Number of training iterations")
+parser.add_argument('--iter_save', type=int, default=10000, help="Save model every n iterations")
+parser.add_argument('--run', type=int, default=0, help="Run ID. In case you want to run replicates")
+parser.add_argument('--train', type=int, default=1, help="Flag for training")
+args = parser.parse_args()
+
+layout = [('model={:s}', 'vae'), ('z={:02d}', args.z), ('run={:04d}', args.run)]
+model_name = '_'.join([t.format(v) for (t, v) in layout])
+pprint(vars(args))
+print('Model name:', model_name)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+train_loader, labeled_subset, _ = ut.get_mnist_data(device, use_test_subset=True)
+vae = VAE(z_dim=args.z, name=model_name).to(device)
+
+if args.train:
+    writer = ut.prepare_writer(model_name, overwrite_existing=True)
+    train(model=vae, train_loader=train_loader, labeled_subset=labeled_subset,
+          device=device, tqdm=tqdm.tqdm, writer=writer, iter_max=args.iter_max,
+          iter_save=args.iter_save)
+    ut.evaluate_lower_bound(vae, labeled_subset, run_iwae=args.train == 2)
+
+else:
+    ut.load_model_by_name(vae, global_step=args.iter_max)
+    ut.evaluate_lower_bound(vae, labeled_subset, run_iwae=True)
+\end{verbatim}
+
+\subsubsection{GMVAE Training Script}
+
+\begin{verbatim}
+import argparse
+import numpy as np
+import torch
+import tqdm
+from codebase import utils as ut
+from codebase.models.gmvae import GMVAE
+from codebase.train import train
+from pprint import pprint
+
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--z', type=int, default=10, help="Number of latent dimensions")
+parser.add_argument('--k', type=int, default=500, help="Number mixture components in MoG prior")
+parser.add_argument('--iter_max', type=int, default=20000, help="Number of training iterations")
+parser.add_argument('--iter_save', type=int, default=10000, help="Save model every n iterations")
+parser.add_argument('--run', type=int, default=0, help="Run ID. In case you want to run replicates")
+parser.add_argument('--train', type=int, default=1, help="Flag for training")
+args = parser.parse_args()
+
+layout = [('model={:s}', 'gmvae'), ('z={:02d}', args.z), ('k={:03d}', args.k),
+          ('run={:04d}', args.run)]
+model_name = '_'.join([t.format(v) for (t, v) in layout])
+pprint(vars(args))
+print('Model name:', model_name)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+train_loader, labeled_subset, _ = ut.get_mnist_data(device, use_test_subset=True)
+gmvae = GMVAE(z_dim=args.z, k=args.k, name=model_name).to(device)
+
+if args.train:
+    writer = ut.prepare_writer(model_name, overwrite_existing=True)
+    train(model=gmvae, train_loader=train_loader, labeled_subset=labeled_subset,
+          device=device, tqdm=tqdm.tqdm, writer=writer, iter_max=args.iter_max,
+          iter_save=args.iter_save)
+    ut.evaluate_lower_bound(gmvae, labeled_subset, run_iwae=args.train == 2)
+
+else:
+    ut.load_model_by_name(gmvae, global_step=args.iter_max)
+    ut.evaluate_lower_bound(gmvae, labeled_subset, run_iwae=True)
+\end{verbatim}
+
+\subsubsection{SSVAE Training Script}
+
+\begin{verbatim}
+import argparse
+import numpy as np
+import torch
+import tqdm
+from codebase import utils as ut
+from codebase.models.ssvae import SSVAE
+from codebase.train import train
+from pprint import pprint
+
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--gw', type=int, default=1, help="Weight on the generative terms")
+parser.add_argument('--cw', type=int, default=100, help="Weight on the class term")
+parser.add_argument('--iter_max', type=int, default=30000, help="Number of training iterations")
+parser.add_argument('--iter_save', type=int, default=10000, help="Save model every n iterations")
+parser.add_argument('--run', type=int, default=0, help="Run ID. In case you want to run replicates")
+parser.add_argument('--train', type=int, default=1, help="Flag for training")
+args = parser.parse_args()
+
+layout = [('model={:s}', 'ssvae'), ('gw={:03d}', args.gw), ('cw={:03d}', args.cw),
+          ('run={:04d}', args.run)]
+model_name = '_'.join([t.format(v) for (t, v) in layout])
+pprint(vars(args))
+print('Model name:', model_name)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+train_loader, labeled_subset, test_set = ut.get_mnist_data(device, use_test_subset=False)
+ssvae = SSVAE(gen_weight=args.gw, class_weight=args.cw, name=model_name).to(device)
+
+if args.train:
+    writer = ut.prepare_writer(model_name, overwrite_existing=True)
+    train(model=ssvae, train_loader=train_loader, labeled_subset=labeled_subset,
+          device=device, y_status='semisup', tqdm=tqdm.tqdm, writer=writer,
+          iter_max=args.iter_max, iter_save=args.iter_save)
+
+else:
+    ut.load_model_by_name(ssvae, args.iter_max)
+
+ut.evaluate_classifier(ssvae, test_set)
+\end{verbatim}
+
+\subsection{Complete Directory Structure}
+
+The final assignment submission includes the following directory structure:
+
+\begin{verbatim}
+HW2_Advanced_VAEs/
+├── src/
+│   ├── codebase/
+│   │   ├── __init__.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── fsvae.py
+│   │   │   ├── gmvae.py
+│   │   │   ├── nns/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── v1.py
+│   │   │   │   └── v2.py
+│   │   │   ├── ssvae.py
+│   │   │   └── vae.py
+│   │   ├── train.py
+│   │   └── utils.py
+│   ├── run_fsvae.py
+│   ├── run_gmvae.py
+│   ├── run_ssvae.py
+│   └── run_vae.py
+├── report/
+│   ├── hw2_complete_report.tex
+│   └── nips_2018.sty
+├── docs/
+│   └── README.md
+├── requirements/
+│   └── requirements.txt
+└── scripts/
+    └── make_submission.sh
+\end{verbatim}
+
+This comprehensive implementation provides a complete solution to the CS236 HW2 assignment, demonstrating both theoretical understanding and practical implementation skills in advanced variational autoencoder techniques.
+
 \section*{Acknowledgments}
 
 We thank the CS236 course staff for providing the assignment framework and dataset. This work was completed as part of Stanford CS236: Deep Generative Models.
