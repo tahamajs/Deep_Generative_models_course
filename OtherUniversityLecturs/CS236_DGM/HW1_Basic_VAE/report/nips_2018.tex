@@ -15,6 +15,8 @@
 \usepackage{enumitem}
 \usepackage{caption}
 \usepackage{float}
+% allow embedding full PDF answers into appendix
+\usepackage{pdfpages}
 
 \title{Homework 1: Basic Variational Autoencoder (VAE) -- Complete Report}
 
@@ -161,5 +163,12 @@ I thank the course staff for the assignment and the publicly available VAE refer
 \section*{References}
 \small
 [1] D. P. Kingma and M. Welling. Auto-Encoding Variational Bayes. ICLR 2014.
+
+\clearpage
+\appendix
+\section*{Full assignment answers (included)}
+The complete answer document provided with the assignment is embedded here for completeness. It contains the original solved answers and reference material.
+
+\includepdf[pages=-,fitpaper=true]{../description/CS236_hw1_answers.pdf}
 
 \end{document}
