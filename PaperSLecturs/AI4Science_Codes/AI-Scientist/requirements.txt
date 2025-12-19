@@ -1,0 +1,18 @@
+# LLM APIs
+anthropic
+aider-chat
+backoff
+openai
+google-generativeai
+# Viz
+matplotlib
+pypdf
+pymupdf4llm
+# Common Requirements
+torch
+numpy
+transformers
+datasets
+tiktoken
+wandb
+tqdm
