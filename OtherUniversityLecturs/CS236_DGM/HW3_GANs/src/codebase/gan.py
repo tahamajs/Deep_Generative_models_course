@@ -1,8 +1,9 @@
 import torch
 from torch.nn import functional as F
 
+
 def loss_nonsaturating(g, d, x_real, *, device):
-    '''
+    """
     Arguments:
     - g (codebase.network.Generator): The generator network
     - d (codebase.network.Discriminator): The discriminator network
@@ -13,7 +14,7 @@ def loss_nonsaturating(g, d, x_real, *, device):
     Returns:
     - d_loss (torch.Tensor): nonsaturating discriminator loss
     - g_loss (torch.Tensor): nonsaturating generator loss
-    '''
+    """
     batch_size = x_real.shape[0]
     z = torch.randn(batch_size, g.dim_z, device=device)
 
@@ -26,8 +27,9 @@ def loss_nonsaturating(g, d, x_real, *, device):
     d_real = d(x_real)
     d_fake = d(x_fake.detach())
 
-    d_loss = F.binary_cross_entropy_with_logits(d_real, torch.ones_like(d_real)) + \
-             F.binary_cross_entropy_with_logits(d_fake, torch.zeros_like(d_fake))
+    d_loss = F.binary_cross_entropy_with_logits(
+        d_real, torch.ones_like(d_real)
+    ) + F.binary_cross_entropy_with_logits(d_fake, torch.zeros_like(d_fake))
 
     d_fake = d(x_fake)
     g_loss = F.binary_cross_entropy_with_logits(d_fake, torch.ones_like(d_fake))
@@ -35,8 +37,9 @@ def loss_nonsaturating(g, d, x_real, *, device):
 
     return d_loss, g_loss
 
+
 def conditional_loss_nonsaturating(g, d, x_real, y_real, *, device):
-    '''
+    """
     Arguments:
     - g (codebase.network.ConditionalGenerator): The generator network
     - d (codebase.network.ConditionalDiscriminator): The discriminator network
@@ -48,7 +51,7 @@ def conditional_loss_nonsaturating(g, d, x_real, y_real, *, device):
     Returns:
     - d_loss (torch.Tensor): nonsaturating conditional discriminator loss
     - g_loss (torch.Tensor): nonsaturating conditional generator loss
-    '''
+    """
     batch_size = x_real.shape[0]
     z = torch.randn(batch_size, g.dim_z, device=device)
     y_fake = y_real  # use the real labels as the fake labels as well
@@ -59,8 +62,9 @@ def conditional_loss_nonsaturating(g, d, x_real, y_real, *, device):
     d_real = d(x_real, y_real)
     d_fake = d(x_fake.detach(), y_fake)
 
-    d_loss = F.binary_cross_entropy_with_logits(d_real, torch.ones_like(d_real)) + \
-             F.binary_cross_entropy_with_logits(d_fake, torch.zeros_like(d_fake))
+    d_loss = F.binary_cross_entropy_with_logits(
+        d_real, torch.ones_like(d_real)
+    ) + F.binary_cross_entropy_with_logits(d_fake, torch.zeros_like(d_fake))
 
     d_fake = d(x_fake, y_fake)
     g_loss = F.binary_cross_entropy_with_logits(d_fake, torch.ones_like(d_fake))
@@ -68,8 +72,9 @@ def conditional_loss_nonsaturating(g, d, x_real, y_real, *, device):
 
     return d_loss, g_loss
 
+
 def conditional_loss_wasserstein_gp(g, d, x_real, y_real, *, device):
-    '''
+    """
     Arguments:
     - g (codebase.network.ConditionalGenerator): The generator network
     - d (codebase.network.ConditionalDiscriminator): The discriminator network
@@ -81,7 +86,7 @@ def conditional_loss_wasserstein_gp(g, d, x_real, y_real, *, device):
     Returns:
     - d_loss (torch.Tensor): wasserstein conditional discriminator loss
     - g_loss (torch.Tensor): wasserstein conditional generator loss
-    '''
+    """
     batch_size = x_real.shape[0]
     z = torch.randn(batch_size, g.dim_z, device=device)
     y_fake = y_real
@@ -94,15 +99,13 @@ def conditional_loss_wasserstein_gp(g, d, x_real, y_real, *, device):
     d_loss = -torch.mean(d_real) + torch.mean(d_fake)
 
     alpha = torch.rand(batch_size, 1, 1, 1, device=device)
-    x_penalty = x_real * alpha + x_fake * (1 - alpha)
+    x_penalty = alpha * x_fake + (1 - alpha) * x_real
     x_penalty.requires_grad_(True)
     d_penalty = d(x_penalty, y_real)
     gradients = torch.autograd.grad(
-        outputs=d_penalty,
+        outputs=d_penalty.sum(),
         inputs=x_penalty,
-        grad_outputs=torch.ones_like(d_penalty),
         create_graph=True,
-        retain_graph=True,
     )[0]
     gradients = gradients.reshape(batch_size, -1)
     grad_norm = gradients.norm(2, 1)
@@ -114,8 +117,9 @@ def conditional_loss_wasserstein_gp(g, d, x_real, y_real, *, device):
 
     return d_loss, g_loss
 
+
 def loss_wasserstein_gp(g, d, x_real, *, device):
-    '''
+    """
     Arguments:
     - g (codebase.network.Generator): The generator network
     - d (codebase.network.Discriminator): The discriminator network
@@ -126,7 +130,7 @@ def loss_wasserstein_gp(g, d, x_real, *, device):
     Returns:
     - d_loss (torch.Tensor): wasserstein discriminator loss
     - g_loss (torch.Tensor): wasserstein generator loss
-    '''
+    """
     batch_size = x_real.shape[0]
     z = torch.randn(batch_size, g.dim_z, device=device)
 
@@ -142,15 +146,13 @@ def loss_wasserstein_gp(g, d, x_real, *, device):
     d_loss = -torch.mean(d_real) + torch.mean(d_fake)
 
     alpha = torch.rand(batch_size, 1, 1, 1, device=device)
-    x_penalty = x_real * alpha + x_fake * (1 - alpha)
+    x_penalty = alpha * x_fake + (1 - alpha) * x_real
     x_penalty.requires_grad_(True)
     d_penalty = d(x_penalty)
     gradients = torch.autograd.grad(
-        outputs=d_penalty,
+        outputs=d_penalty.sum(),
         inputs=x_penalty,
-        grad_outputs=torch.ones_like(d_penalty),
         create_graph=True,
-        retain_graph=True,
     )[0]
     gradients = gradients.reshape(batch_size, -1)
     grad_norm = gradients.norm(2, 1)
