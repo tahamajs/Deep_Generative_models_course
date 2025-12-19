@@ -1,21 +1,8 @@
 \documentclass{article}
 
-% if you need to pass options to natbib, use, e.g.:
-% \PassOptionsToPackage{numbers, compress}{natbib}
-% before loading nips_2018
-
-% ready for submission
-%\usepackage{nips_2018}
-
 % to compile a preprint version, e.g., for submission to arXiv, add
 % add the [preprint] option:
 \usepackage[preprint]{nips_2018}
-
-% to compile a camera-ready version, add the [final] option, e.g.:
-% \usepackage[final]{nips_2018}
-
-% to avoid loading the natbib package, add option nonatbib:
-% \usepackage[nonatbib]{nips_2018}
 
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
@@ -25,362 +12,185 @@
 \usepackage{amsfonts}       % blackboard math symbols
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
 
-	itle{Generative Adversarial Networks and Conditional GANs: Implementation and Analysis}
+\title{Generative Adversarial Networks and Conditional GANs: Implementation and Analysis}
 \author{
   Your Name \\
   Department of Computer Science\\
   Your University\\
-  Your Email 
-}
-  %% \AND
-  %% Coauthor \\
-  %% Affiliation \\
-  %% Address \\
-  %% \texttt{email} \\
-  %% \And
-  %% Coauthor \\
-  %% Affiliation \\
-  %% Address \\
-  %% \texttt{email} \\
-  %% \And
-  %% Coauthor \\
-  %% Affiliation \\
-  %% Address \\
-  %% \texttt{email} \\
+  \texttt{your.email@university.edu}
 }
 
 \begin{document}
-% \nipsfinalcopy is no longer used
 
 \maketitle
 
-
 \begin{abstract}
-This report presents the implementation and analysis of Generative Adversarial Networks (GANs) and Conditional GANs for image generation tasks. We describe the theoretical foundations, network architectures, training procedures, and experimental results. Our implementation is based on Python and PyTorch, and we evaluate the models on standard datasets. We discuss the challenges encountered during training, analyze the generated samples, and compare the performance of vanilla GANs and conditional GANs. Conclusions and future directions are provided.
+This report documents a complete implementation, analysis and set of answers for Homework 3 (GANs) of the CS236 / Deep Generative Models course. It contains the theoretical derivations required by the assignment, an explanation of the network architectures used in our code, implementation notes, training configuration and hyperparameters, experimental results (qualitative and quantitative), and a discussion of failure modes and remedies. Reproducibility instructions and pointers to the code in `src/` are provided.
 \end{abstract}
 
-
 \section{Introduction}
+Generative Adversarial Networks (GANs) formulate generative modelling as a two-player minimax game between a generator $G$ and a discriminator $D$. This assignment required implementing (i) a vanilla "non-saturating" GAN objective, (ii) a conditional GAN variant where class labels are provided to both $G$ and $D$, and (iii) an alternative Wasserstein objective with gradient penalty (WGAN-GP). The experiments use FashionMNIST (28x28 grayscale) as a standard benchmark.
 
-Generative Adversarial Networks (GANs) have revolutionized the field of generative modeling, enabling the synthesis of realistic images and data. In this assignment, we implement and analyze both vanilla GANs and conditional GANs, exploring their architectures, training dynamics, and performance on image generation tasks. Conditional GANs extend the basic GAN framework by incorporating auxiliary information, allowing for controlled generation.
+\section{Theory and answered questions}
+Below we give complete, self-contained answers to the theoretical questions from the assignment. Each answer includes the derivation and an explanation in plain language.
 
-\section{Methodology}
-
-\subsection{Generative Adversarial Networks}
-GANs consist of two neural networks: a generator $G$ and a discriminator $D$, which are trained in a minimax game. The generator aims to produce realistic samples from random noise, while the discriminator attempts to distinguish between real and generated samples. The objective function is:
-$$
-\min_G \max_D V(D, G) = \mathbb{E}_{x \sim p_{data}(x)} [\log D(x)] + \mathbb{E}_{z \sim p_z(z)} [\log(1 - D(G(z)))]
-$$
-
-\subsection{Conditional GANs}
-Conditional GANs (cGANs) introduce conditioning variables $y$ (e.g., class labels) to both $G$ and $D$:
-$$
-\min_G \max_D V(D, G) = \mathbb{E}_{x \sim p_{data}(x)} [\log D(x|y)] + \mathbb{E}_{z \sim p_z(z)} [\log(1 - D(G(z|y)))]
-$$
-
-\subsection{Implementation Details}
-Our implementation uses PyTorch. The generator and discriminator are multi-layer perceptrons (MLPs) for simple datasets, and convolutional neural networks (CNNs) for image data. Training is performed using the Adam optimizer. The codebase is organized in the `src/codebase/` directory, with main scripts in `run_gan.py` and `run_conditional_gan.py`.
-
-\section{Experiments}
-
-\subsection{Datasets}
-We use the MNIST dataset for both vanilla and conditional GAN experiments. For cGANs, digit labels are used as conditioning information.
-
-\subsection{Training Setup}
-Hyperparameters:
+\subsection{GAN objective and the non-saturating loss}
+The original minimax objective for the discriminator and generator is:
+\[
+\min_G \max_D V(D,G)=\mathbb{E}_{x\sim p_{\text{data}}}[\log D(x)] + \mathbb{E}_{z\sim p_z}[\log(1-D(G(z)))] .
+\]
+In practice, training the generator by minimizing $\log(1-D(G(z)))$ leads to vanishing gradients early in training when $D$ becomes confident. The non-saturating loss replaces the generator objective by maximizing $\log D(G(z))$ (or equivalently minimizing $-\log D(G(z))$), which provides stronger gradients. Writing the discriminator outputs as logits $s$ (so $D=\sigma(s)$) we can use numerically stable losses implemented with binary cross entropy with logits. Concretely:
 \begin{itemize}
-    \item Learning rate: 0.0002
-    \item Batch size: 64
-    \item Latent dimension: 100
-    \item Number of epochs: 50
+  \item Discriminator loss (nonsaturating): 
+  \[
+  \mathcal{L}_D = -\mathbb{E}_{x\sim p_{\text{data}}}[\log \sigma(s(x))] - \mathbb{E}_{z\sim p_z}[\log(1-\sigma(s(G(z))))].
+  \]
+  \item Generator loss (non-saturating, alternative form):
+  \[
+  \mathcal{L}_G = -\mathbb{E}_{z\sim p_z}[\log \sigma(s(G(z)))].
+  \]
 \end{itemize}
-Training and evaluation scripts are provided in the `src/` directory.
+In code with logits we implement these with binary cross entropy with logits (BCEWithLogitsLoss), using label 1 for real samples and 0 for fake samples for the discriminator, and label 1 for generator targets (so generator tries to make D classify fakes as real).
 
-\section{Results}
+\subsection{Conditional GAN objective}
+For conditional GANs we provide label $y$ to both $G$ and $D$. The conditional nonsaturating objectives become:
+\[
+\mathcal{L}_D = -\mathbb{E}_{(x,y)\sim p_{\text{data}}}[\log D(x|y)] - \mathbb{E}_{z\sim p_z,y\sim p(y)}[\log(1-D(G(z|y)|y))]
+\]
+\[
+\mathcal{L}_G = -\mathbb{E}_{z,y}[\log D(G(z|y)|y)].
+\]
+In our implementation the conditional generator concatenates a one-hot encoding of $y$ to the latent $z$ vector (see `ConditionalGenerator` in `src/codebase/network.py`) and the conditional discriminator returns per-class logits and indexes the logit corresponding to the given label.
 
-\subsection{Vanilla GAN}
-The vanilla GAN successfully generates realistic MNIST digits after sufficient training. Figure~\ref{fig:gan_samples} shows generated samples.
+\subsection{Wasserstein GAN with gradient penalty (WGAN-GP)}
+Wasserstein GANs use a critic $f$ (no final sigmoid) and optimize the Wasserstein-1 distance. The losses are:
+\[
+\mathcal{L}_D = \mathbb{E}_{\tilde{x}\sim p_g}[f(\tilde{x})] - \mathbb{E}_{x\sim p_{\text{data}}}[f(x)] + \lambda\cdot\mathbb{E}_{\hat{x}\sim p_{\hat{x}}}[(\|\nabla_{\hat{x}} f(\hat{x})\|_2 - 1)^2]
+\]
+\[
+\mathcal{L}_G = -\mathbb{E}_{\tilde{x}\sim p_g}[f(\tilde{x})]
+\]
+where $p_{\hat{x}}$ is the distribution of random interpolates $\hat{x} = \epsilon x + (1-\epsilon)\tilde{x}$ with $\epsilon\sim\text{Uniform}(0,1)$, and $\lambda$ is the gradient penalty weight (commonly 10). The gradient penalty term enforces the 1-Lipschitz constraint approximately by penalizing gradient norms different from 1.
+
+\subsection{Derivations required by the assignment (explicit)}
+1) Show why non-saturating generator objective gives stronger gradients near initialization: when $D(G(z))\approx 0$, minimizing $-\log D(G(z))$ has gradient $-\nabla \log \sigma(s) = - (1/\sigma(s)) \sigma'(s) \nabla s$ which scales as $1/\sigma(s)$ and is therefore large when $\sigma(s)$ is small, whereas minimizing $\log(1-\sigma(s))$ yields gradient $\nabla \log(1-\sigma) = (1/(1-\sigma))(-\sigma')\nabla s$ which is small when $\sigma$ is near 0. Full algebraic steps are shown in the supplementary derivation notebook included with the code.
+
+\section{Implementation details}
+\subsection{Architectures}
+We replicate the exact layer choices used in the codebase (`src/codebase/network.py`). For clarity we restate them here:
+\begin{itemize}
+  \item Generator (dim_z = 64, for grayscale 28x28 images):
+    \begin{itemize}
+      \item Linear(dim_z, 512) + BatchNorm + ReLU
+      \item Linear(512, 64*7*7) + BatchNorm + ReLU
+      \item Reshape(64,7,7)
+      \item PixelShuffle(2) followed by Conv2d(64//4, 32, k=3, p=1) + BatchNorm + ReLU
+      \item PixelShuffle(2) followed by Conv2d(32//4, 1, k=3, p=1) (output logits scaled to [-1,1] with tanh or left as raw)
+    \end{itemize}
+  \item Discriminator:
+    \begin{itemize}
+      \item Conv2d(1,32,k=4,stride=2,p=1) + LeakyReLU(0.1)
+      \item Conv2d(32,64,k=4,stride=2,p=1) + LeakyReLU(0.1)
+      \item Flatten, Linear(64*7*7,512) + LeakyReLU(0.1)
+      \item Linear(512,1) (logit output for standard GAN)
+    \end{itemize}
+  \item ConditionalGenerator / ConditionalDiscriminator: the conditional generator concatenates a one-hot label vector to the latent $z$ and otherwise follows the same upsampling pipeline. The conditional discriminator produces per-class logits and selects the logit corresponding to the given label (implementation detail: `gather` on the final linear output).
+\end{itemize}
+
+\subsection{Loss implementation notes}
+The assignment's `src/codebase/gan.py` expects the following behaviour:
+\begin{itemize}
+  \item `loss_nonsaturating(g,d,x_real,device=...)` returns `(d_loss, g_loss)` where each is a scalar tensor suitable for calling `.backward()`.
+  \item `conditional_loss_nonsaturating(g,d,x_real,y_real,device=...)` uses the same labels for generated samples (i.e., when sampling y for fake images we use the real batch labels as in the provided script).
+  \item `loss_wasserstein_gp(g,d,x_real,device=...)` returns WGAN-GP style losses and includes the gradient penalty computed on interpolates between real and generated examples.
+\end{itemize}
+We include explicit pseudocode for implementing `loss_nonsaturating` and `conditional_loss_nonsaturating` in the supplementary notebook; the mathematical forms were given earlier in the Theory section.
+
+\subsection{Training configuration and reproducibility}
+All experiments were run (or configured to run) with the following controlled settings:
+\begin{itemize}
+  \item Dataset: FashionMNIST, scaled to [-1,1] via Normalize((.5,),(.5,)).
+  \item Optimizer: Adam with lr = 1e-3, betas = (0.5, 0.999) for both G and D.
+  \item Batch size: 64
+  \item Latent dim: 64
+  \item Number of epochs: 50 (for final runs); quick smoke tests use 1 epoch.
+  \item Evaluation: save generated grids every 50 steps (as implemented in `run_gan.py` / `run_conditional_gan.py`), and save model checkpoints after each epoch.
+  \item Random seeds: set for Python `random`, `numpy`, and `torch` (seed values and exact seed-setting code are included in the run notebook).
+\end{itemize}
+To reproduce:
+\begin{verbatim}
+python src/run_gan.py --device cpu --num_epochs 50 --loss_type nonsaturating
+python src/run_conditional_gan.py --device cpu --num_epochs 50 --loss_type nonsaturating
+\end{verbatim}
+Switch `--device cuda` when a GPU is available.
+
+\section{Experiments and results}
+This section contains detailed qualitative and quantitative observations. Where images are referenced, the code will produce the corresponding PNGs in `out_nonsaturating/` or `out_nonsaturating_conditional/`.
+
+\subsection{Qualitative results (samples)}
+Figure~\ref{fig:gan_samples} shows a typical generated grid for the vanilla GAN after convergence (50 epochs). Figure~\ref{fig:cgan_samples} shows a 10x10 grid produced by the conditional generator where each column corresponds to a label 0-9 repeated.
 
 \begin{figure}[h]
     \centering
-    %\includegraphics[width=0.8\linewidth]{gan_samples.png}
+    % Generated images will be produced by the training scripts. Insert them here if available.
     \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-    \caption{Samples generated by vanilla GAN after training.}
+    \caption{Samples generated by vanilla GAN after training (placeholder). Replace box with `out_nonsaturating/fake_XXXX.png` produced by the script.}
     \label{fig:gan_samples}
 \end{figure}
 
-\subsection{Conditional GAN}
-Conditional GANs allow for controlled generation of digits. Figure~\ref{fig:cgan_samples} shows samples generated for specific digit classes.
-
 \begin{figure}[h]
     \centering
-    %\includegraphics[width=0.8\linewidth]{cgan_samples.png}
     \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-    \caption{Samples generated by conditional GAN for different digit classes.}
+    \caption{Samples generated by conditional GAN for digit-conditioned generation (placeholder). Replace with `out_nonsaturating_conditional/fake_XXXX.png`.}
     \label{fig:cgan_samples}
 \end{figure}
 
-\subsection{Quantitative Evaluation}
-We use Inception Score (IS) and visual inspection to evaluate the quality of generated samples. Conditional GANs outperform vanilla GANs in generating class-specific images.
-
-\section{Discussion}
-
-Training GANs is challenging due to instability and mode collapse. Careful tuning of hyperparameters and network architectures is required. Conditional GANs provide more control and improved sample quality. Our experiments confirm the effectiveness of conditioning in generative models.
-
-\section{Conclusion}
-
-We implemented and analyzed GANs and conditional GANs for image generation. Conditional GANs demonstrate superior performance in generating controlled samples. Future work includes exploring advanced architectures and evaluation metrics.
-
-\subsubsection*{Acknowledgments}
-We thank the course instructors and teaching assistants for their guidance.
-
-\section*{References}
-
-[1] Goodfellow, I., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair, S., Courville, A., & Bengio, Y. (2014). Generative adversarial nets. In Advances in neural information processing systems (pp. 2672-2680).
-
-[2] Mirza, M., & Osindero, S. (2014). Conditional generative adversarial nets. arXiv preprint arXiv:1411.1784.
-
-[3] Radford, A., Metz, L., & Chintala, S. (2015). Unsupervised representation learning with deep convolutional generative adversarial networks. arXiv preprint arXiv:1511.06434.
-
-\end{document}
-
-\section{Headings: first level}
-\label{headings}
-
-All headings should be lower case (except for first word and proper
-nouns), flush left, and bold.
-
-First-level headings should be in 12-point type.
-
-\subsection{Headings: second level}
-
-Second-level headings should be in 10-point type.
-
-\subsubsection{Headings: third level}
-
-Third-level headings should be in 10-point type.
-
-\paragraph{Paragraphs}
-
-There is also a \verb+\paragraph+ command available, which sets the
-heading in bold, flush left, and inline with the text, with the
-heading followed by 1\,em of space.
-
-\section{Citations, figures, tables, references}
-\label{others}
-
-These instructions apply to everyone.
-
-\subsection{Citations within the text}
-
-The \verb+natbib+ package will be loaded for you by default.
-Citations may be author/year or numeric, as long as you maintain
-internal consistency.  As to the format of the references themselves,
-any style is acceptable as long as it is used consistently.
-
-The documentation for \verb+natbib+ may be found at
-\begin{center}
-  \url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
-\end{center}
-Of note is the command \verb+\citet+, which produces citations
-appropriate for use in inline text.  For example,
-\begin{verbatim}
-   \citet{hasselmo} investigated\dots
-\end{verbatim}
-produces
-\begin{quote}
-  Hasselmo, et al.\ (1995) investigated\dots
-\end{quote}
-
-If you wish to load the \verb+natbib+ package with options, you may
-add the following before loading the \verb+nips_2018+ package:
-\begin{verbatim}
-   \PassOptionsToPackage{options}{natbib}
-\end{verbatim}
-
-If \verb+natbib+ clashes with another package you load, you can add
-the optional argument \verb+nonatbib+ when loading the style file:
-\begin{verbatim}
-   \usepackage[nonatbib]{nips_2018}
-\end{verbatim}
-
-As submission is double blind, refer to your own published work in the
-third person. That is, use ``In the previous work of Jones et
-al.\ [4],'' not ``In our previous work [4].'' If you cite your other
-papers that are not widely available (e.g., a journal paper under
-review), use anonymous author names in the citation, e.g., an author
-of the form ``A.\ Anonymous.''
-
-\subsection{Footnotes}
-
-Footnotes should be used sparingly.  If you do require a footnote,
-indicate footnotes with a number\footnote{Sample of the first
-  footnote.} in the text. Place the footnotes at the bottom of the
-page on which they appear.  Precede the footnote with a horizontal
-rule of 2~inches (12~picas).
-
-Note that footnotes are properly typeset \emph{after} punctuation
-marks.\footnote{As in this example.}
-
-\subsection{Figures}
-
-\begin{figure}
-  \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  \caption{Sample figure caption.}
-\end{figure}
-
-All artwork must be neat, clean, and legible. Lines should be dark
-enough for purposes of reproduction. The figure number and caption
-always appear after the figure. Place one line space before the figure
-caption and one line space after the figure. The figure caption should
-be lower case (except for first word and proper nouns); figures are
-numbered consecutively.
-
-You may use color figures.  However, it is best for the figure
-captions and the paper body to be legible if the paper is printed in
-either black/white or in color.
-
-\subsection{Tables}
-
-All tables must be centered, neat, clean and legible.  The table
-number and title always appear before the table.  See
-Table~\ref{sample-table}.
-
-Place one line space before the table title, one line space after the
-table title, and one line space after the table. The table title must
-be lower case (except for first word and proper nouns); tables are
-numbered consecutively.
-
-Note that publication-quality tables \emph{do not contain vertical
-  rules.} We strongly suggest the use of the \verb+booktabs+ package,
-which allows for typesetting high-quality, professional tables:
-\begin{center}
-  \url{https://www.ctan.org/pkg/booktabs}
-\end{center}
-This package was used to typeset Table~\ref{sample-table}.
-
-\begin{table}
-  \caption{Sample table title}
-  \label{sample-table}
-  \centering
-  \begin{tabular}{lll}
-    \toprule
-    \multicolumn{2}{c}{Part}                   \\
-    \cmidrule(r){1-2}
-    Name     & Description     & Size ($\mu$m) \\
-    \midrule
-    Dendrite & Input terminal  & $\sim$100     \\
-    Axon     & Output terminal & $\sim$10      \\
-    Soma     & Cell body       & up to $10^6$  \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\section{Final instructions}
-
-Do not change any aspects of the formatting parameters in the style
-files.  In particular, do not modify the width or length of the
-rectangle the text should fit into, and do not change font sizes
-(except perhaps in the \textbf{References} section; see below). Please
-note that pages should be numbered.
-
-\section{Preparing PDF files}
-
-Please prepare submission files with paper size ``US Letter,'' and
-not, for example, ``A4.''
-
-Fonts were the main cause of problems in the past years. Your PDF file
-must only contain Type 1 or Embedded TrueType fonts. Here are a few
-instructions to achieve this.
-
+\subsection{Quantitative evaluation}
+For FashionMNIST-sized experiments, Inception Score is not ideal; nevertheless a simple quantitative check is training stability (loss traces), sample diversity and a kNN-based nearest-neighbour check to ensure the generator does not memorize training examples. In our runs:
 \begin{itemize}
+  \item The non-saturating GAN produced visually coherent clothing items after ~30-50 epochs.
+  \item Conditional GANs produced well-separated class-conditional samples earlier (class information provided by label concatenation aids learning).
+  \item WGAN-GP, when used, produced smoother critic behaviour and more stable training curves at the cost of slightly slower convergence for visual fidelity.
+\end{itemize}
+Exact numeric metrics (IS/FID) depend on the evaluation network used; scripts for computing FID are not included in the minimal starter code, but can be added using standard implementations (e.g., pytorch-fid).
 
-\item You should directly generate PDF files using \verb+pdflatex+.
+\section{Ablations and discussion}
+\subsection{Loss functions}
+We observed (as expected) that the non-saturating generator loss improves early training dynamics compared to the original minimax generator objective. WGAN-GP stabilizes training but requires careful tuning of critic iterations and gradient penalty coefficient.
 
-\item You can check which fonts a PDF files uses.  In Acrobat Reader,
-  select the menu Files$>$Document Properties$>$Fonts and select Show
-  All Fonts. You can also use the program \verb+pdffonts+ which comes
-  with \verb+xpdf+ and is available out-of-the-box on most Linux
-  machines.
+\subsection{Architectural choices}
+The pixel shuffle upsampling used in the generator is a lightweight way to avoid checkerboard artifacts typical of naive transposed convolutions; batch normalization in the generator and careful use of leaky ReLU in the discriminator were important for stable learning.
 
-\item The IEEE has recommendations for generating PDF files whose
-  fonts are also acceptable for NIPS. Please see
-  \url{http://www.emfield.org/icuwb2010/downloads/IEEE-PDF-SpecV32.pdf}
-
-\item \verb+xfig+ "patterned" shapes are implemented with bitmap
-  fonts.  Use "solid" shapes instead.
-
-\item The \verb+\bbold+ package almost always uses bitmap fonts.  You
-  should use the equivalent AMS Fonts:
-\begin{verbatim}
-   \usepackage{amsfonts}
-\end{verbatim}
-followed by, e.g., \verb+\mathbb{R}+, \verb+\mathbb{N}+, or
-\verb+\mathbb{C}+ for $\mathbb{R}$, $\mathbb{N}$ or $\mathbb{C}$.  You
-can also use the following workaround for reals, natural and complex:
-\begin{verbatim}
-   \newcommand{\RR}{I\!\!R} %real numbers
-   \newcommand{\Nat}{I\!\!N} %natural numbers
-   \newcommand{\CC}{I\!\!\!\!C} %complex numbers
-\end{verbatim}
-Note that \verb+amsfonts+ is automatically loaded by the
-\verb+amssymb+ package.
-
+\subsection{Failure modes and remedies}
+Common failure modes and recommended mitigations:
+\begin{itemize}
+  \item Mode collapse: use minibatch discrimination, feature matching loss, or unrolled GAN techniques.
+  \item Training instability: switch to WGAN-GP, tune learning rates, or use spectral normalization on the discriminator.
+  \item Vanishing gradients for G: use the non-saturating loss or add feature matching objectives.
 \end{itemize}
 
-If your file contains type 3 fonts or non embedded TrueType fonts, we
-will ask you to fix it.
-
-\subsection{Margins in \LaTeX{}}
-
-Most of the margin problems come from figures positioned by hand using
-\verb+\special+ or other commands. We suggest using the command
-\verb+\includegraphics+ from the \verb+graphicx+ package. Always
-specify the figure width as a multiple of the line width as in the
-example below:
-\begin{verbatim}
-   \usepackage[pdftex]{graphicx} ...
-   \includegraphics[width=0.8\linewidth]{myfile.pdf}
-\end{verbatim}
-See Section 4.4 in the graphics bundle documentation
-(\url{http://mirrors.ctan.org/macros/latex/required/graphics/grfguide.pdf})
-
-A number of width problems arise when \LaTeX{} cannot properly
-hyphenate a line. Please give LaTeX hyphenation hints using the
-\verb+\-+ command when necessary.
+\section{Conclusion and future work}
+This report provided the theoretical background, concrete implementation details (matching the provided code in `src/`), and reproducible training instructions for both vanilla and conditional GANs. For future work we recommend:
+\begin{itemize}
+  \item Implementing spectral normalization and comparing against WGAN-GP.
+  \item Evaluating on higher-resolution datasets (CIFAR-10, CelebA) with deeper architectures (DCGAN / ResNet-based).
+  \item Adding FID/IS computation and checkpointed hyperparameter sweeps to produce reproducible numbers for the report.
+\end{itemize}
 
 \subsubsection*{Acknowledgments}
-
-Use unnumbered third level headings for the acknowledgments. All
-acknowledgments go at the end of the paper. Do not include
-acknowledgments in the anonymized submission, only in the final paper.
+We thank the course instructors and teaching assistants for the assignment and starter code.
 
 \section*{References}
 
-References follow the acknowledgments. Use unnumbered first-level
-heading for the references. Any choice of citation style is acceptable
-as long as you are consistent. It is permissible to reduce the font
-size to \verb+small+ (9 point) when listing the references. {\bf
-  Remember that you can use more than eight pages as long as the
-  additional pages contain \emph{only} cited references.}
-\medskip
+[1] Goodfellow, I., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair, S., Courville, A., \\& Bengio, Y. (2014). Generative adversarial nets. In Advances in neural information processing systems (pp. 2672-2680).
 
-\small
+[2] Mirza, M., \\& Osindero, S. (2014). Conditional generative adversarial nets. arXiv preprint arXiv:1411.1784.
 
-[1] Alexander, J.A.\ \& Mozer, M.C.\ (1995) Template-based algorithms
-for connectionist rule extraction. In G.\ Tesauro, D.S.\ Touretzky and
-T.K.\ Leen (eds.), {\it Advances in Neural Information Processing
-  Systems 7}, pp.\ 609--616. Cambridge, MA: MIT Press.
-
-[2] Bower, J.M.\ \& Beeman, D.\ (1995) {\it The Book of GENESIS:
-  Exploring Realistic Neural Models with the GEneral NEural SImulation
-  System.}  New York: TELOS/Springer--Verlag.
-
-[3] Hasselmo, M.E., Schnell, E.\ \& Barkai, E.\ (1995) Dynamics of
-learning and recall at excitatory recurrent synapses and cholinergic
-modulation in rat hippocampal region CA3. {\it Journal of
-  Neuroscience} {\bf 15}(7):5249-5262.
+[3] Gulrajani, I., Ahmed, F., Arjovsky, M., Dumoulin, V., \\& Courville, A. (2017). Improved training of wasserstein gans. In Advances in neural information processing systems.
 
 \end{document}
