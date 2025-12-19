@@ -9,8 +9,9 @@ from torch.nn import functional as F
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
 
+
 class FSVAE(nn.Module):
-    def __init__(self, nn='v2', name='fsvae'):
+    def __init__(self, nn="v2", name="fsvae"):
         super().__init__()
         self.name = name
         self.z_dim = 10
@@ -50,11 +51,15 @@ class FSVAE(nn.Module):
         sigma_squared = 1.0 / 10.0
         # log p(x|z,y) = -0.5 * dim * log(2π * σ^2) - 0.5/σ^2 * ||x - mu||^2
         dim = x.size(1)
-        log_px_zy = -0.5 * dim * torch.log(2 * torch.pi * sigma_squared) - 0.5 / sigma_squared * ((x - mu) ** 2).sum(1)
+        log_px_zy = -0.5 * dim * torch.log(
+            2 * torch.pi * sigma_squared
+        ) - 0.5 / sigma_squared * ((x - mu) ** 2).sum(1)
         rec = -log_px_zy.mean()  # Average over batch
 
         # KL divergence: DKL(q(z|x,y) || p(z))
-        kl_z = ut.kl_normal(qm, qv, self.z_prior_m.expand_as(qm), self.z_prior_v.expand_as(qv))
+        kl_z = ut.kl_normal(
+            qm, qv, self.z_prior_m.expand_as(qm), self.z_prior_v.expand_as(qv)
+        )
         kl_z = kl_z.mean()  # Average over batch
 
         # Negative ELBO = KL + Reconstruction
@@ -69,12 +74,14 @@ class FSVAE(nn.Module):
         nelbo, kl_z, rec = self.negative_elbo_bound(x, y)
         loss = nelbo
 
-        summaries = dict((
-            ('train/loss', loss),
-            ('gen/elbo', -nelbo),
-            ('gen/kl_z', kl_z),
-            ('gen/rec', rec),
-        ))
+        summaries = dict(
+            (
+                ("train/loss", loss),
+                ("gen/elbo", -nelbo),
+                ("gen/kl_z", kl_z),
+                ("gen/rec", rec),
+            )
+        )
 
         return loss, summaries
 
@@ -82,5 +89,7 @@ class FSVAE(nn.Module):
         return self.dec.decode(z, y)
 
     def sample_z(self, batch):
-        return ut.sample_gaussian(self.z_prior[0].expand(batch, self.z_dim),
-                                  self.z_prior[1].expand(batch, self.z_dim))
+        return ut.sample_gaussian(
+            self.z_prior[0].expand(batch, self.z_dim),
+            self.z_prior[1].expand(batch, self.z_dim),
+        )

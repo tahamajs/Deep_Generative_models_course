@@ -9,8 +9,9 @@ from torch.nn import functional as F
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
 
+
 class SSVAE(nn.Module):
-    def __init__(self, nn='v1', name='ssvae', gen_weight=1, class_weight=100):
+    def __init__(self, nn="v1", name="ssvae", gen_weight=1, class_weight=100):
         super().__init__()
         self.name = name
         self.z_dim = 64
@@ -53,7 +54,7 @@ class SSVAE(nn.Module):
         ################################################################################
         y_logits = self.cls.classify(x)
         y_logprob = F.log_softmax(y_logits, dim=1)
-        y_prob = torch.softmax(y_logprob, dim=1) # (batch, y_dim)
+        y_prob = torch.softmax(y_logprob, dim=1)  # (batch, y_dim)
 
         # Duplicate y based on x's batch size. Then duplicate x
         # This enumerates all possible combination of x with labels (0, 1, ..., 9)
@@ -76,7 +77,9 @@ class SSVAE(nn.Module):
         logits_reshaped = logits.view(x.size(0) // self.y_dim, self.y_dim, -1)
 
         # Compute log p(x|z,y) for each (x,y,z) triple
-        log_px_zy = ut.log_bernoulli_with_logits(x_reshaped, logits_reshaped)  # (batch, y_dim)
+        log_px_zy = ut.log_bernoulli_with_logits(
+            x_reshaped, logits_reshaped
+        )  # (batch, y_dim)
 
         # Weight by q(y|x) and sum over y: E_{q(y|x)}[-log p(x|z,y)]
         rec = -(y_prob * log_px_zy).sum(1).mean()  # Average over batch
@@ -93,11 +96,19 @@ class SSVAE(nn.Module):
         qv_reshaped = qv.view(x.size(0) // self.y_dim, self.y_dim, -1)
 
         # Sample one z per (x,y) pair for Monte Carlo
-        z_reshaped = z.view(x.size(0) // self.y_dim, self.y_dim, -1)  # (batch, y_dim, z_dim)
+        z_reshaped = z.view(
+            x.size(0) // self.y_dim, self.y_dim, -1
+        )  # (batch, y_dim, z_dim)
 
         # Compute log q(z|x,y) and log p(z)
-        log_qz_xy = ut.log_normal(z_reshaped, qm_reshaped, qv_reshaped)  # (batch, y_dim)
-        log_pz = ut.log_normal(z_reshaped, self.z_prior_m.expand_as(z_reshaped), self.z_prior_v.expand_as(z_reshaped))  # (batch, y_dim)
+        log_qz_xy = ut.log_normal(
+            z_reshaped, qm_reshaped, qv_reshaped
+        )  # (batch, y_dim)
+        log_pz = ut.log_normal(
+            z_reshaped,
+            self.z_prior_m.expand_as(z_reshaped),
+            self.z_prior_v.expand_as(z_reshaped),
+        )  # (batch, y_dim)
 
         # KL_z = E_{q(y|x)}[log q(z|x,y) - log p(z)]
         kl_z_per_y = log_qz_xy - log_pz  # (batch, y_dim)
@@ -122,14 +133,16 @@ class SSVAE(nn.Module):
         ce = self.classification_cross_entropy(xl, yl)
         loss = self.gen_weight * nelbo + self.class_weight * ce
 
-        summaries = dict((
-            ('train/loss', loss),
-            ('class/ce', ce),
-            ('gen/elbo', -nelbo),
-            ('gen/kl_z', kl_z),
-            ('gen/kl_y', kl_y),
-            ('gen/rec', rec),
-        ))
+        summaries = dict(
+            (
+                ("train/loss", loss),
+                ("class/ce", ce),
+                ("gen/elbo", -nelbo),
+                ("gen/kl_z", kl_z),
+                ("gen/kl_y", kl_y),
+                ("gen/rec", rec),
+            )
+        )
 
         return loss, summaries
 
@@ -138,8 +151,10 @@ class SSVAE(nn.Module):
         return torch.sigmoid(logits)
 
     def sample_z(self, batch):
-        return ut.sample_gaussian(self.z_prior[0].expand(batch, self.z_dim),
-                                  self.z_prior[1].expand(batch, self.z_dim))
+        return ut.sample_gaussian(
+            self.z_prior[0].expand(batch, self.z_dim),
+            self.z_prior[1].expand(batch, self.z_dim),
+        )
 
     def sample_x_given(self, z, y):
         return torch.bernoulli(self.compute_sigmoid_given(z, y))

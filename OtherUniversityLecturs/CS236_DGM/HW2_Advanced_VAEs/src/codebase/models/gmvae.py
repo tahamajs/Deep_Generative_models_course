@@ -5,8 +5,9 @@ from codebase.models import nns
 from torch import nn
 from torch.nn import functional as F
 
+
 class GMVAE(nn.Module):
-    def __init__(self, nn='v1', z_dim=2, k=500, name='gmvae'):
+    def __init__(self, nn="v1", z_dim=2, k=500, name="gmvae"):
         super().__init__()
         self.name = name
         self.k = k
@@ -16,8 +17,9 @@ class GMVAE(nn.Module):
         self.dec = nn.Decoder(self.z_dim)
 
         # Mixture of Gaussians prior
-        self.z_pre = torch.nn.Parameter(torch.randn(1, 2 * self.k, self.z_dim)
-                                        / np.sqrt(self.k * self.z_dim))
+        self.z_pre = torch.nn.Parameter(
+            torch.randn(1, 2 * self.k, self.z_dim) / np.sqrt(self.k * self.z_dim)
+        )
         # Uniform weighting
         self.pi = torch.nn.Parameter(torch.ones(k) / k, requires_grad=False)
 
@@ -149,7 +151,7 @@ class GMVAE(nn.Module):
         niwae = -iwae.mean()  # Negative IWAE, averaged over batch
 
         # For KL and Rec, use single sample (ELBO decomposition)
-        z_single = z[:x.size(0)]  # Take first sample per batch element
+        z_single = z[: x.size(0)]  # Take first sample per batch element
         logits_single = self.dec.decode(z_single)
 
         rec = -ut.log_bernoulli_with_logits(x, logits_single)
@@ -173,12 +175,14 @@ class GMVAE(nn.Module):
         nelbo, kl, rec = self.negative_elbo_bound(x)
         loss = nelbo
 
-        summaries = dict((
-            ('train/loss', nelbo),
-            ('gen/elbo', -nelbo),
-            ('gen/kl_z', kl),
-            ('gen/rec', rec),
-        ))
+        summaries = dict(
+            (
+                ("train/loss", nelbo),
+                ("gen/elbo", -nelbo),
+                ("gen/kl_z", kl),
+                ("gen/rec", rec),
+            )
+        )
 
         return loss, summaries
 

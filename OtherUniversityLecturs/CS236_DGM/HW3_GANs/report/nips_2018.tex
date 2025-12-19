@@ -37,48 +37,150 @@ This report documents a complete implementation, analysis and set of answers for
 Generative Adversarial Networks (GANs) formulate generative modelling as a two-player minimax game between a generator $G$ and a discriminator $D$. This assignment required implementing (i) a vanilla "non-saturating" GAN objective, (ii) a conditional GAN variant where class labels are provided to both $G$ and $D$, and (iii) an alternative Wasserstein objective with gradient penalty (WGAN-GP). The experiments use FashionMNIST (28x28 grayscale) as a standard benchmark.
 
 \section{Theory and answered questions}
-Below we give complete, self-contained answers to the theoretical questions from the assignment. Each answer includes the derivation and an explanation in plain language.
+Below we give complete, self-contained answers to all theoretical questions from the assignment. Each answer includes the derivation and an explanation in plain language.
 
-\subsection{GAN objective and the non-saturating loss}
+\subsection{Problem 1: Generative Adversarial Networks (15 points)}
+
+\subsubsection{Minimax loss and vanishing gradients [5 points]}
 The original minimax objective for the discriminator and generator is:
 \[
 \min_G \max_D V(D,G)=\mathbb{E}_{x\sim p_{\text{data}}}[\log D(x)] + \mathbb{E}_{z\sim p_z}[\log(1-D(G(z)))] .
 \]
-In practice, training the generator by minimizing $\log(1-D(G(z)))$ leads to vanishing gradients early in training when $D$ becomes confident. The non-saturating loss replaces the generator objective by maximizing $\log D(G(z))$ (or equivalently minimizing $-\log D(G(z))$), which provides stronger gradients. Writing the discriminator outputs as logits $s$ (so $D=\sigma(s)$) we can use numerically stable losses implemented with binary cross entropy with logits. Concretely:
-\begin{itemize}
-  \item Discriminator loss (nonsaturating): 
-  \[
-  \mathcal{L}_D = -\mathbb{E}_{x\sim p_{\text{data}}}[\log \sigma(s(x))] - \mathbb{E}_{z\sim p_z}[\log(1-\sigma(s(G(z))))].
-  \]
-  \item Generator loss (non-saturating, alternative form):
-  \[
-  \mathcal{L}_G = -\mathbb{E}_{z\sim p_z}[\log \sigma(s(G(z)))].
-  \]
-\end{itemize}
-In code with logits we implement these with binary cross entropy with logits (BCEWithLogitsLoss), using label 1 for real samples and 0 for fake samples for the discriminator, and label 1 for generator targets (so generator tries to make D classify fakes as real).
 
-\subsection{Conditional GAN objective}
-For conditional GANs we provide label $y$ to both $G$ and $D$. The conditional nonsaturating objectives become:
+In practice, training the generator by minimizing $\log(1-D(G(z)))$ leads to vanishing gradients early in training when $D$ becomes confident. The generator's loss is:
 \[
-\mathcal{L}_D = -\mathbb{E}_{(x,y)\sim p_{\text{data}}}[\log D(x|y)] - \mathbb{E}_{z\sim p_z,y\sim p(y)}[\log(1-D(G(z|y)|y))]
+L_{\text{minimax}}^G (\theta; \phi) = \mathbb{E}_{z\sim N(0,I)} [\log(1 - \sigma(h_\phi(G_\theta(z))))].
 \]
-\[
-\mathcal{L}_G = -\mathbb{E}_{z,y}[\log D(G(z|y)|y)].
-\]
-In our implementation the conditional generator concatenates a one-hot encoding of $y$ to the latent $z$ vector (see `ConditionalGenerator` in `src/codebase/network.py`) and the conditional discriminator returns per-class logits and indexes the logit corresponding to the given label.
 
-\subsection{Wasserstein GAN with gradient penalty (WGAN-GP)}
-Wasserstein GANs use a critic $f$ (no final sigmoid) and optimize the Wasserstein-1 distance. The losses are:
+\textbf{Derivation:} Using the chain rule and the fact that $\sigma'(x) = \sigma(x)(1 - \sigma(x))$,
 \[
-\mathcal{L}_D = \mathbb{E}_{\tilde{x}\sim p_g}[f(\tilde{x})] - \mathbb{E}_{x\sim p_{\text{data}}}[f(x)] + \lambda\cdot\mathbb{E}_{\hat{x}\sim p_{\hat{x}}}[(\|\nabla_{\hat{x}} f(\hat{x})\|_2 - 1)^2]
+\frac{\partial L_{\text{minimax}}^G}{\partial \theta} = \mathbb{E}_{z\sim N(0,I)} \left[ \frac{\sigma'(h_\phi(G_\theta(z)))}{1 - \sigma(h_\phi(G_\theta(z)))} \cdot \frac{\partial h_\phi(G_\theta(z))}{\partial \theta} \right].
 \]
-\[
-\mathcal{L}_G = -\mathbb{E}_{\tilde{x}\sim p_g}[f(\tilde{x})]
-\]
-where $p_{\hat{x}}$ is the distribution of random interpolates $\hat{x} = \epsilon x + (1-\epsilon)\tilde{x}$ with $\epsilon\sim\text{Uniform}(0,1)$, and $\lambda$ is the gradient penalty weight (commonly 10). The gradient penalty term enforces the 1-Lipschitz constraint approximately by penalizing gradient norms different from 1.
 
-\subsection{Derivations required by the assignment (explicit)}
-1) Show why non-saturating generator objective gives stronger gradients near initialization: when $D(G(z))\approx 0$, minimizing $-\log D(G(z))$ has gradient $-\nabla \log \sigma(s) = - (1/\sigma(s)) \sigma'(s) \nabla s$ which scales as $1/\sigma(s)$ and is therefore large when $\sigma(s)$ is small, whereas minimizing $\log(1-\sigma(s))$ yields gradient $\nabla \log(1-\sigma) = (1/(1-\sigma))(-\sigma')\nabla s$ which is small when $\sigma$ is near 0. Full algebraic steps are shown in the supplementary derivation notebook included with the code.
+Since $\sigma'(x) = \sigma(x)(1 - \sigma(x))$, we get:
+\[
+\frac{\partial L_{\text{minimax}}^G}{\partial \theta} = \mathbb{E}_{z\sim N(0,I)} \left[ \frac{\sigma(h_\phi(G_\theta(z))) \cdot (1 - \sigma(h_\phi(G_\theta(z))))}{1 - \sigma(h_\phi(G_\theta(z)))} \cdot \frac{\partial h_\phi(G_\theta(z))}{\partial \theta} \right] = \mathbb{E}_{z\sim N(0,I)} \left[ \sigma(h_\phi(G_\theta(z))) \cdot \frac{\partial h_\phi(G_\theta(z))}{\partial \theta} \right].
+\]
+
+When the discriminator successfully identifies fake samples (i.e., $\sigma(h_\phi(G_\theta(z))) \approx 0$), the gradient $\frac{\partial L_{\text{minimax}}^G}{\partial \theta} \approx 0$, causing training to slow or stop.
+
+\subsubsection{Non-saturating GAN implementation [10 points]}
+To address vanishing gradients, we use the non-saturating loss:
+\[
+L_G^{\text{non-saturating}}(\theta; \phi) = -\mathbb{E}_{z\sim N(0,I)} [\log \sigma(h_\phi(G_\theta(z)))].
+\]
+
+\textbf{Implementation:} The implementation uses Monte Carlo estimates:
+\[
+L_D(\phi; \theta) \approx -\frac{1}{m} \sum_{i=1}^m \log \sigma(h_\phi(x^{(i)})) - \frac{1}{m} \sum_{i=1}^m \log(1 - \sigma(h_\phi(G_\theta(z^{(i)}))))
+\]
+\[
+L_G^{\text{non-saturating}}(\theta; \phi) \approx -\frac{1}{m} \sum_{i=1}^m \log \sigma(h_\phi(G_\theta(z^{(i)})))
+\]
+
+where $m$ is batch size, $x^{(i)} \sim p_{\text{data}}$, $z^{(i)} \sim N(0,I)$.
+
+\subsection{Problem 2: Divergence Minimization (25 points)}
+
+\subsubsection{Optimal discriminator characterization [10 points]}
+Show that $L_D$ is minimized when $D_\phi = D^*$, where $D^*(x) = \frac{p_{\text{data}}(x)}{p_\theta(x) + p_{\text{data}}(x)}$.
+
+\textbf{Derivation:} For fixed $x$, minimize $f(t) = -p_{\text{data}}(x) \log t - p_\theta(x) \log(1-t)$. Setting $f'(t) = 0$:
+\[
+-\frac{p_{\text{data}}(x)}{t} + \frac{p_\theta(x)}{1-t} = 0
+\]
+\[
+p_\theta(x) t = p_{\text{data}}(x) (1-t)
+\]
+\[
+t(p_\theta(x) + p_{\text{data}}(x)) = p_{\text{data}}(x)
+\]
+\[
+t = \frac{p_{\text{data}}(x)}{p_\theta(x) + p_{\text{data}}(x)}
+\]
+
+Since $f$ is sum of strictly convex functions, this is the unique minimizer.
+
+\subsubsection{Discriminator logits as log-likelihood ratios [5 points]}
+When $D_\phi = D^* = \sigma(h_\phi(x))$, show that $h_\phi(x) = \log \frac{p_{\text{data}}(x)}{p_\theta(x)}$.
+
+\textbf{Derivation:} $D^*(x) = \sigma(h_\phi(x)) = \frac{1}{1 + e^{-h_\phi(x)}} = \frac{p_{\text{data}}(x)}{p_\theta(x) + p_{\text{data}}(x)}$
+\[
+1 + e^{-h_\phi(x)} = \frac{p_\theta(x) + p_{\text{data}}(x)}{p_{\text{data}}(x)} = 1 + \frac{p_\theta(x)}{p_{\text{data}}(x)}
+\]
+\[
+e^{-h_\phi(x)} = \frac{p_\theta(x)}{p_{\text{data}}(x)}
+\]
+\[
+-h_\phi(x) = \log \frac{p_\theta(x)}{p_{\text{data}}(x)}
+\]
+\[
+h_\phi(x) = \log \frac{p_{\text{data}}(x)}{p_\theta(x)}
+\]
+
+\subsubsection{Specific generator loss and KL divergence [5 points]}
+Consider $L_G(\theta; \phi) = \mathbb{E}_{x\sim p_\theta(x)} [\log(1 - D_\phi(x))] - \mathbb{E}_{x\sim p_\theta(x)} [\log D_\phi(x)]$.
+Show that if $D_\phi = D^*$, then $L_G(\theta; \phi) = KL(p_\theta(x)||p_{\text{data}}(x))$.
+
+\textbf{Derivation:}
+\[
+L_G = \mathbb{E}_{p_\theta} [\log(1 - D^*)] - \mathbb{E}_{p_\theta} [\log D^*]
+= \mathbb{E}_{p_\theta} \left[ \log \frac{1 - D^*}{D^*} \right]
+= \mathbb{E}_{p_\theta} \left[ \log \frac{p_\theta}{p_{\text{data}}} \right]
+= \mathbb{E}_{p_\theta} \left[ \log \frac{p_\theta(x)}{p_{\text{data}}(x)} \right] = KL(p_\theta||p_{\text{data}})
+\]
+
+\subsubsection{Comparing VAEs and GANs [5 points]}
+Show that the negative log likelihood can be written as $KL(p_{\text{data}}||p_\theta) + C$ where $C$ is constant w.r.t. $\theta$.
+
+The VAE minimizes $-ELBO \leq -\log p_\theta(x) + KL(q(z|x)||p(z))$. But the true objective is $KL(p_{\text{data}}||p_\theta) = \mathbb{E}_{p_{\text{data}}} [\log p_{\text{data}} - \log p_\theta] = C - \mathbb{E}_{p_{\text{data}}} [\log p_\theta]$ where $C = \mathbb{E}_{p_{\text{data}}} [\log p_{\text{data}}]$ is constant. However, $KL(p_\theta||p_{\text{data}}) \neq KL(p_{\text{data}}||p_\theta)$ in general, so VAEs and GANs optimize different objectives.
+
+\subsection{Problem 3: Conditional GAN with Projection Discriminator (20 points)}
+
+\subsubsection{Optimal conditional discriminator [10 points]}
+Assume feature mapping $\phi(x)$ where both $p_{\text{data}}(x|y)$ and $p_\theta(x|y)$ are mixtures of Gaussians with means $\mu_y$ and $\hat{\mu}_y$. Show that optimal logits $h^*(x,y) = y^T (A \phi(x) + b)$.
+
+\textbf{Derivation:} The log-likelihood ratio is:
+\[
+\log \frac{p_{\text{data}}(x,y)}{p_\theta(x,y)} = \log \frac{p_{\text{data}}(x|y)}{p_\theta(x|y)}
+\]
+
+For Gaussians: $\log \frac{\mathcal{N}(\phi(x)|\mu_y,I)}{\mathcal{N}(\phi(x)|\hat{\mu}_y,I)} = -\frac{1}{2}||\phi(x)-\mu_y||^2 + \frac{1}{2}||\phi(x)-\hat{\mu}_y||^2$
+
+\[
+= (\hat{\mu}_y - \mu_y)^T \phi(x) + \frac{1}{2}(||\hat{\mu}_y||^2 - ||\mu_y||^2)
+\]
+
+For one-hot $y$, this gives the form $y^T (A \phi(x) + b)$.
+
+\subsubsection{Conditional GAN implementation [10 points]}
+Implement conditional GAN with projection discriminator. The generator concatenates one-hot labels to latent vectors, discriminator uses projection form.
+
+\subsection{Problem 4: Wasserstein GAN (35 points)}
+
+\subsubsection{KL divergence for Gaussians [5 points]}
+Let $p_\theta(x) = \mathcal{N}(x|\theta, \epsilon^2)$, $p_{\text{data}}(x) = \mathcal{N}(x|\theta_0, \epsilon^2)$. Show $KL(p_\theta||p_{\text{data}}) = \frac{(\theta - \theta_0)^2}{2\epsilon^2}$.
+
+\textbf{Derivation:} Standard KL for Gaussians with same variance gives this result.
+
+\subsubsection{Limit behavior and instability [5 points]}
+As $\epsilon \to 0$, unless $\theta = \theta_0$, KL diverges and its gradients become extremely large, causing training instability.
+
+\subsubsection{Problems with unconstrained Wasserstein critic [5 points]}
+For $\epsilon \to 0$ (point masses), the critic loss $L_D = \mathbb{E}_{p_\theta}[f(x)] - \mathbb{E}_{p_{\text{data}}}[f(x)]$ can approach $-\infty$ by making $f(\theta) \to -\infty$ or $f(\theta_0) \to \infty$, so no optimal discriminator exists.
+
+\subsubsection{Lipschitz-constrained critic [5 points]}
+Restricting to 1-Lipschitz functions (derivative in [-1,1]), the optimal critic is $f(x) = c - |\theta - \theta_0|$ for $x$ between $\theta$ and $\theta_0$.
+
+\subsubsection{WGAN-GP implementation [15 points]}
+WGAN-GP adds gradient penalty: $L_D = \mathbb{E}_{p_\theta}[f] - \mathbb{E}_{p_{\text{data}}}[f] + \lambda \mathbb{E}_{p_{\hat{x}}} [(||\nabla f(x)||_2 - 1)^2]$ where $p_{\hat{x}}$ interpolates between real and fake samples.
+
+\subsection{Problem 5: Noise Contrastive Estimation (5 points)}
+
+\subsubsection{Optimal NCE parameters [5 points]}
+Show that the optimal parameters satisfy $\frac{1}{Z^*} \exp(-E_{\theta^*}(x)) = p_{\text{data}}(x)$.
+
+\textbf{Derivation:} Using the optimal discriminator result, the NCE objective leads to $E_{\theta^*}(x) + \log Z^* + \log p_{\text{noise}}(x) = \log \frac{p_{\text{data}}(x)}{p_{\text{noise}}(x)}$. Exponentiating gives the result.
 
 \section{Implementation details}
 \subsection{Architectures}

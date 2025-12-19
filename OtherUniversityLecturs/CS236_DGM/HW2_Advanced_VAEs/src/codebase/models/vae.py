@@ -4,8 +4,9 @@ from codebase.models import nns
 from torch import nn
 from torch.nn import functional as F
 
+
 class VAE(nn.Module):
-    def __init__(self, nn='v1', name='vae', z_dim=2):
+    def __init__(self, nn="v1", name="vae", z_dim=2):
         super().__init__()
         self.name = name
         self.z_dim = z_dim
@@ -57,7 +58,9 @@ class VAE(nn.Module):
         rec = rec.mean()  # Average over batch
 
         # Compute KL divergence: KL(q(z|x) || p(z))
-        kl = ut.kl_normal(qm, qv, self.z_prior_m.expand_as(qm), self.z_prior_v.expand_as(qv))
+        kl = ut.kl_normal(
+            qm, qv, self.z_prior_m.expand_as(qm), self.z_prior_v.expand_as(qv)
+        )
         kl = kl.mean()  # Average over batch
 
         # Negative ELBO = KL + Reconstruction
@@ -108,7 +111,9 @@ class VAE(nn.Module):
         log_px_z = ut.log_bernoulli_with_logits(x_dup, logits)  # (batch * iw,)
 
         # Compute log p(z) for each sample
-        log_pz = ut.log_normal(z, self.z_prior_m.expand_as(z), self.z_prior_v.expand_as(z))  # (batch * iw,)
+        log_pz = ut.log_normal(
+            z, self.z_prior_m.expand_as(z), self.z_prior_v.expand_as(z)
+        )  # (batch * iw,)
 
         # Compute log q(z|x) for each sample
         log_qz_x = ut.log_normal(z, qm_dup, qv_dup)  # (batch * iw,)
@@ -128,13 +133,15 @@ class VAE(nn.Module):
         niwae = -iwae.mean()  # Negative IWAE, averaged over batch
 
         # For KL and Rec, use single sample (ELBO decomposition)
-        z_single = z[:x.size(0)]  # Take first sample per batch element
+        z_single = z[: x.size(0)]  # Take first sample per batch element
         logits_single = self.dec.decode(z_single)
 
         rec = -ut.log_bernoulli_with_logits(x, logits_single)
         rec = rec.mean()
 
-        kl = ut.kl_normal(qm, qv, self.z_prior_m.expand_as(qm), self.z_prior_v.expand_as(qv))
+        kl = ut.kl_normal(
+            qm, qv, self.z_prior_m.expand_as(qm), self.z_prior_v.expand_as(qv)
+        )
         kl = kl.mean()
 
         ################################################################################
@@ -146,12 +153,14 @@ class VAE(nn.Module):
         nelbo, kl, rec = self.negative_elbo_bound(x)
         loss = nelbo
 
-        summaries = dict((
-            ('train/loss', nelbo),
-            ('gen/elbo', -nelbo),
-            ('gen/kl_z', kl),
-            ('gen/rec', rec),
-        ))
+        summaries = dict(
+            (
+                ("train/loss", nelbo),
+                ("gen/elbo", -nelbo),
+                ("gen/kl_z", kl),
+                ("gen/rec", rec),
+            )
+        )
 
         return loss, summaries
 
@@ -166,7 +175,8 @@ class VAE(nn.Module):
     def sample_z(self, batch):
         return ut.sample_gaussian(
             self.z_prior[0].expand(batch, self.z_dim),
-            self.z_prior[1].expand(batch, self.z_dim))
+            self.z_prior[1].expand(batch, self.z_dim),
+        )
 
     def sample_x(self, batch):
         z = self.sample_z(batch)

@@ -1,0 +1,235 @@
+                                        CS 236 Homework 3
+
+                            Instructors: Stefano Ermon and Aditya Grover
+                                  {ermon,adityag}@cs.stanford.edu
+
+                         Available: 11/12/2018; Due: 23:59 PST, 12/3/2018
+
+
+Problem 1: Generative adversarial networks (15 points)
+   In this problem, we will implement a generative adversarial network (GAN) that models a high-dimensional
+data distribution pdata (x), where x ∈ Rn . To do so, we will define a generator Gθ : Rk → Rn ; we obtain samples
+from our model by first sampling a k-dimensional random vector z ∼ N (0, I) and then returning Gθ (z).
+We will also define a discriminator Dφ : Rn → (0, 1) that judges how realistic the generated images Gθ (z) are,
+compared to samples from the data distribution x ∼ pdata (x). Because its output is intended to be interpreted
+as a probability, the last layer of the discriminator is frequently the sigmoid function,
+                                                             1
+                                                 σ(x) =           ,
+                                                          1 + e−x
+which constrains its output to fall between 0 and 1. For convenience, let hφ (x) denote the activation of the
+discriminator right before the sigmoid layer, i.e. let Dφ (x) = σ(hφ (x)). The values hφ (x) are also called the
+discriminator’s logits.
+There are several common variants of the loss functions used to train GANs. They can all be described as
+a procedure where we alternately perform a gradient descent step on LD (φ; θ) with respect to φ to train the
+discriminator Dφ , and a gradient descent step on LG (θ; φ) with respect to θ to train the generator Gθ :
+
+                                         min LD (φ; θ),       min LG (θ; φ).
+                                          φ                    θ
+
+
+In lecture, we talked about the following losses, where the discriminator’s loss is given by
+
+                     LD (φ; θ) = −Ex∼pdata (x) [log Dφ (x)] − Ez∼N (0,I) [log(1 − Dφ (Gθ (z)))],
+
+and the generator’s loss is given by the minimax loss
+
+                                Lminimax
+                                 G       (θ; φ) = Ez∼N (0,I) [log(1 − Dφ (Gθ (z)))].
+
+  1. [5 points] Unfortunately, this form of loss for LG suffers from a vanishing gradient problem. In terms of
+     the discriminator’s logits, the minimax loss is
+
+                                  Lminimax
+                                   G       (θ; φ) = Ez∼N (0,I) [log(1 − σ(hφ (Gθ (z))))].
+
+     Show that the derivative of Lminimax
+                                  G       with respect to θ is approximately 0 if D(Gθ (z)) ≈ 0, or equivalently,
+     if hφ (Gθ (z))  0. You may use the fact that σ 0 (x) = σ(x)(1 − σ(x)). Why is this problematic for the
+     training of the generator when the discriminator successfully identifies a fake sample Gθ (z)?
+  2. [10 points] Because of this vanishing gradient problem, in practice, Lminimax
+                                                                           G       is typically replaced with
+     the non-saturating loss
+
+                                  Lnon-saturating
+                                   G              (θ; φ) = −Ez∼N (0,I) [log Dφ (Gθ (z))].
+
+
+                                                          1
+     To turn the non-saturating loss into a concrete algorithm, we will take alternating gradient steps on Monte
+     Carlo estimates of LD and Lnon-saturating
+                                  G            :
+                                                  m                   m
+                                               1 X            (i)  1 X
+                                 LD (φ; θ) ≈ −       log Dφ (x ) −       log(1 − Dφ (Gθ (z (i) )),
+                                               m i=1               m i=1
+                                                       m
+                                                   1 X
+                      Lnon-saturating
+                       G              (θ; φ) ≈ −         log Dφ (Gθ (z (i) )),
+                                                   m i=1
+
+     where m is the batch size, and for i = 1, . . . , m, we sample x(i) ∼ pdata (x) and z (i) ∼ N (0, I).
+     Implement and train a non-saturating GAN on Fashion MNIST for one epoch. Read through run gan.py,
+     and in codebase/gan.py, implement the loss nonsaturating function. To train the model, execute
+     python run gan.py. You may monitor the GAN’s output in the out nonsaturating directory. Note
+     that because the GAN is only trained for one epoch, we cannot expect the model’s output to produce very
+     realistic samples, but they should be roughly recognizable as clothing items.
+     Please package all of the programming parts (1.2, 3.2, and 4.5) together using make submission.sh and
+     submit the resulting ZIP file on GradeScope.
+
+Problem 2: Divergence minimization (25 points)
+  Now, let us analyze some theoretical properties of GANs. For convenience, we will denote pθ (x) to be the
+distribution whose samples are generated by first sampling z ∼ N (0, I) and then returning the sample Gθ (z).
+With this notation, we may compactly express the discriminator’s loss as
+
+                        LD (φ; θ) = −Ex∼pdata (x) [log Dφ (x)] − Ex∼pθ (x) [log(1 − Dφ (x))].
+
+  1. [10 points] Show that LD is minimized when Dφ = D∗ , where
+
+                                                                  pdata (x)
+                                               D∗ (x) =                         .
+                                                             pθ (x) + pdata (x)
+
+     (Hint: for a fixed x, what t minimizes f (t) = −pdata (x) log t − pθ (x) log(1 − t)?)
+  2. [5 points] Recall that Dφ (x) = σ(hφ (x)). Show that the logits hφ (x) of the discriminator estimate the
+     log of the likelihood ratio of x under the true distribution compared to the model’s distribution; that is,
+     show that if Dφ = D∗ , then
+                                                             pdata (x)
+                                                hφ (x) = log           .
+                                                               pθ (x)
+
+  3. [5 points] Consider a generator loss defined by the sum of the minimax loss and the non-saturating loss,
+
+                             LG (θ; φ) = Ex∼pθ (x) [log(1 − Dφ (x))] − Ex∼pθ (x) [log Dφ (x)].
+
+     Show that if Dφ = D∗ , then
+                                            LG (θ; φ) = KL(pθ (x)||pdata (x)).
+
+  4. [5 points] Recall that when training VAEs, we minimize the negative ELBO, an upper bound to the
+     negative log likelihood. Show that the negative log likelihood, −Ex∼pdata (x) [log pθ (x)], can be written as
+     a KL divergence plus an additional term that is constant with respect to θ. Does this mean that a VAE
+     decoder trained with ELBO and a GAN generator trained with the LG defined in the previous part are
+     implicitly learning the same objective? Explain.
+
+
+
+
+                                                             2
+Problem 3: Conditional GAN with projection discriminator (20 points)
+   So far, we have trained GANs that sample from a given dataset of images. However, many datasets come
+with not only images, but also labels that specify the class of that particular image. In the MNIST dataset,
+we have both the digit’s image as well as its numerical identity. It is natural to want to generate images that
+correspond to a particular class.
+Formally, an unconditional GAN is trained to produce samples x ∼ pθ (x) that mimic samples x ∼ pdata (x)
+from a data distribution. In the class-conditional setting, we instead have have labeled data (x, y) ∼ pdata (x, y)
+and seek to train a model pθ (x, y). Since it is the class conditional generator pθ (x|y) that we are interested
+in, we will express pθ (x, y) = pθ (x|y)pθ (y). We will set pθ (x|y) to be the distribution given by Gθ (z, y), where
+                                                                      1                   1
+z ∼ N (0, I) as usual. For simplicity, we will assume pdata (y) = m      and set pθ (y) = m , where m is the number
+of classes. In this case, the discriminator’s loss becomes
+
+          LD (φ; θ) = −E(x,y)∼pdata (x,y) [log Dφ (x, y)] − E(x,y)∼pθ (x,y) [log(1 − Dφ (x, y))]
+                    = −E(x,y)∼pdata (x,y) [log Dφ (x, y)] − Ey∼pθ (y) [Ez∼N (0,I) [log(1 − Dφ (Gθ (z, y), y))]].
+
+Therefore, the main difference for the conditional GAN is that we must structure our generator Gθ (z, y) and
+discriminator Dφ (x, y) to accept the class label y as well. For the generator, one simple way to do so is to encode
+y as a one-hot vector y and concatenate it to z, and then apply neural network layers normally. (A one-hot
+representation of a class label y is an m-dimensional vector y that is 1 in the yth entry and 0 everywhere else.)
+In practice, the effectiveness of the model is strongly dependent on the way the discriminator depends on y. One
+heuristic with which to design the discriminator is to mimic the form of the theoretically optimal discriminator.
+That is, we can structure the neural network used to model Dφ based on the form of D∗ , where D∗ minimizes
+LD . To calculate the theoretically optimal discriminator, though, it is necessary to make some assumptions.
+
+  1. [10 points] Suppose that when (x, y) ∼ pdata (x, y), there exists a feature mapping ϕ under which ϕ(x)
+     becomes a mixture of m unit Gaussians, with one Gaussian per class label y. Assume that when (x, y) ∼
+     pθ (x, y), ϕ(x) also becomes a mixture of m unit Gaussians, again with one Gaussian per class label y.
+     Concretely, we assume that the ratio of the conditional probabilities can be written as
+
+                                               pdata (x|y)   N (ϕ(x)|µy , I)
+                                                           =                  ,
+                                                pθ (x|y)     N (ϕ(x)|µ̂y , I)
+
+      where µy and µ̂y are the means of the Gaussians for pdata and pθ respectively.
+      Show that under this simplifying assumption, the optimal discriminator’s logits h∗ (x, y) can be written
+      in the form
+                                            h∗ (x, y) = y T (Aϕ(x) + b)
+      for some matrix A and vector b, where y is a one-hot vector denoting the class y. In this problem,
+      the discriminator’s output and logits are related by Dφ (x, y) = σ(hφ (x, y)). (Hint: use the result from
+      problem 2.2.)
+  2. [10 points] Implement and train a conditional GAN on Fashion MNIST for one epoch. The discriminator
+     has the structure described in part 1, with ϕ, A and b parameterized by a neural network with a final
+     linear layer, and the generator accepts a one-hot encoding of the class. In codebase/gan.py, implement the
+     conditional loss nonsaturating function. To train the model, execute python run conditional gan.py.
+     You may monitor the GAN’s output in the out nonsaturating conditional directory. You should be
+     able to roughly recognize the categories that correspond to each column.
+
+Problem 4: Wasserstein GAN (35 points)
+  In many cases, the GAN algorithm can be thought of as minimizing a divergence between a data distribution
+pdata (x) and the model distribution pθ (x). For example, the minimax GAN discussed in the lectures minimizes
+the Jensen-Shannon divergence, and the loss in problem 2.3 minimizes the KL divergence. In this problem, we
+will explore an issue with these divergences and one potential way to fix it.
+
+
+
+                                                            3
+   1. [5 points] Let pθ (x) = N (x|θ, 2 ) and pdata (x) = N (x|θ0 , 2 ) be normal distributions with standard
+      deviation  centered at θ ∈ R and θ0 ∈ R respectively. Show that
+
+                                                                        (θ − θ0 )2
+                                              KL(pθ (x)||pdata (x)) =              .
+                                                                           22
+
+   2. [5 points] Suppose pθ (x) and pdata (x) both place probability mass in only a very small part of the domain;
+      that is, consider the limit  → 0. What happens to KL(pθ (x)||pdata (x)) and its derivative with respect to
+      θ, assuming that θ 6= θ0 ? Why is this problematic for a GAN trained with the loss function LG defined in
+      problem 2.3?
+   3. [5 points] To avoid this problem, we’ll propose an alternative objective for the discriminator and gener-
+      ator. Consider the following alternative objectives:
+
+                                     LD (φ; θ) = Ex∼pθ (x) [Dφ (x)] − Ex∼pdata (x) [Dφ (x)]
+                                     LG (θ; φ) = −Ex∼pθ (x) [Dφ (x)],
+
+      where Dφ is no longer constrained to functions that output a probability; instead Dφ can be a function
+      that outputs any real number. As defined, however, these losses are still problematic. Again consider the
+      limit  → 0; that is, let pθ (x) be the distribution that outputs θ ∈ R with probability 1, and let pdata (x) be
+      the distribution that outputs θ0 ∈ R with probability 1. Why is there no discriminator Dφ that minimizes
+      this new objective LD ?
+
+   4. [5 points] Let’s tweak the alternate objective so that an optimal discriminator exists. Consider the same
+      objective LD and the same limit  → 0. Now, suppose that Dφ is restricted to differentiable functions
+      whose derivative is always between −1 and 1. It can still output any real number. Is there now a
+      discriminator Dφ out of this class of functions that minimizes LD ? Briefly describe what the optimal Dφ
+      looks like as a function of x.
+
+   5. [15 points] The Wasserstein GAN with gradient penalty (WGAN-GP) enables stable training by penal-
+      izing functions whose derivatives are too large. It achieves this by adding a penalty on the 2-norm of the
+      gradient of the discriminator at various points in the domain. It is defined by
+
+                  LD (φ; θ) = Ex∼pθ (x) [Dφ (x)] − Ex∼pdata (x) [Dφ (x)] + λEx∼rθ (x) [(||∇Dφ (x)||2 − 1)2 ]
+                   LG (θ; φ) = −Ex∼pθ (x) [Dφ (x)],
+
+      where rθ (x) is defined by sampling α ∼ Uniform([0, 1]), x1 ∼ pθ (x), and x2 ∼ pdata (x), and returning
+      αx1 + (1 − α)x2 . The hyperparameter λ controls the strength of the penalty; a setting that usually works
+      is λ = 10.
+      Implement and train WGAN-GP for one epoch on Fashion MNIST. In codebase/gan.py, implement the
+      loss wasserstein gp function. To train the model, execute python run gan.py --loss type wasserstein gp.
+      You may monitor the GAN’s output in the out wasserstein gp directory.
+
+Problem 5: Noise contrastive estimation (5 points)
+  Noise contrastive estimation is a technique to learn an energy-based model pθ (x) = Z1 exp(−ER   θ (x)) to model
+a data distribution pdata (x). (Recall that pθ is only a proper probability distribution if Z = exp(−Eθ (x)) dx.)
+Noise contrastive estimation (NCE) requires access to a second, tractable probabilistic model pnoise (x) and
+optimizes the following objective:
+
+max Ex∼pdata (x) [log σ(−Eθ (x) − log Z − log pnoise (x))] + Ex∼pnoise (x) [log(1 − σ(−Eθ (x) − log Z − log pnoise (x)))].
+θ,Z
+
+
+   1. [5 points] Let (θ∗ , Z ∗ ) be the parameters that maximize this objective. Show that Z1∗ exp(−Eθ∗ (x)) =
+      pdata (x). (Hint: use the result from problem 2.2.)
+
+
+
+
+                                                            4
+

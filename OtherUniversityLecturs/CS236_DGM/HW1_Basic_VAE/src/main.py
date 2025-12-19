@@ -37,21 +37,19 @@ def dict2namespace(config):
 
 
 def parse_config(args):
-    with open('config.yml', 'r') as f:
-        config = yaml.load(f)
+    with open('configs/config.yml', 'r') as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
     with open(os.path.join(args.log_dir, 'config.yml'), 'w') as f:
         yaml.dump(config, f, default_flow_style=False)
     return dict2namespace(config)
 
-def plot_log_p(filename, dataset, rnn):
-    with open(filename + '.pkl', 'rb') as f:
-        lls = []
-        data = pkl.load(f)
-        for i, str in data.items():
-            str_np = np.asarray([dataset.char2idx[c] for c in str])
-            lls.append(rnn.compute_prob(str_np))
+def plot_log_p(filename, dataset, rnn, data_dict):
+    lls = []
+    for i, str in data_dict.items():
+        str_np = np.asarray([dataset.char2idx[c] for c in str])
+        lls.append(rnn.compute_prob(str_np))
 
     with open(filename + '_raw.pkl', 'wb') as f:
         pkl.dump(lls, f, protocol=pkl.HIGHEST_PROTOCOL)
@@ -98,16 +96,22 @@ def main():
     print("# RNN weights restored.")
 
     # question 5)
-    with open('snippets.pkl', 'rb') as f:
+    with open(os.path.join(args.checkpoint_dir, 'snippets.pkl'), 'rb') as f:
         snippets = pkl.load(f)
     lbls = []
 
-    with open('random_raw.pkl', 'rb') as f:
-        random_lls = pkl.load(f)
-    with open('shakespeare_raw.pkl', 'rb') as f:
-        shakespeare_lls = pkl.load(f)
-    with open('nips_raw.pkl', 'rb') as f:
-        nips_lls = pkl.load(f)
+    # Load datasets and compute average likelihoods
+    with open(os.path.join(args.checkpoint_dir, 'random.pkl'), 'rb') as f:
+        random_data = pkl.load(f)
+    with open(os.path.join(args.checkpoint_dir, 'shakespeare.pkl'), 'rb') as f:
+        shakespeare_data = pkl.load(f)
+    with open(os.path.join(args.checkpoint_dir, 'nips.pkl'), 'rb') as f:
+        nips_data = pkl.load(f)
+
+    # Compute likelihoods for each dataset
+    random_lls = [rnn.compute_prob(np.asarray([dataset.char2idx[c] for c in text])) for text in random_data.values()]
+    shakespeare_lls = [rnn.compute_prob(np.asarray([dataset.char2idx[c] for c in text])) for text in shakespeare_data.values()]
+    nips_lls = [rnn.compute_prob(np.asarray([dataset.char2idx[c] for c in text])) for text in nips_data.values()]
 
     avg_random = np.mean(random_lls)
     avg_shakespeare = np.mean(shakespeare_lls)
@@ -122,6 +126,30 @@ def main():
         ]
         label = int(np.argmin(dists))
         lbls.append(label)
+
+    # Save answers.pkl
+    with open('answers.pkl', 'wb') as f:
+        pkl.dump(lbls, f, protocol=pkl.HIGHEST_PROTOCOL)
+    print("# answers.pkl saved.")
+
+    # Generate samples
+    samples = []
+    for _ in range(10):  # Generate 10 samples
+        sample_tokens = rnn.sample(SAMPLE_SEQ_LEN)
+        sample_text = ''.join([dataset.idx2char[token] for token in sample_tokens])
+        samples.append(sample_text)
+
+    with open('samples.txt', 'w', encoding='utf-8') as f:
+        for sample in samples:
+            f.write(sample + '\n\n')
+    print("# samples.txt saved.")
+
+    # Generate plots
+    plot_log_p('random', dataset, rnn)
+    plot_log_p('shakespeare', dataset, rnn)
+    plot_log_p('nips', dataset, rnn)
+
+    print("# All required files generated successfully!")
 
 if __name__ == '__main__':
     sys.exit(main())
