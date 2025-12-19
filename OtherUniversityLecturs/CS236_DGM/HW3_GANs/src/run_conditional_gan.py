@@ -52,6 +52,8 @@ for _ in range(args.num_epochs):
         
         if args.loss_type == 'nonsaturating':
             loss = codebase.gan.conditional_loss_nonsaturating
+        elif args.loss_type == 'wasserstein_gp':
+            loss = codebase.gan.conditional_loss_wasserstein_gp
         else:
             raise NotImplementedError
 
