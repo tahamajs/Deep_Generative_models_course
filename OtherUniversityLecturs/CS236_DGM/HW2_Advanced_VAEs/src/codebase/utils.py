@@ -4,9 +4,6 @@ import shutil
 
 # import tensorflow as tf
 import torch
-from codebase.models.gmvae import GMVAE
-from codebase.models.ssvae import SSVAE
-from codebase.models.vae import VAE
 from torch.nn import functional as F
 from torchvision import datasets, transforms
 
@@ -259,6 +256,10 @@ def load_model_by_name(model, global_step):
 
 
 def evaluate_lower_bound(model, labeled_test_subset, run_iwae=True):
+    # Import here to avoid circular imports
+    from codebase.models.vae import VAE
+    from codebase.models.gmvae import GMVAE
+
     check_model = isinstance(model, VAE) or isinstance(model, GMVAE)
     assert check_model, "This function is only intended for VAE and GMVAE"
 
@@ -295,6 +296,9 @@ def evaluate_lower_bound(model, labeled_test_subset, run_iwae=True):
 
 
 def evaluate_classifier(model, test_set):
+    # Import here to avoid circular imports
+    from codebase.models.ssvae import SSVAE
+
     check_model = isinstance(model, SSVAE)
     assert check_model, "This function is only intended for SSVAE"
 
