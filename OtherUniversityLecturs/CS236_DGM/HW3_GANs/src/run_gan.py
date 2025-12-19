@@ -41,6 +41,9 @@ g = codebase.network.Generator().to(device)
 d = codebase.network.Discriminator().to(device)
 z_test = torch.randn(100, g.dim_z).to(device)
 
+# enable anomaly detection to trace in-place op errors
+torch.autograd.set_detect_anomaly(True)
+
 g_optimizer = torch.optim.Adam(g.parameters(), 1e-3, betas=(0.5, 0.999))
 d_optimizer = torch.optim.Adam(d.parameters(), 1e-3, betas=(0.5, 0.999))
 

@@ -54,6 +54,9 @@ d = codebase.network.ConditionalDiscriminator().to(device)
 z_test = torch.randn(10, 1, g.dim_z).repeat(1, 10, 1).reshape(100, g.dim_z).to(device)
 y_test = torch.arange(10).repeat(10).to(device)
 
+# enable anomaly detection to get accurate stack traces for autograd errors
+torch.autograd.set_detect_anomaly(True)
+
 g_optimizer = torch.optim.Adam(g.parameters(), 1e-3, betas=(0.5, 0.999))
 d_optimizer = torch.optim.Adam(d.parameters(), 1e-3, betas=(0.5, 0.999))
 
