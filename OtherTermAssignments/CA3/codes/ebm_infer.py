@@ -73,7 +73,7 @@ def sample_and_save_trajectory(
     ensure_dir(output_dir)
     model = load_model(checkpoint, ebm_cfg.device)
     # Use the helper that records snapshots
-    from .ebm_sampling import sample_with_trajectory
+    from ebm_sampling import sample_with_trajectory
 
     traj = sample_with_trajectory(model, ebm_cfg, (16, 1, 28, 28), record_every=record_every)
     # Save each snapshot as a grid
