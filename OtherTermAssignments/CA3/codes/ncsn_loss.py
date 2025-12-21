@@ -4,7 +4,7 @@ Weighted denoising score matching loss for NCSN.
 
 import torch
 from torch import nn
-from .config import NCSNConfig
+from config import NCSNConfig
 from typing import Optional
 
 

@@ -5,11 +5,11 @@ Inference helpers for the trained EBM: generation from noise and denoising.
 from pathlib import Path
 import torch
 
-from .config import DataConfig, EBMConfig, RunPaths
-from .data import mnist_dataloaders
-from .ebm_model import ConvEnergyModel
-from .ebm_sampling import sample_from_noise, LangevinSampler
-from .utils import save_grid, set_seed, ensure_dir
+from config import DataConfig, EBMConfig, RunPaths
+from data import mnist_dataloaders
+from ebm_model import ConvEnergyModel
+from ebm_sampling import sample_from_noise, LangevinSampler
+from utils import save_grid, set_seed, ensure_dir
 
 
 def load_model(checkpoint: Path, device: torch.device) -> ConvEnergyModel:

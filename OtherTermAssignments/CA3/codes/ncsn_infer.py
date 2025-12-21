@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import Optional, Sequence
 import torch
 
-from .config import NCSNConfig, DataConfig, RunPaths
-from .data import mnist_dataloaders
-from .ncsn_model import ScoreNet
-from .ncsn_sampling import sample, annealed_langevin_dynamics
-from .utils import save_grid, ensure_dir
+from config import NCSNConfig, DataConfig, RunPaths
+from data import mnist_dataloaders
+from ncsn_model import ScoreNet
+from ncsn_sampling import sample, annealed_langevin_dynamics
+from utils import save_grid, ensure_dir
 
 
 def load_model(

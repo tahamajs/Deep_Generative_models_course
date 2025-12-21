@@ -11,12 +11,12 @@ import torch
 from torch import optim
 from tqdm import tqdm
 
-from .config import NCSNConfig, DataConfig, RunPaths
-from .data import mnist_dataloaders
-from .ncsn_model import ScoreNet
-from .ncsn_loss import dsm_loss
-from .ncsn_sampling import sample
-from .utils import save_grid, set_seed, ensure_dir, write_run_info
+from config import NCSNConfig, DataConfig, RunPaths
+from data import mnist_dataloaders
+from ncsn_model import ScoreNet
+from ncsn_loss import dsm_loss
+from ncsn_sampling import sample
+from utils import save_grid, set_seed, ensure_dir, write_run_info
 
 
 def train(

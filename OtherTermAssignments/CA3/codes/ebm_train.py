@@ -12,11 +12,11 @@ import torch
 from torch import optim
 from tqdm import tqdm
 
-from .config import DataConfig, EBMConfig, RunPaths
-from .data import mnist_dataloaders
-from .ebm_model import ConvEnergyModel
-from .ebm_sampling import LangevinSampler, sample_from_noise
-from .utils import save_grid, set_seed, ensure_dir, write_run_info
+from config import DataConfig, EBMConfig, RunPaths
+from data import mnist_dataloaders
+from ebm_model import ConvEnergyModel
+from ebm_sampling import LangevinSampler, sample_from_noise
+from utils import save_grid, set_seed, ensure_dir, write_run_info
 
 
 def train(

@@ -5,7 +5,7 @@ Annealed Langevin Dynamics sampling and denoising for NCSN.
 from typing import Optional
 import torch
 from torch import nn
-from .config import NCSNConfig
+from config import NCSNConfig
 
 
 @torch.no_grad()

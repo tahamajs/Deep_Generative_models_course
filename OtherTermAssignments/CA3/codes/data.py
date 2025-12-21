@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Tuple
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from .config import DataConfig
-from .utils import set_seed
+from config import DataConfig
+from utils import set_seed
 
 
 def mnist_dataloaders(
