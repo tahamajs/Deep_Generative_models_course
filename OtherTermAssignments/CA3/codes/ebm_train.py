@@ -73,11 +73,10 @@ def train(
                 )
 
         # Save training samples each epoch
-        with torch.no_grad():
-            samples = sample_from_noise(
-                model, cfg_model, (cfg_model.sample_grid, 1, 28, 28)
-            )
-            save_grid(samples, output_dir / f"ebm_samples_epoch{epoch}.png", nrow=4)
+        samples = sample_from_noise(
+            model, cfg_model, (cfg_model.sample_grid, 1, 28, 28)
+        )
+        save_grid(samples, output_dir / f"ebm_samples_epoch{epoch}.png", nrow=4)
 
             # Denoising a few test digits via Langevin starting from noisy images
             x_test, _ = next(iter(test_loader))

@@ -66,13 +66,12 @@ def train(
             history["loss"].append(loss.item())
             progress.set_postfix(loss=f"{loss.item():.3f}")
 
-        with torch.no_grad():
-            y_samples: Optional[torch.Tensor] = None
-            if conditional:
-                y_samples = torch.arange(0, 16, device=device) % cfg.num_classes
-            samples = sample(model, cfg, num_samples=16, y=y_samples)
-            samples = (samples + 1) / 2.0
-            save_grid(samples, output_dir / f"samples_epoch{epoch}.png", nrow=4)
+        y_samples: Optional[torch.Tensor] = None
+        if conditional:
+            y_samples = torch.arange(0, 16, device=device) % cfg.num_classes
+        samples = sample(model, cfg, num_samples=16, y=y_samples)
+        samples = (samples + 1) / 2.0
+        save_grid(samples, output_dir / f"samples_epoch{epoch}.png", nrow=4)
 
         torch.save(
             {
