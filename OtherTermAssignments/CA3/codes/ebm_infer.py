@@ -29,9 +29,9 @@ def generate_and_denoise(
     model = load_model(checkpoint, ebm_cfg.device)
     sampler = LangevinSampler(model, ebm_cfg)
 
-    with torch.no_grad():
-        samples = sample_from_noise(model, ebm_cfg, (16, 1, 28, 28))
-        save_grid(samples, output_dir / "ebm_samples_final.png", nrow=4)
+    # Sampling requires gradients for input; enable gradients for Langevin updates
+    samples = sample_from_noise(model, ebm_cfg, (16, 1, 28, 28))
+    save_grid(samples.detach().cpu(), output_dir / "ebm_samples_final.png", nrow=4)
 
     # Denoise a few training digits
     x_real, _ = next(iter(train_loader))

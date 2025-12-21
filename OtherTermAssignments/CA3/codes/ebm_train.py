@@ -78,14 +78,15 @@ def train(
         )
         save_grid(samples, output_dir / f"ebm_samples_epoch{epoch}.png", nrow=4)
 
-            # Denoising a few test digits via Langevin starting from noisy images
-            x_test, _ = next(iter(test_loader))
-            x_test = x_test[: cfg_model.sample_grid].to(device)
-            noise = torch.randn_like(x_test) * 0.3
-            noisy = (x_test + noise).clamp(0.0, 1.0)
-            denoised = sampler(noisy)
-            save_grid(noisy, output_dir / f"ebm_noisy_epoch{epoch}.png", nrow=4)
-            save_grid(denoised, output_dir / f"ebm_denoised_epoch{epoch}.png", nrow=4)
+        # Denoising a few test digits via Langevin starting from noisy images
+        x_test, _ = next(iter(test_loader))
+        x_test = x_test[: cfg_model.sample_grid].to(device)
+        noise = torch.randn_like(x_test) * 0.3
+        noisy = (x_test + noise).clamp(0.0, 1.0)
+        denoised = sampler(noisy)
+        save_grid(x_test, output_dir / f"ebm_real_epoch{epoch}.png", nrow=4)
+        save_grid(noisy, output_dir / f"ebm_noisy_epoch{epoch}.png", nrow=4)
+        save_grid(denoised, output_dir / f"ebm_denoised_epoch{epoch}.png", nrow=4)
 
         torch.save(
             {
