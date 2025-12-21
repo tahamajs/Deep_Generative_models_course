@@ -155,6 +155,10 @@ def train_interactive(
             pass
     else:
         set_seed(cfg_data.seed)
+        # Cap batch size for interactive/demo runs on GPU to avoid OOM
+        if cfg_model.device.type == "cuda":
+            cfg_data.batch_size = min(cfg_data.batch_size, 32)
+            cfg_data.num_workers = min(getattr(cfg_data, "num_workers", 2), 2)
         train_loader, test_loader = mnist_dataloaders(cfg_data)
     device = cfg_model.device
 
@@ -165,26 +169,38 @@ def train_interactive(
     history = {"loss": []}
     ensure_dir(output_dir)
 
-    for epoch in range(1, epochs + 1):
-        loop = tqdm(train_loader, desc=f"EBM demo epoch {epoch}/{epochs}", leave=False)
-        for x_real, _ in loop:
-            x_real = x_real.to(device)
-            x_fake = sampler(torch.rand_like(x_real))
+    try:
+        for epoch in range(1, epochs + 1):
+            loop = tqdm(train_loader, desc=f"EBM demo epoch {epoch}/{epochs}", leave=False)
+            for x_real, _ in loop:
+                x_real = x_real.to(device)
+                x_fake = sampler(torch.rand_like(x_real))
 
-            E_real = model(x_real)
-            E_fake = model(x_fake)
+                E_real = model(x_real)
+                E_fake = model(x_fake)
 
-            data_term = E_real.mean() - E_fake.detach().mean()
-            reg_term = cfg_model.lambda_reg * (
-                E_real.pow(2).mean() + E_fake.detach().pow(2).mean()
-            )
-            loss = data_term + reg_term
+                data_term = E_real.mean() - E_fake.detach().mean()
+                reg_term = cfg_model.lambda_reg * (
+                    E_real.pow(2).mean() + E_fake.detach().pow(2).mean()
+                )
+                loss = data_term + reg_term
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            history["loss"].append(loss.item())
+                history["loss"].append(loss.item())
+    except RuntimeError as e:
+        if "out of memory" in str(e).lower():
+            print("CUDA out of memory during EBM demo training.\nSuggestions: reduce `ebm_cfg.langevin_steps` or reduce batch size via `DataConfig(batch_size=...)`, or run on CPU (set `device=torch.device('cpu')`).\nAborting demo run.")
+            try:
+                import torch
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
+        raise
 
         # Sampling uses input gradients; do not disable grads here
         samples = sample_from_noise(model, cfg_model, (cfg_model.sample_grid, 1, 28, 28))

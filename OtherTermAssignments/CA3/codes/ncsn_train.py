@@ -126,6 +126,10 @@ def train_interactive(
         data_cfg = DataConfig(
             batch_size=cfg.batch_size, num_workers=cfg.num_workers, channels=cfg.channels
         )
+        # Cap batch size for interactive/demo runs to avoid OOM on small GPUs
+        if cfg.device.type == "cuda":
+            data_cfg.batch_size = min(data_cfg.batch_size, 16)
+            data_cfg.num_workers = min(data_cfg.num_workers, 2)
         train_loader, _ = mnist_dataloaders(data_cfg, normalize_to_minus1_1=True)
 
     device = cfg.device
@@ -147,10 +151,11 @@ def train_interactive(
         device=str(device),
     )
 
-    for epoch in range(1, epochs + 1):
-        progress = tqdm(
-            train_loader, desc=f"NCSN demo epoch {epoch}/{epochs}", leave=False
-        )
+    try:
+        for epoch in range(1, epochs + 1):
+            progress = tqdm(
+                train_loader, desc=f"NCSN demo epoch {epoch}/{epochs}", leave=False
+            )
         for x, labels in progress:
             x = x.to(device)
             x = x * 2 - 1  # map to [-1, 1]
@@ -183,14 +188,25 @@ def train_interactive(
             except Exception:
                 pass
 
-        torch.save(
-            {
-                "model": model.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "epoch": epoch,
-            },
-            checkpoint_path,
-        )
+            torch.save(
+                {
+                    "model": model.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "epoch": epoch,
+                },
+                checkpoint_path,
+            )
+    except RuntimeError as e:
+        if "out of memory" in str(e).lower():
+            print("CUDA out of memory during NCSN demo training.\nSuggestions: reduce `ncsn_cfg.embed_dim`, reduce `ncsn_cfg.num_levels` or `ncsn_cfg.langevin_steps`, or run on CPU (set `device=torch.device('cpu')`).\nAborting demo run.")
+            try:
+                import torch
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
+        raise
 
     # Save loss visualization
     try:
