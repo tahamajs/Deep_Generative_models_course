@@ -41,7 +41,15 @@ def generate_and_denoise(
     if conditional:
         y_samples = torch.arange(0, 16, device=cfg.device) % cfg.num_classes
     samples = sample(model, cfg, num_samples=16, y=y_samples)
-    save_grid((samples + 1) / 2.0, output_dir / "ncsn_samples.png", nrow=4)
+    # if sample returned a trajectory (list), handle accordingly
+    if isinstance(samples, list):
+        # save final frame
+        save_grid((samples[-1] + 1) / 2.0, output_dir / "ncsn_samples.png", nrow=4)
+        # also save intermediate frames
+        for i, frame in enumerate(samples):
+            save_grid((frame + 1) / 2.0, output_dir / f"ncsn_traj_{i:03d}.png", nrow=4)
+    else:
+        save_grid((samples + 1) / 2.0, output_dir / "ncsn_samples.png", nrow=4)
 
     x_real, labels = next(iter(train_loader))
     x_real = x_real.to(cfg.device)[:16] * 2 - 1
