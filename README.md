@@ -544,6 +544,10 @@ CA4 explores advanced applications of deep generative models in vision-language 
 
 This assignment bridges traditional generative modeling with modern multi-modal AI, showing how generative techniques extend beyond image synthesis to language and reasoning tasks.
 
+### Results Summary
+
+**Fine-Tuning PaliGemma on CLEVR**: Achieved 73% validation loss reduction (to 0.0234) with only 3% trainable parameters (~90M out of 3B). Training completed in ~2.5 hours on single GPU. Evaluation showed ROUGE scores indicating challenges with exact matching but successful adaptation.
+
 Key components in `CA4_Vision_Language_Model/code/final_CA4_training.ipynb`:
 
 1. **Vision-Language Model**: Paligemma-3B, a state-of-the-art VLM for understanding images and answering questions.
