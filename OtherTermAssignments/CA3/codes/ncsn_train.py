@@ -17,6 +17,7 @@ from ncsn_model import ScoreNet
 from ncsn_loss import dsm_loss
 from ncsn_sampling import sample
 from utils import save_grid, set_seed, ensure_dir, write_run_info
+from torchvision.utils import make_grid
 
 
 def train(
@@ -166,8 +167,6 @@ def train_interactive(
             checkpoint_path,
         )
 
-    return history
-
     # Save loss visualization
     try:
         plt.figure(figsize=(6, 4))
@@ -183,7 +182,8 @@ def train_interactive(
         # Best-effort plotting
         pass
 
-    return history
+    # Return model and history for interactive/demo usage
+    return model, history
 
 
 def main():

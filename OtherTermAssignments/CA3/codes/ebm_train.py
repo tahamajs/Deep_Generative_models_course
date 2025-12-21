@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from dataclasses import asdict
 from pathlib import Path
 from typing import Dict, Any
+from torch.utils.data import DataLoader
+from torchvision.utils import make_grid
 
 import torch
 from torch import optim
@@ -138,8 +140,22 @@ def train_interactive(
     Runs a small number of epochs, saves demo samples/loss plots to `output_dir`,
     and optionally displays sample grids inline when `show` is True.
     """
-    set_seed(cfg_data.seed)
-    train_loader, test_loader = mnist_dataloaders(cfg_data)
+    # Backwards-compatible: allow calling with (train_loader, test_loader, cfg_model, ...)
+    if isinstance(cfg_data, DataLoader):
+        train_loader = cfg_data
+        test_loader = cfg_model
+        # third positional arg was passed into output_dir; interpret it as cfg_model
+        cfg_model = output_dir
+        # default demo output directory if not provided
+        output_dir = Path("./outputs/ebm_demo")
+        try:
+            set_seed(cfg_model.seed)
+        except Exception:
+            # If seed isn't available, ignore
+            pass
+    else:
+        set_seed(cfg_data.seed)
+        train_loader, test_loader = mnist_dataloaders(cfg_data)
     device = cfg_model.device
 
     model = ConvEnergyModel().to(device)
