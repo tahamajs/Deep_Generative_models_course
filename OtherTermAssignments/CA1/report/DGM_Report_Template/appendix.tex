@@ -1,48 +1,91 @@
 \chapter{پیوست}
 
 \section{جزئیات پیاده‌سازی}
-کدهای مربوط به پیاده‌سازی VAE در پوشهٔ `code/` قرار گرفته‌اند. نکات عملی:
+کدهای مربوط به پیاده‌سازی VAE در پوشهٔ `code/` قرار گرفته‌اند. نکات عملی و ساختار پیشنهاد شده:
 \begin{itemize}
-    \item فایل آموزشی اصلی: `vae_training.py`
-    \item تابع بارگذاری و پیش‌پردازش داده‌ها در `data/` قرار دارد.
-    \item برای تولید شکل‌ها و ذخیره‌سازی آن‌ها از توابع تصویرسازی موجود در `utils/visualization.py` استفاده شده است.
+  \item ساختار پوشه‌ها: `code/`، `code/data/`، `code/models/`، `code/utils/` و `figures/`.
+  \item فایل اصلی آموزش: `code/vae_training.py` که شامل حلقهٔ آموزش، ارزیابی و ذخیرهٔ مدل است.
+  \item مدل‌ها در `code/models/vae.py` تعریف می‌شوند و شامل کلاس‌های `Encoder`, `Decoder`, `VAE` هستند.
+  \item توابع بارگذاری و پیش‌پردازش در `code/data/dsprites_loader.py` قرار دارند؛ شامل نرمال‌سازی پیکسل‌ها و تولید مینی‌بچ.
+  \item ابزارهای تصویرسازی و محاسبهٔ معیارها در `code/utils/visualization.py` و `code/utils/metrics.py` قرار دارند.
 \end{itemize}
 
 \section{لیست شکل‌ها (مکان‌نماها)}
-شکل‌های مورد نیاز مطابق با `README_FIGURES.md` به صورت مکان‌نما در اینجا آورده شده‌اند. هنگام آماده‌سازی نهایی، فایل‌های PNG معادل را در پوشهٔ `figures/` قرار دهید.
+شکل‌ها و نتایج آزمایشی به صورت مکان‌نما در اینجا ذکر شده‌اند. در آماده‌سازی نهایی، تصاویر تولیدشده توسط کد را با نام‌های زیر در پوشهٔ `figures/` قرار دهید.
 
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{figures/bayesian_network.png}
-    \caption{شبکهٔ بیزی نمونه — مدل سیستم پزشکی}
-    \label{fig:bayes_net}
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/bayesian_network.png}
+  \caption{شبکهٔ بیزی نمونه — مدل سیستم پزشکی}
+  \label{fig:bayes_net}
 \end{figure}
 
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{figures/dsprites_samples.png}
-    \caption{نمونه‌هایی از مجموعهٔ dSprites}
-    \label{fig:dsprites}
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/dsprites_samples.png}
+  \caption{نمونه‌هایی از مجموعهٔ dSprites (شکل، مقیاس، زاویه)}
+  \label{fig:dsprites}
 \end{figure}
 
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{figures/reconstructions.png}
-    \caption{بازسازی‌های مدل (اورجینال در بالا، بازسازی در پایین)}
-    \label{fig:recons}
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/reconstructions.png}
+  \caption{مقایسهٔ اورجینال و بازسازی}
+  \label{fig:recons}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/latent_traversal.png}
+  \caption{تراورس فضای پنهان برای هر بعد}
+  \label{fig:traversal}
 \end{figure}
 
 \section{جداول نمونه}
-در صورت نیاز می‌توانید جداول نتایج مقایسه‌ای را به شکل زیر وارد کنید:
+در صورت نیاز می‌توانید جداول نتایج مقایسه‌ای را به شکل زیر وارد کنید؛ مقادیر ارائه‌شده نمونه‌ای و فرضی است:
 \begin{table}[H]
   \centering
   \begin{tabular}{lcc}
-    \toprule
-    مدل & MSE بازسازی & امتیاز MIG \\
-    \midrule
-    VAE (\beta=1) & 0.012 & 0.15 \\
-    \beta-VAE (\beta=4) & 0.018 & 0.42 \\
-    \bottomrule
+  	oprule
+  مدل & MSE بازسازی & امتیاز MIG \\
+  \midrule
+  VAE (\beta=1) & 0.012 & 0.15 \\
+  beta-VAE (\beta=4) & 0.018 & 0.43 \\
+  VAE+Flow & 0.010 & 0.32 \\
+  \bottomrule
   \end{tabular}
-  \caption{نمونهٔ جدول نتایج}
+  \caption{نمونهٔ جدول نتایج (مقادیر فرضی)}
 \end{table}
+
+\section{دستورات ساخت و بررسی}
+دستورات پیشنهادی برای تولید گزارش در پوشهٔ قالب:
+\begin{verbatim}
+cd DGM_Report_Template
+pdflatex -shell-escape main.tex
+bibtex main
+pdflatex -shell-escape main.tex
+pdflatex -shell-escape main.tex
+\end{verbatim}
+
+اگر از `latexmk` استفاده می‌کنید:
+\begin{verbatim}
+latexmk -pdf -shell-escape main.tex
+\end{verbatim}
+
+\section{کد نمونهٔ پیوست}
+در ادامه یک قطعهٔ نمونه برای ساختار `Encoder/Decoder` آورده شده است (Python/PyTorch — نمایشی):
+\begin{program}[H]
+\begin{minted}[frame=none]{python}
+class Encoder(nn.Module):
+  def __init__(self, latent_dim):
+    super().__init__()
+    self.conv = nn.Sequential(...)
+    self.fc_mu = nn.Linear(..., latent_dim)
+    self.fc_logvar = nn.Linear(..., latent_dim)
+  def forward(self, x):
+    h = self.conv(x).view(x.size(0), -1)
+    return self.fc_mu(h), self.fc_logvar(h)
+\end{minted}
+\caption{نمونهٔ ساختار Encoder}
+\end{program}
+

@@ -54,12 +54,44 @@ p_\theta(x) = \frac{\exp(-f_\theta(x))}{Z_\theta}
 از آنجایی که \( \log Z_\theta \) غیرقابل محاسبه است، از نمونه‌گیری منفی استفاده می‌کنیم.
 
 \subsubsection{واگرایی کنتراستی}
-در CD، گرادیان تقریبی به صورت زیر است:
+گرادیان دقیق لگ‌-احتمال یک نمونه منفرد به صورت زیر نوشته می‌شود:
 \[
-\nabla_\theta \mathcal{L} \approx \mathbb{E}_{x \sim p_{\text{data}}} [\nabla_\theta f_\theta(x)] - \mathbb{E}_{x' \sim p_\theta} [\nabla_\theta f_\theta(x')]
+\nabla_\theta \log p_\theta(x) = -\nabla_\theta f_\theta(x) - \nabla_\theta \log Z_\theta
 \]
+با توجه به اینکه
+\[
+\nabla_\theta \log Z_\theta = \frac{1}{Z_\theta} \nabla_\theta \int \exp(-f_\theta(x')) \, dx' = -\int p_\theta(x') \nabla_\theta f_\theta(x') \, dx' = -\mathbb{E}_{x' \sim p_\theta}[\nabla_\theta f_\theta(x')]
+\]
+بنابراین داریم:
+\[
+\nabla_\theta \log p_\theta(x) = -\nabla_\theta f_\theta(x) + \mathbb{E}_{x' \sim p_\theta}[\nabla_\theta f_\theta(x')]
+\]
+با انتگرال‌گیری روی توزیع داده، گرادیان معیار آموزش به صورت زیر است:
+\[
+\nabla_\theta \mathcal{L} = \mathbb{E}_{x \sim p_{\text{data}}}[\nabla_\theta f_\theta(x)] - \mathbb{E}_{x' \sim p_\theta}[\nabla_\theta f_\theta(x')]
+\]
+از آنجا که نمونه‌گیری دقیق از \(p_\theta\) دشوار است، Hinton پیشنهاد کرد که با شروع از نمونه‌های داده و اجرای k مرحله MCMC، یک تقریب برای \(\mathbb{E}_{x' \sim p_\theta}\) به‌دست آوریم. این روش به عنوان CD-k شناخته می‌شود و برای k=1 معمولاً عملکرد قابل‌قبولی دارد اما گرادیان آن بایاس دارد (نه کاملاً بی‌تور)؛ با افزایش k به ترتیب به گرادیان حقیقی نزدیک می‌شویم.
 
-برای CD-k، k مرحله MCMC انجام می‌شود.
+الگوریتم CD-k (پزدود):
+\begin{algorithm}[H]
+\caption{CD-k}
+\begin{latin}
+\KwData{آموزش داده‌ها}
+\KwResult{بروزرسانی پارامتر \(\theta\)}
+\For{هر دسته در داده}{
+    نمونه‌گیری منفی: $x^{(0)} \leftarrow$ داده‌ی واقعی (یا نمونه‌شده از آن) 
+    \\ 
+    \For{$i=1$ \KwTo $k$}{
+        $x^{(i)} \leftarrow \text{MCMC	extunderscore step}(x^{(i-1)}; \theta)$
+    }
+    $x^{(k)}$ را به‌عنوان نمونه منفی در نظر بگیر
+    محاسبه گرادیان: $\nabla_\theta \mathcal{L} \approx \nabla_\theta f_\theta(x^{(0)}) - \nabla_\theta f_\theta(x^{(k)})$
+    به‌روزرسانی پارامترها با SGD/Adam
+}
+\end{latin}
+\end{algorithm}
+
+نکته: گرادیان کنتراستی ساده و قابل‌اجراست اما کارایی آن بستگی زیادی به کیفیت و همگرایی MCMC دارد؛ برای صرفه‌جویی محاسباتی معمولاً از CD-1 یا CD-10 استفاده می‌شود.
 
 \subsubsection{دینامیک لانژوین}
 برای نمونه‌گیری، از دینامیک لانژوین استفاده می‌شود:
@@ -67,7 +99,23 @@ p_\theta(x) = \frac{\exp(-f_\theta(x))}{Z_\theta}
 dx = \frac{\epsilon}{2} \nabla_x \log p_\theta(x) dt + \sqrt{\epsilon} dW_t
 \]
 
-این معادله به سمت حالت پایدار همگرا می‌شود.
+این معادله به سمت حالت پایدار همگرا می‌شود که \( p(x) \propto \exp(-f_\theta(x)) \).
+
+مثال حل شده: فرض کنید \( f_\theta(x) = \frac{1}{2} x^2 \) برای یک توزیع گوسی یک بعدی. سپس:
+\[
+p_\theta(x) = \frac{\exp(-\frac{1}{2} x^2)}{Z}, \quad Z = \sqrt{2\pi}
+\]
+\[
+\log p_\theta(x) = -\frac{1}{2} x^2 - \log Z
+\]
+\[
+\nabla_x \log p_\theta(x) = -x
+\]
+دینامیک لانژوین:
+\[
+dx = \frac{\epsilon}{2} (-x) dt + \sqrt{\epsilon} dW_t = -\frac{\epsilon}{2} x dt + \sqrt{\epsilon} dW_t
+\]
+این معادله دیفرانسیل تصادفی Ornstein-Uhlenbeck است. حالت پایدار \( \mathcal{N}(0,1) \) است، که با توزیع هدف مطابقت دارد.
 
 \subsection{مدل‌های مبتنی بر امتیاز}
 \subsubsection{تاریخچه}
@@ -83,13 +131,55 @@ q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{1 - \beta_t} x_{t-1}, \beta_t I)
 
 امتیاز \( \nabla_{x_t} \log q(x_t) \) یاد گرفته می‌شود.
 
-DSM هدف زیر را بهینه می‌کند:
+DSM بر مبنای هدف امتیاز-مچینگ عمل می‌کند. به‌طور کلی، امتیاز-مچینگ Hyv\'arinen به صورت زیر تعریف می‌شود (برای توزیع p):
 \[
-\mathcal{L}(\theta) = \mathbb{E}_{q} \left[ \lambda(t) \| s_\theta(x_t, t) - \nabla_{x_t} \log q(x_t | x_0) \|^2 \right]
+J(\theta) = \frac{1}{2} \mathbb{E}_{p}\left[ \| s_\theta(x) - \nabla_x \log p(x) \|^2 \right]
 \]
+این معیار با مشتق‌گیری و استفاده از انتگرال‌گیری جز به جز به یک شکل قابل محاسبه تبدیل می‌شود:
+\[
+J(\theta) = \mathbb{E}_p\left[ \mathrm{tr}\left( \nabla_x s_\theta(x) \right) + \frac{1}{2} \| s_\theta(x) \|^2 \right] + \text{const.}
+\]
+DSM (Denoising Score Matching) نشان می‌دهد که به جای تخمین مستقیم \(\nabla_x \log p(x)\)، می‌توان امتیاز توزیع نویزی \(q_\sigma(x)\) را با هدف زیر یاد گرفت:
+\[
+\mathcal{L}(\theta) = \mathbb{E}_{q(x_0)} \mathbb{E}_{q_\sigma(x|x_0)} \left[ \frac{1}{2} \| s_\theta(x, \sigma) - \nabla_x \log q_\sigma(x|x_0) \|^2 \right]
+\]
+برای نویز گوسی، \(\nabla_x \log q_\sigma(x|x_0) = -\frac{x - x_0}{\sigma^2}\). بنابراین هدف عملی برای یک نمونه ساده می‌شود به:
+\[
+\frac{1}{2} \left\| s_\theta(x, \sigma) + \frac{x - x_0}{\sigma^2} \right\|^2
+\]
+با وزن‌دهی زمانی (weighted DSM)، از یک وزن \(\lambda(\sigma)\) استفاده می‌شود تا اهمیت سطوح نویز مختلف تنظیم شود.
 
-####نمونه‌گیری با ALD
-ALD امتیازها را در سطوح مختلف نویز ادغام می‌کند.
+الگوریتم آموزش DSM (پزدود):
+\begin{algorithm}[H]
+\caption{DSM	extunderscore Training}
+\begin{latin}
+\KwData{داده‌های آموزشی $x_0$، توزیع نویز $\sigma \sim p(\sigma)$}
+\For{هر دسته از داده}{
+    برای هر نمونه $x_0$، نمونه‌گیری $\sigma \sim p(\sigma)$ و $x \sim \mathcal{N}(x_0, \sigma^2 I)$
+    محاسبه هدف: $\ell = \frac{1}{2} \lambda(\sigma) \| s_\theta(x, \sigma) + \frac{x - x_0}{\sigma^2} \|^2$
+    به‌روزرسانی \(\theta\) با مشتق \(\nabla_\theta \ell\)
+}
+\end{latin}
+\end{algorithm}
+
+\subsubsection{نمونه‌گیری Annealed Langevin Dynamics (ALD)}
+ALD برای تبدیل امتیازهای یادگرفته‌شده به نمونه‌برداری استفاده می‌شود. طرح کلی:
+\begin{algorithm}[H]
+\caption{ALD}
+\begin{latin}
+\KwData{امتیازها $s_\theta(x, \sigma)$، سبد نویز $\sigma_1>\dots>\sigma_L$, تعداد مراحل $T_i$ در هر سطح}
+$x \sim \mathcal{N}(0, \sigma_L^2 I)$
+\For{i=L \KwTo 1}{
+    \For{t=1 \KwTo $T_i$}{
+        $z \sim \mathcal{N}(0,I)$
+        $x \leftarrow x + \frac{\epsilon_i}{2} s_\theta(x, \sigma_i) + \sqrt{\epsilon_i} z$
+    }
+}
+\Return $x$
+\end{latin}
+\end{algorithm}
+
+پارامترهای مهم شامل انتخاب برنامه نویز \(\{\sigma_i\}\)، تعداد مراحل در هر سطح \(T_i\) و نرخ گام \(\epsilon_i\) هستند. انتخاب‌های مناسب برای این پارامترها تأثیر قابل‌توجهی بر کیفیت و زمان نمونه‌گیری دارند.
 
 \section{روش‌ها}
 \subsection{مدل‌های مبتنی بر انرژی}
@@ -139,153 +229,376 @@ U-Net با توجه به زمان نویز.
 
 ورودی: تصویر + زمان t.
 
-####آموزش
-DSM وزنی با \(\lambda(t) = t\).
 
-کد:
-\begin{program}[H]
-\begin{minted}{python}
-# پیاده‌سازی NCSN
-class ScoreNet(nn.Module):
-    # U-Net architecture
-    pass
+\def \Subject {مدل‌های مولد مبتنی بر انرژی و امتیاز (EBM و Score-based) — بررسی کامل روی MNIST}
+\def \Session { یک}
+% \setcounter{chapter}{\Session-1}
+\renewcommand{\chaptername}{سوال}
+\chapter{\Subject}
 
-# آموزش DSM
-\end{minted}
-\caption{شبکه امتیاز}
-\label{score_code}
-\end{program}
+\section{مقدمه (توضیح جامع)}
+در این جلسه به‌طور جامع و گام‌به‌گام دو خانوادهٔ مهم از مدل‌های مولد عمیق را بررسی می‌کنیم: مدل‌های مبتنی بر انرژی (Energy-Based Models — EBM) و مدل‌های مبتنی بر امتیاز یا(score-based / diffusion) که در سال‌های اخیر کاربرد و پیشرفت چشم‌گیری در تولید تصویر و تشخیص ناهنجاری داشته‌اند. اهداف این فصل عبارت‌اند از:
+\begin{itemize}
+    \item ارائهٔ پایه‌های ریاضیاتی و مشتقات لازم برای آموزش و نمونه‌گیری از هر خانواده.
+    \item شرح معماری‌های معمول، تنظیم‌های عملی (هایپرپارامترها)، و نکات پیاده‌سازی برای مجموعه‌دادهٔ MNIST.
+    \item بررسی متریک‌های ارزیابی، روش‌های نمونه‌برداری (Langevin, ALD/SDE) و چالش‌های عملی مانند کالیبراسیون احتمال، همگرایی MCMC و پیچیدگی محاسباتی.
+    \item ارائهٔ مراحل تجربی قابل بازتولید، جداول هایپرپارامتر، و پیشنهادات برای کارهای بعدی.
+\end{itemize}
 
-\subsubsection{نمونه‌گیری}
-ALD با ۱۰ سطح، ۱۰۰ مرحله در هر سطح.
+در ادامه، هر بخش با رویکرد «مقدمه → بیان ریاضی → پیاده‌سازی → نکات عملی → مثال‌ عددی» شرح داده می‌شود تا خواننده بتواند مستقیماً پیاده‌سازی کند یا بخش‌هایی را به‌روز نماید.
 
-\subsubsection{پیاده‌سازی}
-شبکه امتیاز: U-Net با توجه به نویز.
 
-آموزش: DSM وزنی، نرخ یادگیری ۰.۰۰۱، ۱۰۰۰۰۰ تکرار.
+\section{مروری بر مفاهیم پایه}
+در این بخش تعاریف، مفاهیم و اصطلاحات پایه معرفی می‌شوند تا زمینهٔ ریاضیاتی روش‌ها روشن باشد.
 
-نمونه‌گیری: ALD با ۱۰ سطح نویز، ۱۰۰ مرحله در هر سطح.
+\subsection{توزیع احتمال و تابع انرژی}
+فرض کنید داده‌ها \(x \in \mathbb{R}^D\) از توزیع نامشخص \(p_{\text{data}}(x)\) نمونه‌برداری شده‌اند. یک مدل مبتنی بر انرژی تابعی اسکالر دارد:
+\begin{equation}
+f_{\theta}(x): \mathbb{R}^D \to \mathbb{R},
+\end{equation}
+و چگالی مدل به‌صورت غیرنرمال‌شده نوشته می‌شود:
+\begin{equation}
+	ilde p_{\theta}(x) = \exp\big(-f_{\theta}(x)\big),\quad p_{\theta}(x)=\frac{\tilde p_{\theta}(x)}{Z_{\theta}},\; Z_{\theta}=\int \tilde p_{\theta}(x)\,dx.
+\end{equation}
+وجود \(Z_{\theta}\) باعث می‌شود محاسبهٔ مستقیم لاگ‌احتمال دشوار باشد و آموزش باید به‌صورت غیرمستقیم یا تقریبی انجام شود.
 
-\section{آزمایش‌ها}
-\subsection{مجموعه داده}
-MNIST: ۶۰۰۰۰ تصویر آموزشی، ۱۰۰۰۰ آزمایشی.
+\subsection{امتیاز (Score) چیست؟}
+امتیاز توزیع در نقطهٔ \(x\) به‌صورت گرادیان لاگ‌احتمال تعریف می‌شود:
+\begin{equation}
+s(x) = \nabla_x \log p(x).
+\end{equation}
+مدل‌های مبتنی بر امتیاز به‌جای مدل‌سازی مستقیم \(p(x)\) سعی در تخمین این بردار دارند. برای حالت‌های نویزی و آموزش مبتنی بر حذف نویز، امتیاز شرطی \(s_{\theta}(x,\sigma) \approx \nabla_x \log q_{\sigma}(x)\) آموزش داده می‌شود که \(q_{\sigma}\) نسخهٔ هموارشده از چگالی اصلی است.
 
-پیش‌پردازش: نرمال‌سازی به [-1, 1].
+\section{مدل‌های مبتنی بر انرژی (EBM): مشتقات و اثبات‌ها}
+در این بخش مشتقات مهم برای آموزش EBMها به‌صورت مرحله‌به‌مرحله آورده شده و مفاهیم مرتبط با تقریب گرادیان و نمونه‌گیری تشریح می‌شود.
 
-\subsection{معیارها}
-کیفیت نمونه‌ها: FID، IS.
+\subsection{گرادیان لاگ‌احتمال نسبت به پارامترها — مشتق دقیق}
+هدف آموزش حداکثرسازی لگ‌لیکهود داده‌ها است:
+\begin{equation}
+\mathcal{L}(\theta)=\mathbb{E}_{x\sim p_{\text{data}}}[\log p_{\theta}(x)] = \mathbb{E}_{x\sim p_{\text{data}}}\big[-f_{\theta}(x)\big] - \log Z_{\theta}.
+\end{equation}
+گرادیان نسبت به \(\theta\) را محاسبه می‌کنیم:
+\begin{align}
+\nabla_{\theta} \mathcal{L}(\theta) &= -\mathbb{E}_{x\sim p_{\text{data}}}[\nabla_{\theta} f_{\theta}(x)] - \nabla_{\theta} \log Z_{\theta}.
+\end{align}
+اکنون مشتق \(\log Z_{\theta}\) را بازنویسی می‌کنیم:
+\begin{align}
+\nabla_{\theta} \log Z_{\theta} &= \frac{1}{Z_{\theta}} \nabla_{\theta} Z_{\theta} = \frac{1}{Z_{\theta}} \nabla_{\theta} \int \exp(-f_{\theta}(x))\,dx \\
+&= \frac{1}{Z_{\theta}} \int -\nabla_{\theta} f_{\theta}(x) \exp(-f_{\theta}(x))\,dx = -\mathbb{E}_{x\sim p_{\theta}}[\nabla_{\theta} f_{\theta}(x)].
+\end{align}
+بنابراین داریم:
+\begin{equation}\label{eq:grad_exact}
+\boxed{\nabla_{\theta} \mathcal{L}(\theta) = -\mathbb{E}_{x\sim p_{\text{data}}}[\nabla_{\theta} f_{\theta}(x)] + \mathbb{E}_{x\sim p_{\theta}}[\nabla_{\theta} f_{\theta}(x)].}
+\end{equation}
+این رابطه بیان می‌کند که گرادیان آموزش برابر اختلاف میانگین گرادیان انرژی روی داده‌ها و روی نمونه‌های تولیدشده توسط مدل است.
 
-کیفیت مدل: احتمال داده‌ها (تقریبی).
+\subsection{تقریب عملی: واگرایی کنتراستی (Contrastive Divergence)}
 
-\section{نتایج}
-\subsection{تولید بدون شرط}
-نمونه‌های EBM و NCSN مقایسه شوند.
+مسئلهٔ کلیدی محاسبهٔ عبارت \(\mathbb{E}_{x\sim p_{\theta}}[\nabla_{\theta} f_{\theta}(x)]\) است که مستقیماً با نمونه‌گیری از \(p_{\theta}\) نیازمند MCMC طولانی است. هینتون پیشنهاد کرد به‌جای آن از زنجیرهٔ کوتاه MCMC با شروع از نمونه‌های واقعی استفاده شود. در CD-\(k)\)، ما از نقطهٔ آغاز \(x^{(0)}\sim p_{\text{data}}\) استفاده کرده و \(k\) گام MCMC (مثلاً Langevin) اجرا می‌کنیم تا \(x^{(k)}\) به‌دست آید، سپس عبارت مدل را با \(x^{(k)}\) تقریب می‌زنیم:
+\begin{equation}
+\nabla_{\theta} \mathcal{L}(\theta) \approx -\mathbb{E}_{x\sim p_{\text{data}}}[\nabla_{\theta} f_{\theta}(x)] + \mathbb{E}_{x^{(k)}\sim \text{MCMC}_k(x)}[\nabla_{\theta} f_{\theta}(x^{(k)})].
+\end{equation}
+برای CD-1 این تقریب اغلب کافی است و عملی بودن آن در بسیاری از مسایل نشان داده شده است اما باید توجه داشت که این تقریب دارای خطا و فشار به سمت توزیع محلی حول دادهٔ اولیه است.
 
-شکل‌ها: نمونه‌های تولیدشده.
+\subsubsection{تحلیل خطای CD-k}
+برای بررسی بایاس CD-\(k)\) فرض کنید \(P^k(x'|x)\) کرنل MCMC است که از نقطهٔ آغاز \(x\) پس از \(k\) گام توزیع می‌دهد. توزیع ترکیبی پایانی برای نمونه‌های منفی برابر است با
+\begin{equation}
+\tilde p^{(k)}_{\theta}(x') = \int p_{\text{data}}(x) P^k(x'|x)\,dx.
+\end{equation}
+گرادیان مورد استفاده در CD-\(k)\) برابر است با
+\begin{equation}
+\hat g^{(k)}(\theta) = -\mathbb{E}_{x\sim p_{\text{data}}}[\nabla_{\theta} f_{\theta}(x)] + \mathbb{E}_{x'\sim \tilde p^{(k)}_{\theta}}[\nabla_{\theta} f_{\theta}(x')].
+\end{equation}
+اختلاف این تقریب نسبت به گرادیان دقیق \(g(\theta)\) در معادلهٔ (\ref{eq:grad_exact}) برابر است با
+\begin{equation}
+\hat g^{(k)}(\theta) - g(\theta) = \mathbb{E}_{x'\sim \tilde p^{(k)}_{\theta}}[\nabla_{\theta} f_{\theta}(x')] - \mathbb{E}_{x'\sim p_{\theta}}[\nabla_{\theta} f_{\theta}(x')]
+= \mathbb{E}_{x'}\big[\big(\tilde p^{(k)}_{\theta}(x') - p_{\theta}(x')\big)\nabla_{\theta} f_{\theta}(x')\big].
+\end{equation}
+بنابراین اگر کرنل MCMC برای \(k\) گام به توزیع مدل نزدیک شود (\(\tilde p^{(k)}_{\theta} \to p_{\theta}\))، بایاس ناپدید می‌شود. در عمل برای کاهش هزینهٔ محاسباتی، از مقادیر کوچک \(k\) استفاده می‌شود و تعادل بین بایاس و هزینه تعیین‌کنندهٔ انتخاب \(k\) است.
 
-\subsection{تولید شرطی}
-با کلاس‌های MNIST.
+\subsubsection{MALA: پذیرش-رد تصحیح‌شده}
+برای بهبود پیشنهادهای Langevin می‌توان از الگوریتم MALA استفاده کرد که یک مرحلهٔ پیشنهادی Langevin را با گام متروپلیس-هستینگز تصحیح می‌کند. پیشنهاد از \(x\) به \(y\) به شکل زیر است:
+\begin{equation}
+y = x + \frac{\epsilon}{2} \nabla_x \log p_{\theta}(x) + \sqrt{\epsilon}\,\eta, \quad \eta\sim\mathcal{N}(0,I).
+\end{equation}
+کرنل پیشنهاد گاوسی است: \(q(y|x)=\mathcal{N}(y; x + \frac{\epsilon}{2}\nabla_x \log p_{\theta}(x),\,\epsilon I)\). احتمال پذیرش متروپلیس برابر است با
+\begin{equation}
+\alpha(x,y)=\min\Big(1, \frac{p_{\theta}(y)q(x|y)}{p_{\theta}(x)q(y|x)}\Big).
+\end{equation}
+با جایگذاری \(p_{\theta}(x)=\exp(-f_{\theta}(x))/Z\) و کرنل‌های گاوسی، می‌توان عبارت پذیرش را به‌صورت تابعی از اختلاف انرژی و اختلاف فاصلهٔ پیشنهادی نوشت؛ در عمل این تصحیح نرخ بایاس را کاهش می‌دهد ولی هزینهٔ محاسباتی را افزایش می‌کند.
 
-\subsection{حذف نویز}
-در سطوح نویز مختلف.
+\subsection{نمونه‌گیری Langevin — مشتق از SDE و گسسته‌سازی}
+پذیرفته شده‌ترین روش برای نمونه‌گیری در فضای پیوسته استفاده از کرنل Langevin است. ابتدا SDE اوردرِرِد Langevin را می‌نویسیم:
+\begin{equation}
+dX_t = \frac{1}{2} \nabla_x \log p_{\theta}(X_t)\,dt + dW_t,
+\end{equation}
+که در آن \(W_t\) حرکت براونی استاندارد است. این SDE برای توزیع هدف \(p_{\theta}\) ایستا است. با استفاده از تکه‌بردار Euler–Maruyama می‌توان آن را گسسته‌سازی کرد:
+\begin{equation}\label{eq:langevin_discrete}
+X_{t+1} = X_t + \frac{\epsilon}{2} \nabla_x \log p_{\theta}(X_t) + \sqrt{\epsilon}\,\eta_t, \quad \eta_t \sim \mathcal{N}(0,I),
+\end{equation}
+که در آن \(\epsilon\) قدم زمانی گسسته است. برای EBMها \(\nabla_x \log p_{\theta}(x) = -\nabla_x f_{\theta}(x)\) است، بنابراین گام به شکل منفی گرادیان انرژی ظاهر می‌شود.
 
-\section{بحث}
-EBMها ساده‌تر اما کندتر هستند. NCSNها کیفیت بالاتر دارند اما پیچیده‌تر.
+قابلیت و حساسیت‌ها:
+\begin{itemize}
+    \item \(\epsilon\) باید به‌اندازهٔ کافی کوچک باشد تا توزیع هدف را به‌خوبی تقریبی کند؛ معمولاً با کاهش تدریجی \(\epsilon\) یا annealing همراه می‌شود.
+    \item برای ثبات بهتر می‌توان از متدهای پیشرفتهٔ MCMC مانند MALA (Metropolis-Adjusted Langevin Algorithm) استفاده کرد که یک مرحلهٔ پیشنهادی Langevin را با تصحیح متقابل متروپلیس–هستینگز ترکیب می‌کند.
+\end{itemize}
 
-\section{نتیجه‌گیری}
-هر دو مدل موفق هستند، اما NCSN برتر است.
+\subsection{خطاها و همگرایی}
+استفاده از CD-k همراه با Langevin ممکن است منجر به بایاس در گرادیان شود؛ به‌خصوص اگر \(k\) کوچک باشد. از سوی دیگر افزایش \(k\) هزینهٔ محاسباتی را بالا می‌برد. تکنیک‌های عملی مانند replay buffer و کوتاه‌سازی گام‌های Langevin می‌تواند عملکرد را بهبود بخشد.
 
-DSM وزنی: \( \mathcal{L}(\theta) = \frac{1}{2} \mathbb{E}_{x_0, \sigma} \lambda(\sigma) \| s_\theta(x_\sigma, \sigma) - \nabla_{x_\sigma} \log q(x_\sigma | x_0) \|^2 \).
+\section{مدل‌های مبتنی بر امتیاز (Score-based): مشتقات کامل و ارتباط‌ها}
+در این بخش اثبات‌های ریاضیاتی مربوط به DSM، ارتباط با تخمین حذف نویز، و معادلهٔ معکوس SDE را به‌صورت دقیق ارایه می‌دهیم.
 
-ALD: نمونه‌گیری در چندین سطح نویز با کاهش تدریجی \( \sigma \).
+\subsection{هدف DSM و اثبات معادل بودن با Score Matching}
+هدف DSM تقریب امتیاز توزیع هموار \(q_{\sigma}(x)\) است که تعریف آن برای نویز گوسی به‌شکل زیر است:
+\begin{equation}
+q_{\sigma}(x) = \int p_{\text{data}}(x_0)\,\mathcal{N}(x; x_0, \sigma^2 I)\,dx_0.
+\end{equation}
+در حالت DSM، هدف به فرم زیر نوشته می‌شود (وزن‌دار):
+\begin{equation}\label{eq:dsm_repeat}
+\mathcal{L}(\theta)=\frac{1}{2} \mathbb{E}_{x_0\sim p_{\text{data}},\,x\sim q_{\sigma}(\cdot|x_0)}\big[\lambda(\sigma) \| s_{\theta}(x,\sigma) - \nabla_x \log q_{\sigma}(x|x_0) \|^2\big].
+\end{equation}
+برای نویز گوسی، مقدار تحلیلی \(\nabla_x \log q_{\sigma}(x|x_0)\) برابر است با:
+\begin{equation}
+\nabla_x \log q_{\sigma}(x|x_0) = \nabla_x \log \mathcal{N}(x; x_0,\sigma^2 I) = -\frac{x - x_0}{\sigma^2}.
+\end{equation}
+پس هدف DSM برای هر نمونهٔ آموزشی به‌سادگی یک رگرسیون برداری است که شبکه باید مقدار \(-(x-x_0)/\sigma^2\) را پیش‌بینی کند. اگر \(\lambda(\sigma)=1\) و با انتگرال‌گیری روی \(x_0\) و \(x\) محاسبات انجام شود، این هدف معادل objective اصلی Score Matching هیواری‌نن است (با فرض مناسب برای فضاهای محدود). به‌صورت خلاصه، DSM یک راه عملی برای به‌دست آوردن تخمینی از امتیاز توزیع است که از فرم تحلیلی مشتق برای نویز گوسی بهره می‌برد.
 
-\subsubsection{پیاده‌سازی}
-شبکه امتیاز: U-Net با کانولوشن‌های شرطی نویز.
+\subsection{گرادیان هدف DSM و پیاده‌سازی عددی}
+اگر نمونه‌برداری کنیم از زوج \((x_0, x)\) با \(x\sim \mathcal{N}(x_0,\sigma^2 I)\)، گرادیان نسبت به پارامترهای شبکهٔ امتیاز برابر است با گرادیان MSE بین خروجی شبکه و هدف تحلیلی:
+\begin{equation}
+\nabla_{\theta} \mathcal{L}(\theta) = \mathbb{E}_{x_0,x}\big[\lambda(\sigma) (s_{\theta}(x,\sigma) + \frac{x-x_0}{\sigma^2})^T \nabla_{\theta} s_{\theta}(x,\sigma)\big].
+\end{equation}
+که در عمل با نمونه‌گیری مینی‌بچ‌ها و backpropagation قابل محاسبه است.
 
-آموزش: DSM وزنی با ۱۰ سطح نویز، نرخ یادگیری ۰.۰۰۱، ۱۰۰۰۰۰ تکرار.
+\subsection{رابطهٔ DSM با Denoising Autoencoders}
+برای یک DAE با تابع بازسازی \(r_{\theta}(x)\)، می‌توان نشان داد که در حدود نویز کوچک یک تقریب برای امتیاز است:
+\begin{equation}
+s(x) \approx \frac{r_{\theta}(x) - x}{\sigma^2}.
+\end{equation}
+این رابطه مبنای نظری ارتباط بین شبکه‌های حذف نویز و تخمین امتیاز است (Vincent, 2011).
 
-نمونه‌گیری: ALD با ۱۰۰ مرحله در هر سطح.
+\subsection{نمونه‌گیری Annealed Langevin Dynamics (ALD) — توضیح دقیق}
+الگوریتم ALD برای نمونه‌گیری از توزیع اصلی با استفاده از تخمین امتیاز در سطوح نویز مختلف تعریف می‌شود. برنامهٔ نویز \(\{\sigma_1>\sigma_2>\dots>\sigma_L\}\) انتخاب می‌شود، و برای هر سطح \(\sigma_l\) چند قدم Langevin مطابق زیر انجام می‌گردد:
+\begin{equation}\label{eq:ald_step}
+x \leftarrow x + \alpha_l\, s_{\theta}(x,\sigma_l) + \sqrt{2\alpha_l}\,\eta, \quad \eta\sim\mathcal{N}(0,I),
+\end{equation}
+که \(\alpha_l\) اندازهٔ گامِ متناظر با سطح \(\sigma_l\) است. مقدار پیشنهادی برای \(\alpha_l\) معمولاً متناسب با \(\epsilon \cdot \sigma_l^2\) یا تابعی از آن است تا پایداری و کاوش مناسبی فراهم شود.
 
-\section{نتایج تجربی}
-نتایج در شکل‌ها و جداول ارائه شده‌اند. نمونه‌های تولیدشده کیفیت خوبی دارند.
+دلایل انتخاب این گام:
+\begin{itemize}
+    \item در سطح نویز بالا، توزیع هموار است و گام‌های بزرگ‌تر قابل قبول‌اند تا فضای حالت سریع‌تر کاوش شود.
+    \item با کاهش \(\sigma_l\) به سطوح کم‌نویز، باید گام‌ها را کوچک‌تر کرد تا از ورود به نواحی با احتمال پایین جلوگیری شود.
+\end{itemize}
 
-\section{نتیجه‌گیری}
-این مدل‌ها توانمند هستند، اما محدودیت‌هایی دارند. کار آینده شامل بهبود نمونه‌گیری است.
- همچنین برای درج کلمات انگلیسی در پاراگراف فارسی می‌توان به این شکل
- \lr{English Text}
- یا برای تاکید به این شکل
- \grayBox{English Text}
- عمل کرد.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.4\linewidth]{images/dynamic_programming}
-    \caption{عنوان شکل}
-    \label{fig:dynamicprogramming}
-\end{figure}
+\subsection{دید SDE معکوس (Reverse-time SDE)}
+دیدگاه مدرن نشان می‌دهد که می‌توان نمونه‌گیری را به‌عنوان حل SDE معکوس انجام داد. اگر فرایند جلو به‌صورت زیر باشد:
+\begin{equation}
+dX_t = f(X_t,t)\,dt + g(t)\,dW_t,
+\end{equation}
+آنگاه معادلهٔ SDE معکوس که توزیع‌های زمانی \(p_t\) را تولید می‌کند به شکل زیر نوشته می‌شود (Song et al.):
+\begin{equation}\label{eq:reverse_sde}
+dX_t = [f(X_t,t) - g^2(t)\,\nabla_x \log p_t(X_t)]\,dt + g(t)\,d\bar W_t,
+\end{equation}
+که \(\bar W_t\) یک حرکت براونی در زمان معکوس است و \(\nabla_x \log p_t\) همان امتیاز توزیع در زمان \(t\) است. این معادله نشان می‌دهد که اگر بتوانیم امتیاز را در تمامی زمان‌ها تخمین بزنیم، می‌توانیم SDE معکوس را حل کنیم و از توزیع نویزی اولیه به توزیع هدف نمونه‌گیری کنیم.
 
-برای گنجاندن قطعه‌ای از کد به زبان‌های 
-\grayBox{Python} 
-از فایل اصلی کد می‌توانید به شکل زیر عمل کنید.
- 
+\section{نکات عددی و پیاده‌سازی — جمع‌بندی عملی}
+در این قسمت نکات عملی جمع‌بندی شده تا پیاده‌سازی با دقت و پایداری بیشتری انجام شود:
+\begin{itemize}
+    \item \textbf{پیاده‌سازی مشتق‌ها:} محاسبهٔ \(\nabla_x f_{\theta}(x)\) و \(\nabla_{\theta} f_{\theta}(x)\) با autograd در چارچوب‌هایی مانند PyTorch به‌راحتی انجام‌پذیر است؛ اما باید از بازده حافظه‌ای و استفادهٔ مجدد گرادیان‌ها آگاه بود.
+    \item \textbf{ثبات Langevin:} استفاده از تقطیع گرادیان، clamping و کاهش گام‌ها (annealing) به ثبات کمک می‌کند.
+    \item \textbf{تنظیم وزن‌ها در DSM:} مقدار \(\lambda(\sigma)\) می‌تواند برای تراز کردن سطوح نویز و جلوگیری از تسلط سطوح پرنویز تنظیم شود.
+    \item \textbf{مقایسه هزینه/کیفیت:} برای MNIST، ALD با شبکهٔ امتیاز U-Net معمولاً کیفیت بهتری نسبت به EBM ساده دارد؛ اما EBMها در برآورد انرژی و کاربردهای تشخیص ناهنجاری مزیت دارند.
+\end{itemize}
 
-با مقایسه متن لاتک و خروجی به این مساله پی‌ خواهید برد که برای اشاره به یک قطعه کد در لاتک لازم است از دستور
-\grayBox{label}
-داخل محیط/بخش 
-\grayBox{program}
-استفاده کرده و برای اشاره به آن بخش از کد از دستور
-\grayBox{programref}
-استفاده نمایید. لازم است پارامتر داده شده به هر دو دستور یکی باشد تا بدرستی به قطعه کد مورد نظر اشاره کنید(\programref{pythonfib}). 
+\section{خلاصه و پیشنهادات برای ادامه}
+در این فایل نظریهٔ لازم برای پیاده‌سازی هر دو خانوادهٔ مدل با مشتقات و اثبات‌های اساسی آورده شد. برای ادامهٔ کار عملی پیشنهاد می‌شود:
+\begin{itemize}
+    \item پیاده‌سازی نمونهٔ کوچک EBM و بررسی تأثیر طول زنجیرهٔ Langevin (k) بر همگرایی.
+    \item آموزش شبکهٔ امتیاز با DSM و بررسی کیفیت نمونه‌ها با ALD تحت چندین برنامهٔ نویز.
+    \item اندازه‌گیری معیارهایی مانند AUROC (برای تشخیص ناهنجاری)، FID یا معیارهای مربوطه و گزارش مقایسه‌ای.
+\end{itemize}
 
-\begin{program}[H]
-\inputminted[frame=none]{python}{sample.py}
-\caption{تابع فیبوناچی در پایتون }
-\label{pythonfib}
-\end{program}
+\bibliographystyle{unsrt-fa}
+\bibliography{references}
 
-در نهایت استفاده از دستور 
-\grayBox{grayBox}
-نیز می‌تواند کمک شایانی به زیبایی و خوانایی متن شما بکند. این دستور علاوه بر عوض کردن رنگ پس‌زمینه از فونت انگلیسی با عرض ثابت نیز استفاده می‌کند که برای کلمات کلیدی یا اسامی متغیرها در کد قابل استفاده است.
+\section{مدل‌های مبتنی بر انرژی (EBM): جزئیات کامل}
 
-\begin{program}[H]
-\begin{minted}[frame=none]{python}
-class Node: 
-def __init__(self, data): 
-    self.value = data
-    self.next = None  
-\end{minted}
-\label{pythonnode}
-\caption{تعریف لیست پیوندی در ‌پایتون}
-\end{program}
+\subsection{هدف آموزش و مشتق گرادیان}
+هدف حداکثرسازی لاگ‌احتمال داده‌هاست:
+\begin{equation}
+\mathcal{L}(\theta)=\mathbb{E}_{x\sim p_{\text{data}}}[\log p_{\theta}(x)] = \mathbb{E}_{x\sim p_{\text{data}}}\big[-f_{\theta}(x)\big] - \log Z_{\theta}.
+\end{equation}
+گرادیان این تابع نسبت به پارامترها به شکل زیر است:
+\begin{align}
+\nabla_{\theta} \mathcal{L}(\theta) &= -\mathbb{E}_{x\sim p_{\text{data}}}[\nabla_{\theta} f_{\theta}(x)] + \mathbb{E}_{x\sim p_{\theta}}[\nabla_{\theta} f_{\theta}(x)].
+\end{align}
+عبارت دوم شامل انتظاری است نسبت به توزیع مدل \(p_{\theta}(x)\) که مستقیماً قابل محاسبه نیست؛ بنابراین روش‌های تقریبی مانند نمونه‌گیری MCMC برای تخمین آن مورد استفاده قرار می‌گیرند.
 
-\grayLBox{
-    AAC\\
-    ACG\\
-    GAA\\
-    GTT\\
-    TCG\\
-}
-\\
-\newpage
-هم‌چنین نتایج خود را در قالب جدول به فرم زیر گزارش کنید:
+\subsection{تقریب با واگرایی کنتراستی (Contrastive Divergence)}
+در عمل، هینتون پیشنهاد کرد به‌جای نمونه‌گیری دقیق از \(p_{\theta}\)، از یک زنجیرهٔ کوتاه MCMC با نقطهٔ شروع از دادهٔ واقعی استفاده شود. برای CD-\(k)\) مراحل، گرادیان تقریبی به‌صورت زیر نوشته می‌شود:
+\begin{equation}
+\nabla_{\theta} \mathcal{L}(\theta) \approx -\mathbb{E}_{x\sim p_{\text{data}}}[\nabla_{\theta} f_{\theta}(x)] + \mathbb{E}_{x'\sim \text{MCMC}_k(x)}[\nabla_{\theta} f_{\theta}(x')],
+\end{equation}
+که در آن \(x'\) نمونه‌های به‌دست‌آمده پس از اجرای \(k\) گام MCMC آغازشده از نمونهٔ \(x\) هستند.
+
+\subsection{نمونه‌گیری با دینامیک لانژوین (Langevin Dynamics)}
+یک روش رایج برای اجرای MCMC در فضای پیوسته استفاده از Langevin است. گام‌های دیسکریت لانژوین (با مرحلهٔ کوچک \(\epsilon\)) به‌صورت زیر اند:
+\begin{equation}
+x_{t+1} = x_t + \frac{\epsilon}{2} \nabla_x \log p_{\theta}(x_t) + \sqrt{\epsilon}\,\eta_t, \quad \eta_t \sim \mathcal{N}(0, I).
+\end{equation}
+از آن‌جا که \(\nabla_x \log p_{\theta}(x) = -\nabla_x f_{\theta}(x)\) (برای EBMها)، این گام‌ها با محاسبهٔ گرادیان انرژی نسبت به ورودی نیازمند مشتق‌گیری از شبکه نسبت به ورودی هستند (با autograd قابل محاسبه).
+
+نکات عملی:
+\begin{itemize}
+    \item انتخاب \(\epsilon\) حساس است: بسیار بزرگ → ناپایدار، بسیار کوچک → همگرایی کند.
+    \item استفاده از گرادیان‌گیرهای کمینه‌سازی (momentum) و تقطیع گرادیان می‌تواند به ثبات کمک کند.
+    \item معمولاً قبل از نمونه‌گیری کامل یک مرحلهٔ گرم‌سازی با نویز تصادفی انجام می‌شود.
+\end{itemize}
+
+\subsection{پیاده‌سازی پیشنهادی برای MNIST}
+معماری انرژی: شبکهٔ کانولوشنی ساده یا MLP عمیق که در خروجی یک اسکور/انرژی اسکالر ارائه می‌دهد. مثال عملی:
+\begin{itemize}
+    \item ورودی: تصویر 28×28، نرمال‌شده به محدودهٔ [-1,1].
+    \item بدنه: ۳ لایهٔ کانولوشن (32,64,128) با کرنل 3×3 و ReLU، سپس ۲ لایهٔ FC (512، 256).
+    \item خروجی: یک نر (اسکالر) بدون فعال‌سازی (Energy = f_\theta(x)).
+\end{itemize}
+
+تنظیمات آموزشی نمونه:
+\begin{itemize}
+    \item الگوریتم: CD-1 یا CD-10 بسته به قدرت محاسباتی.
+    \item بهینه‌ساز: Adam با lr=1e-4، betas=(0.5,0.999).
+    \item اندازهٔ بچ: 128.
+    \item گام‌های Langevin برای نمونه‌گیری: 200–1000 با \(\epsilon\) بین 1e-4 تا 1e-2 (بر اساس پیش‌پردازش).
+\end{itemize}
+
+توصیه‌هایی برای پایداری:
+\begin{itemize}
+    \item از یک بافر نمونهٔ تاریخی (replay buffer) برای ذخیره نمونه‌های مدل استفاده کنید تا آغاز زنجیره از نمونه‌های نزدیک‌تر به توزیع مدل انجام شود و نوسانات کاهش یابد.
+    \item گاهی اوقات از تکنیک‌های ضریب کاهش دما (annealing) روی \(\epsilon\) برای بهبود کاوش استفاده می‌شود.
+\end{itemize}
+
+\section{مدل‌های مبتنی بر امتیاز (Score-based / Diffusion): جزئیات کامل}
+
+\subsection{پیش‌زمینه و انگیزه}
+مدل‌های امتیاز تلاش می‌کنند که آمار محلی توزیع را به‌صورت برداری \(s(x)=\nabla_x \log p(x)\) یاد بگیرند. از آن‌جا که تخمین دقیق \(s(x)\) برای توزیع اصلی دشوار است، شبکه‌ها بر روی نسخه‌های نویزی شدهٔ داده آموزش می‌بینند که این کار هم به هموارسازی فضا و هم به استحکام یادگیری کمک می‌کند.
+
+\subsection{توزیع‌های نویزی و DSM}
+برای تعمیم، تعریف می‌کنیم:
+\begin{equation}
+q_\sigma(x|x_0)=\mathcal{N}(x; x_0, \sigma^2 I),\quad q_\sigma(x)=\int q_\sigma(x|x_0)p_{\text{data}}(x_0)dx_0.
+\end{equation}
+هدف تخمین \(\nabla_x \log q_\sigma(x)\) برای مجموعه‌ای از مقادیر \(\sigma\). Loss پیشنهادی (Denoising Score Matching — DSM) به‌صورت وزنی نوشته می‌شود:
+\begin{equation}\label{eq:dsm}
+\mathcal{L}(\theta)=\frac{1}{2} \mathbb{E}_{x_0,\sigma, x\sim q_\sigma(\cdot|x_0)}\big[\lambda(\sigma) \| s_\theta(x,\sigma) - \nabla_x \log q_\sigma(x|x_0) \|^2\big].
+\end{equation}
+در عمل \(\nabla_x \log q_\sigma(x|x_0) = -(x - x_0)/\sigma^2\) برای گوسی بودن نویز، بنابراین هدف محاسبهٔ واگرایی بین تخمین شبکه و مقدار تحلیلی ساده است.
+
+\subsection{نمونه‌گیری: Annealed Langevin Dynamics (ALD)}
+پس از یادگیری \(s_\theta(x,\sigma)\) در مجموعه‌ای از سطوح نویز \(\{\sigma_1 > \sigma_2 > \dots > \sigma_L\}\)، نمونه‌گیری به‌صورت پله‌ای انجام می‌شود؛ برای هر سطح نویز از چند گام Langevin استفاده می‌کنیم:
+\begin{equation}
+x_{t+1} = x_t + \alpha\, s_\theta(x_t, \sigma_l) + \sqrt{2\alpha}\,\eta_t,\quad \eta_t\sim\mathcal{N}(0,I),
+\end{equation}
+که \(\alpha\) اندازهٔ گام (متناسب با \(\sigma_l^2\)) است. با کاهش تدریجی \(\sigma\) به سمت صفر، نمونه‌ها از فضای هموار به نمونه‌های دقیق نزدیک می‌شوند.
+
+\subsection{روابط با SDE و تئوری}
+روش‌های اخیر (Song et al.) نشان داده‌اند که می‌توان نمونه‌گیری را با حل یک SDE معکوس انجام داد که امتیاز تخمینی وارد آن می‌شود؛ این دیدگاه تئوریک قوی‌تری برای تحلیل همگرایی و طراحی برنامهٔ نویز فراهم می‌کند.
+
+\subsection{پیاده‌سازی پیشنهادی برای MNIST}
+\begin{itemize}
+    \item معماری امتیاز: U-Net سبک‌شده با شرط‌گذاری بر سطح نویز (embedding برای \(\sigma\)).
+    \item مقادیر نویز: ۱۰–۲۰ سطح در بازهٔ \([\sigma_{\max}, \sigma_{\min}])\) با توزیع هندسی یا خطی در مقیاس لگاریتمی.
+    \item وزن‌دهی \(\lambda(\sigma)\): معمولاً برابر با \(\sigma^2\) یا معکوس آن بسته به نرمالیزاسیون مورد استفاده.
+    \item بهینه‌ساز: Adam, lr=2e-4، batch=128، تعداد گام‌های آموزش 100k–300k (بسته به منابع).
+    \item نمونه‌گیری: ALD با 100 گام در هر سطح (قابل کاهش با warm-start و تقطیع خطی گام).
+\end{itemize}
+
+نکات عملی:
+\begin{itemize}
+    \item برای تسریع آموزش می‌توان از mixup سطوح نویز استفاده کرد (نمونه‌برداری تصادفی \(\sigma\) برای هر نمونه).
+    \item استفاده از گروه‌های نرمال‌سازی و skip connectionها کیفیت و پایداری یادگیری را افزایش می‌دهد.
+\end{itemize}
+
+\section{خط لولهٔ تجربی (پیکربندی، هایپرپارامترها، و تکرارپذیری)}
+
+\subsection{مجموعه‌داده و پیش‌پردازش}
+\begin{itemize}
+    \item مجموعه: MNIST — تصاویر خاکستری 28×28.
+    \item نرمال‌سازی: تبدیل مقیاس به \([-1,1]\) یا استانداردسازی کانال بر اساس میانگین و واریانس آموزشی.
+    \item دِکوانتیزاسیون: افزودن نویز کوچک (مثلاً \(\text{Uniform}(0,1/256)\)) قبل از نرمال‌سازی در صورت نیاز برای جلوگیری از مقادیر گسسته.
+\end{itemize}
+
+\subsection{هایپرپارامترهای کلیدی — جدول نمونه}
 \begin{table}[h!]
-  \begin{center}
-    \caption{عنوان جدول}
-    \label{tab:table1}
-    \begin{tabular}{l|S|r}
-      \textbf{ مدل ۱} & \textbf{مدل ۲} & \textbf{مدل ۳}\\
-      $\alpha$ & $\beta$ & $\gamma$ \\
-      \hline
-      1 & 1110.1 & a\\
-      2 & 10.1 & b\\
-      3 & 23.113231 & c\\
-      4 & 25.113231 & d\\ % <-- added row here
-    \end{tabular}
-  \end{center}
+\centering
+\caption{هایپرپارامترهای پیشنهادی برای پیاده‌سازی روی MNIST}
+\begin{tabular}{l l}
+	oprule
+پارامتر & مقدار پیشنهادی \\
+\midrule
+EBM: lr (Adam) & 1e-4 \\
+EBM: batch size & 128 \\
+EBM: Langevin steps (sampling) & 500 \\
+EBM: Langevin \(\epsilon\) & 1e-3 -- 1e-2 \\
+Score: lr (Adam) & 2e-4 \\
+Score: batch size & 128 \\
+Score: noise levels & 10 (log-spaced) \\
+ALD: steps per level & 50--200 \\
+\bottomrule
+\end{tabular}
 \end{table}
-\\
-\\
-\\
-همچنین سعی کنید حتی‌الامکان به منابع و مراحع مناسب ارجاع دهید
-\cite{CLRS}. 
-علاوه بر مراجع چنانچه ابزار یا وب‌سایت قابل توجهی موجود است خوب است به آن هم ارجاع دهید
-\cite{visualizationwebsite}. 
+
+\subsection{معیارهای ارزیابی}
+\begin{itemize}
+    \item FID: برای تصاویر حقیقی رنگی تعریف شده است؛ برای MNIST می‌توان از نسخهٔ اصلاح‌شدهٔ FID یا معیارهای مبتنی بر ویژگی‌های ساده‌تر استفاده کرد.
+    \item کیفیت بصری: نمایش نمونه‌ها در ماتریس‌های مرتب‌شده بر اساس کلاس یا نمرهٔ احتمال.
+    \item در مسائل تشخیص ناهنجاری: AUROC با استفاده از نمرهٔ NLL یا انرژی به‌عنوان معیار.
+    \item زمان و مصرف حافظه: گزارش گام/ثانیه و مصرف VRAM برای مقایسهٔ عملی‌بودن روش‌ها.
+\end{itemize}
+
+\section{نتایج تجربی (نمونه‌ها، کمیت‌ها، تحلیل)}
+در این بخش نحوهٔ ارائهٔ نتایج توضیح داده می‌شود و مثال‌هایی از خروجی‌ها و تحلیل‌های قابل انجام ذکر می‌شود.
+
+\subsection{تولید بدون شرط — مقایسه کیفی}
+نمونه‌هایی از هر مدل (EBM و Score-based) باید در ماتریسی کنار هم قرار گیرند: در سطرها نمونه‌های تصادفی و در ستون‌ها نمونه‌های پس از بهبود/فیلتر. نکات تحلیلی:
+\begin{itemize}
+    \item وضوح جزئیات خطوط دست‌نوشته و حفظ شکل ارقام.
+    \item تنوع نمونه‌ها (mode coverage) — آیا همهٔ ارقام تولید می‌شوند یا مدل فقط چند حالت غالب را بازتولید می‌کند؟
+    \item وجود آرتیفکت‌های نویزی یا محلی (گرادیان‌های قوی، پیکسل‌های پر سر و صدا).
+\end{itemize}
+
+\subsection{تولید شرطی بر اساس کلاس}
+برای تولید شرطی (مثلاً تولید عدد 7) در EBM می‌توان شرط‌گذاری ساده بر روی ویژگی کلاس یا افزودن یک بایاس شرطی در انرژی استفاده کرد؛ در مدل‌های امتیاز معمولاً شرط‌گذاری با concatenate کردن embedding کلاس به feature mapهای U-Net انجام می‌شود.
+
+\subsection{آزمون حذف نویز}
+برای شبکه‌های امتیاز آزمون حذف نویز (denoising) در سطوح مختلف \(\sigma\) نشان می‌دهد که تخمین امتیاز چقدر به مقدار تحلیلی نزدیک است. معیارها شامل MSE بین تصویر حذف‌شده و تصویر اصلی و کیفیت دیداری خروجی است.
+
+\subsection{آبلِیشن و حساسیت به هایپرپارامتر}
+تحلیل‌هایی که توصیه می‌شوند:
+\begin{itemize}
+    \item اثر تعداد سطوح نویز بر کیفیت نمونه‌ها.
+    \item حساسیت به تعداد گام‌های Langevin و اندازهٔ گام \(\alpha\).
+    \item مقایسهٔ استفاده از replay buffer در EBM (مزایا و معایب).
+\end{itemize}
+
+\section{بحث و محدودیت‌ها}
+نکات مهم در عمل:
+\begin{itemize}
+    \item EBMها نیازمند نمونه‌گیری‌سازی دقیق برای گرادیان دوم هستند؛ همگرایی MCMC دشوار و هزینه‌بر است.
+    \item مدل‌های امتیاز کیفیت بالایی در تولید تصویری دارند اما آموزش و نمونه‌گیری زمان‌بر است و نیازمند طراحی دقیق برنامهٔ نویز و شبکه است.
+    \item هر دو خانواده نسبت به دادهٔ آموزشی حساس‌اند؛ دادهٔ نامتعادل یا با نویز می‌تواند یادگیری را منحرف سازد.
+\end{itemize}
+
+\section{نتیجه‌گیری و پیشنهادات برای کار آینده}
+خلاصه:
+\begin{itemize}
+    \item برای MNIST، مدل‌های امتیاز معمولاً نمونه‌های تمیزتر و متنوع‌تری تولید می‌کنند؛ EBMها برای کاربردهای کالیبراسیون احتمال و تشخیص ناهنجاری مفیدند اما هزینهٔ محاسباتی بالاتری دارند.
+    \item پیشنهادها: استفاده از جریان‌های کانولوشنی در ساختار EBM، تلفیق امتیاز با مدل‌های واریاسیونی برای نمونه‌گیری سریع‌تر، و به‌کارگیری تکنیک‌های جدید SDE-based sampling برای بهبود سرعت و کیفیت.
+\end{itemize}
+
+\section*{یادداشت‌های تکرارپذیری}
+برای بازتولید نتایج مطمئن شوید که موارد زیر ذکر شده و ثابت باشند: seedهای رندوم، نسخهٔ کتابخانه‌ها (PyTorch, numpy)، مشخصات GPU، تمام هایپرپارامترها و مسیرهای داده. کد نمونه و اسکریپت‌های آموزش و ارزیابی باید در پوشهٔ مجزایی ضمیمه شوند.
+
+\bibliographystyle{unsrt-fa}
+\bibliography{references}
