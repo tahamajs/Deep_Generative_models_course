@@ -143,7 +143,7 @@ class MADE(nn.Module):
         in_dim = input_dim
         out_dim = hidden_dims[0]
         m = torch.zeros(out_dim, in_dim)
-        for d: int in range(out_dim):
+        for d in range(out_dim):
             m[d, :min(d+1, in_dim)] = 1
         masks.append(m)
 
@@ -160,7 +160,7 @@ class MADE(nn.Module):
         in_dim = hidden_dims[-1]
         out_dim = output_dim
         m = torch.zeros(out_dim, in_dim)
-        for d: int in range(out_dim):
+        for d in range(out_dim):
             m[d, :min(d+1, in_dim)] = 1
         masks.append(m)
 
@@ -595,7 +595,7 @@ class ImageDataset(Dataset):
         self.transform = transform
         self.images = []
 
-        for fname: str in os.listdir(root_dir):
+        for fname in os.listdir(root_dir):
             if fname.endswith(('.png', '.jpg', '.jpeg', '.bmp')):
                 self.images.append(os.path.join(root_dir, fname))
 
