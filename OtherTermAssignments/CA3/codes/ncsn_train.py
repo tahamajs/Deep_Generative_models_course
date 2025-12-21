@@ -94,14 +94,35 @@ def train_interactive(
 
     Runs a small number of epochs, saves demo samples/loss plots to `output_dir`,
     and optionally displays sample grids inline when `show` is True.
-    """
-    cfg.conditional = conditional
-    set_seed(42)
 
-    data_cfg = DataConfig(
-        batch_size=cfg.batch_size, num_workers=cfg.num_workers, channels=cfg.channels
-    )
-    train_loader, _ = mnist_dataloaders(data_cfg, normalize_to_minus1_1=True)
+    Backwards-compatible call signatures supported:
+        - train_interactive(cfg, output_dir, ...)
+        - train_interactive(train_loader, cfg, ...)  # notebook convenience (deprecated)
+    """
+    # Backwards-compat: if user passed (train_loader, cfg, ...)
+    from torch.utils.data import DataLoader
+
+    if isinstance(cfg, DataLoader):
+        train_loader = cfg
+        cfg = output_dir
+        # default demo output directory if not provided
+        output_dir = Path("./outputs/ncsn_demo")
+        try:
+            cfg.conditional = conditional
+        except Exception:
+            pass
+        try:
+            set_seed(42)
+        except Exception:
+            pass
+    else:
+        cfg.conditional = conditional
+        set_seed(42)
+
+        data_cfg = DataConfig(
+            batch_size=cfg.batch_size, num_workers=cfg.num_workers, channels=cfg.channels
+        )
+        train_loader, _ = mnist_dataloaders(data_cfg, normalize_to_minus1_1=True)
 
     device = cfg.device
     model = ScoreNet(cfg).to(device)
