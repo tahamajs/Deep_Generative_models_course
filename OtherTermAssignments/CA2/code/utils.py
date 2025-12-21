@@ -50,3 +50,20 @@ def plot_roc_curve(fpr: np.ndarray, tpr: np.ndarray, auroc: float) -> None:
 
 def plot_score_distributions(normal_scores: np.ndarray, anomaly_scores: np.ndarray) -> None:
     plt.figure(figsize=(10, 6)); plt.hist(normal_scores, bins=50, alpha=0.7, label='Normal', density=True); plt.hist(anomaly_scores, bins=50, alpha=0.7, label='Anomaly', density=True); plt.legend(); plt.xlabel('NLL'); plt.ylabel('Density'); plt.show()
+
+
+def save_checkpoint(path: str, model, optimizer=None, epoch: int = 0) -> None:
+    payload = {'epoch': epoch, 'model_state': model.state_dict()}
+    if optimizer is not None:
+        payload['optimizer_state'] = optimizer.state_dict()
+    import torch
+    torch.save(payload, path)
+
+
+def load_checkpoint(path: str, model, optimizer=None, map_location='cpu'):
+    import torch
+    checkpoint = torch.load(path, map_location=map_location)
+    model.load_state_dict(checkpoint.get('model_state', checkpoint))
+    if optimizer is not None and 'optimizer_state' in checkpoint:
+        optimizer.load_state_dict(checkpoint['optimizer_state'])
+    return checkpoint.get('epoch', 0)

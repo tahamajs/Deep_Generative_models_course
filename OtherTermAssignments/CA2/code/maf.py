@@ -1,6 +1,7 @@
 """MAF implementation (MADE + MAF blocks) and training helpers.
 """
 from typing import List, Optional
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -147,11 +148,51 @@ class MAF(nn.Module):
 
 # Training helpers
 
-def train_maf(model: MAF, train_loader: torch.utils.data.DataLoader, num_epochs: int = 100, lr: float = 1e-4, device: str = "cpu"):
+def train_maf(model: MAF,
+              train_loader: torch.utils.data.DataLoader,
+              num_epochs: int = 100,
+              lr: float = 1e-4,
+              device: str = "cpu",
+              checkpoint_dir: Optional[str] = None,
+              save_every: int = 10,
+              resume: Optional[str] = None,
+              use_scheduler: bool = False):
+    """Train MAF with optional checkpointing and scheduler.
+
+    Arguments:
+        model: MAF instance
+        train_loader: DataLoader for training
+        num_epochs: total epochs
+        lr: learning rate
+        device: device string
+        checkpoint_dir: if provided, checkpoints are saved here
+        save_every: save every N epochs
+        resume: path to checkpoint to resume from
+        use_scheduler: if True, use linear decay after half epochs
+    """
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
+    start_epoch = 0
+    scheduler = None
+
+    if use_scheduler:
+        scheduler = optim.lr_scheduler.LambdaLR(
+            optimizer, lr_lambda=lambda epoch: 1.0 - max(0, epoch - num_epochs // 2) / (num_epochs // 2)
+        )
+
+    if resume is not None and os.path.isfile(resume):
+        checkpoint = torch.load(resume, map_location=device)
+        model.load_state_dict(checkpoint.get('model_state', checkpoint))
+        if 'optimizer_state' in checkpoint:
+            optimizer.load_state_dict(checkpoint['optimizer_state'])
+        start_epoch = checkpoint.get('epoch', 0)
+        print(f"Resumed training from epoch {start_epoch}")
+
+    if checkpoint_dir:
+        os.makedirs(checkpoint_dir, exist_ok=True)
+
     losses = []
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         model.train()
         epoch_loss = 0.0
         for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
@@ -161,9 +202,24 @@ def train_maf(model: MAF, train_loader: torch.utils.data.DataLoader, num_epochs:
             nll.backward()
             optimizer.step()
             epoch_loss += nll.item()
-        avg = epoch_loss / len(train_loader)
+
+        avg = epoch_loss / max(1, len(train_loader))
         losses.append(avg)
         print(f"Epoch {epoch+1}, Avg NLL: {avg:.4f}")
+
+        if scheduler is not None:
+            scheduler.step()
+
+        # checkpoint
+        if checkpoint_dir and ((epoch + 1) % save_every == 0 or (epoch + 1) == num_epochs):
+            path = os.path.join(checkpoint_dir, f"maf_epoch_{epoch+1}.pth")
+            torch.save({
+                'epoch': epoch + 1,
+                'model_state': model.state_dict(),
+                'optimizer_state': optimizer.state_dict(),
+            }, path)
+            print(f"Saved checkpoint: {path}")
+
     return losses
 
 

@@ -149,6 +149,10 @@ if __name__ == '__main__':
     p_maf.add_argument('--model', type=str, default=None)
     p_maf.add_argument('--out', type=str, default=None)
     p_maf.add_argument('--quick', action='store_true')
+    p_maf.add_argument('--checkpoint_dir', type=str, default='checkpoints')
+    p_maf.add_argument('--save_every', type=int, default=10)
+    p_maf.add_argument('--resume', type=str, default=None)
+    p_maf.add_argument('--use_scheduler', action='store_true')
 
     # CycleGAN parser
     p_cyc = subparsers.add_parser('cyclegan')

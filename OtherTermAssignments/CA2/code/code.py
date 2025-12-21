@@ -217,7 +217,7 @@ class CapsuleDataset(Dataset):
         self.img_size: int = img_size
         self.images = []
 
-        for fname: str in os.listdir(root_dir):
+        for fname in os.listdir(root_dir):
             if fname.endswith(('.png', '.jpg', '.jpeg')):
                 self.images.append(os.path.join(root_dir, fname))
 
@@ -1073,9 +1073,9 @@ print(f"Anomaly images - Mean score: {anomaly_scores.mean():.4f}, Std: {anomaly_
 
 
 
-
-!wget https://efrosgans.eecs.berkeley.edu/cyclegan/datasets/horse2zebra.zip
-!unzip horse2zebra.zip
+# NOTE: In notebooks shell commands like `!wget` / `!unzip` were used to fetch the dataset.
+# In this script we expect the dataset to be present in the working directory (e.g., `horse2zebra/`).
+# Please download and unzip manually, or use the helper in `datasets.py` if you add it.
 
 train_dataset_A: ImageDataset = ImageDataset(
     root_dir='horse2zebra/trainA',
