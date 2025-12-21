@@ -13,7 +13,7 @@ from ncsn_sampling import sample, annealed_langevin_dynamics
 from utils import save_grid, ensure_dir
 
 
-def load_model(
+def load_ncsn_model(
     checkpoint: Path, cfg: NCSNConfig, conditional: bool = False
 ) -> ScoreNet:
     cfg.conditional = conditional
@@ -25,7 +25,7 @@ def load_model(
 
 
 @torch.no_grad()
-def generate_and_denoise(
+def ncsn_generate_and_denoise(
     checkpoint: Path,
     output_dir: Path,
     cfg: NCSNConfig,
@@ -35,7 +35,7 @@ def generate_and_denoise(
     ensure_dir(output_dir)
     data_cfg = DataConfig(batch_size=16)
     train_loader, _ = mnist_dataloaders(data_cfg, normalize_to_minus1_1=True)
-    model = load_model(checkpoint, cfg, conditional)
+    model = load_ncsn_model(checkpoint, cfg, conditional)
 
     y_samples: Optional[torch.Tensor] = None
     if conditional:
@@ -67,13 +67,13 @@ def main():
     paths = RunPaths()
     paths.ensure()
     cfg = NCSNConfig()
-    generate_and_denoise(
+    ncsn_generate_and_denoise(
         paths.images / "ncsn" / "ncsn.pt",
         paths.images / "ncsn_infer",
         cfg,
         conditional=False,
     )
-    generate_and_denoise(
+    ncsn_generate_and_denoise(
         paths.images / "ncsn_cond" / "ncsn_cond.pt",
         paths.images / "ncsn_cond_infer",
         cfg,

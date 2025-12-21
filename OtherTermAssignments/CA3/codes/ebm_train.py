@@ -194,8 +194,6 @@ def train_interactive(
         if "out of memory" in str(e).lower():
             print("CUDA out of memory during EBM demo training.\nSuggestions: reduce `ebm_cfg.langevin_steps` or reduce batch size via `DataConfig(batch_size=...)`, or run on CPU (set `device=torch.device('cpu')`).\nAborting demo run.")
             try:
-                import torch
-
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
             except Exception:
