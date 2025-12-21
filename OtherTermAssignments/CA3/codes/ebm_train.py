@@ -126,6 +126,71 @@ def train(
     return history
 
 
+def train_interactive(
+    cfg_data: DataConfig,
+    cfg_model: EBMConfig,
+    output_dir: Path,
+    epochs: int = 1,
+    show: bool = True,
+):
+    """Interactive/demo training for quick runs inside notebooks.
+
+    Runs a small number of epochs, saves demo samples/loss plots to `output_dir`,
+    and optionally displays sample grids inline when `show` is True.
+    """
+    set_seed(cfg_data.seed)
+    train_loader, test_loader = mnist_dataloaders(cfg_data)
+    device = cfg_model.device
+
+    model = ConvEnergyModel().to(device)
+    optimizer = optim.Adam(model.parameters(), lr=cfg_model.lr)
+    sampler = LangevinSampler(model, cfg_model)
+
+    history = {"loss": []}
+    ensure_dir(output_dir)
+
+    for epoch in range(1, epochs + 1):
+        loop = tqdm(train_loader, desc=f"EBM demo epoch {epoch}/{epochs}", leave=False)
+        for x_real, _ in loop:
+            x_real = x_real.to(device)
+            x_fake = sampler(torch.rand_like(x_real))
+
+            E_real = model(x_real)
+            E_fake = model(x_fake)
+
+            data_term = E_real.mean() - E_fake.detach().mean()
+            reg_term = cfg_model.lambda_reg * (
+                E_real.pow(2).mean() + E_fake.detach().pow(2).mean()
+            )
+            loss = data_term + reg_term
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            history["loss"].append(loss.item())
+
+        # Sampling uses input gradients; do not disable grads here
+        samples = sample_from_noise(model, cfg_model, (cfg_model.sample_grid, 1, 28, 28))
+        save_grid(samples.detach().cpu(), output_dir / f"ebm_demo_samples_epoch{epoch}.png", nrow=4)
+
+        if show:
+            try:
+                import matplotlib.pyplot as plt
+
+                grid = make_grid(samples, nrow=4, normalize=True)
+                img_arr = grid.permute(1, 2, 0).detach().cpu().numpy()
+                plt.figure(figsize=(4, 4))
+                plt.axis("off")
+                plt.imshow(img_arr)
+                plt.show()
+            except Exception:
+                # Best-effort display; continue even if matplotlib is unavailable.
+                pass
+
+    return model, history
+
+
 def main():
     paths = RunPaths()
     paths.ensure()
