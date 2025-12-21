@@ -115,6 +115,10 @@ def train_interactive(
             set_seed(42)
         except Exception:
             pass
+        # Construct a DataConfig object for bookkeeping (used by write_run_info)
+        data_cfg = DataConfig(
+            batch_size=cfg.batch_size, num_workers=getattr(cfg, "num_workers", 2), channels=getattr(cfg, "channels", 1)
+        )
     else:
         cfg.conditional = conditional
         set_seed(42)
