@@ -27,7 +27,7 @@ class RunPaths:
 @dataclass
 class DataConfig:
     batch_size: int = 64
-    num_workers: int = 4
+    num_workers: int = 2
     pin_memory: bool = True
     seed: int = 42
     image_size: int = 28
@@ -54,7 +54,7 @@ class NCSNConfig:
     epochs: int = 30
     lr: float = 2e-4
     batch_size: int = 64
-    num_workers: int = 4
+    num_workers: int = 2
     sigma_begin: float = 30.0
     sigma_end: float = 0.01
     num_levels: int = 10
