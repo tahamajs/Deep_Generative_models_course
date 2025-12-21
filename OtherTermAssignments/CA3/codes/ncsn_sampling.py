@@ -70,20 +70,6 @@ def sample(
 
 
 @torch.no_grad()
-def sample(
-    model: nn.Module,
-    cfg: NCSNConfig,
-    num_samples: int,
-    y: Optional[torch.Tensor] = None,
-) -> torch.Tensor:
-    x = torch.randn(
-        num_samples, cfg.channels, cfg.image_size, cfg.image_size, device=cfg.device
-    )
-    sigmas = cfg.sigmas
-    return annealed_langevin_dynamics(model, cfg, sigmas, x, y)
-
-
-@torch.no_grad()
 def denoise(
     model: nn.Module,
     cfg: NCSNConfig,
