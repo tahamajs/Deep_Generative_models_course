@@ -51,9 +51,9 @@ def train(
             E_real = model(x_real)
             E_fake = model(x_fake)
 
-            data_term = E_real.mean() - E_fake.mean()
+            data_term = E_real.mean() - E_fake.detach().mean()
             reg_term = cfg_model.lambda_reg * (
-                E_real.pow(2).mean() + E_fake.pow(2).mean()
+                E_real.pow(2).mean() + E_fake.detach().pow(2).mean()
             )
             loss = data_term + reg_term
 
