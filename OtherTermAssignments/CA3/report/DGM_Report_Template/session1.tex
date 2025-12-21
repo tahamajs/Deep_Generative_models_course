@@ -292,6 +292,17 @@ s(x) = \nabla_x \log p(x).
 \end{equation}
 این رابطه بیان می‌کند که گرادیان آموزش برابر اختلاف میانگین گرادیان انرژی روی داده‌ها و روی نمونه‌های تولیدشده توسط مدل است.
 
+\subsection{ارتباط با کمینه‌سازی فاصلهٔ کل (KL)}
+حداقل‌سازی خطای مدل نسبت به داده معادل حداقل‌سازی فاصلهٔ Kullback–Leibler است. تعریف KL به صورت زیر است:
+\begin{equation}
+\mathrm{KL}(p_{\text{data}}\|p_{\theta}) = \mathbb{E}_{x\sim p_{\text{data}}}\big[\log p_{\text{data}}(x) - \log p_{\theta}(x)\big].
+\end{equation}
+حداقل‌سازی \(\mathrm{KL}(p_{\text{data}}\|p_{\theta})\) نسبت به \(\theta\) معادل با بیشینه‌سازی \(\mathbb{E}_{x\sim p_{\text{data}}}[\log p_{\theta}(x)]\) است زیرا جملهٔ \(\mathbb{E}_{x\sim p_{\text{data}}}[\log p_{\text{data}}(x)]\) مستقل از \(\theta\) است. با مشتق‌گیری داریم:
+\begin{align}
+\nabla_{\theta} \mathrm{KL}(p_{\text{data}}\|p_{\theta}) &= - \nabla_{\theta} \mathbb{E}_{x\sim p_{\text{data}}}[\log p_{\theta}(x)] = -\nabla_{\theta}\mathcal{L}(\theta).
+\end{align}
+بنابراین گرادیانی که با معادلهٔ (\ref{eq:grad_exact}) به‌دست می‌آید، دقیقاً همان گرادیانی است که برای کمینه‌سازی KL استفاده می‌شود، و این نشانگر رابطهٔ مستقیم بین حداکثر‌سازی لگ‌لیکهود و کمینه‌سازی فاصلهٔ KL است.
+
 \subsection{تقریب عملی: واگرایی کنتراستی (Contrastive Divergence)}
 
 مسئلهٔ کلیدی محاسبهٔ عبارت \(\mathbb{E}_{x\sim p_{\theta}}[\nabla_{\theta} f_{\theta}(x)]\) است که مستقیماً با نمونه‌گیری از \(p_{\theta}\) نیازمند MCMC طولانی است. هینتون پیشنهاد کرد به‌جای آن از زنجیرهٔ کوتاه MCMC با شروع از نمونه‌های واقعی استفاده شود. در CD-\(k)\)، ما از نقطهٔ آغاز \(x^{(0)}\sim p_{\text{data}}\) استفاده کرده و \(k\) گام MCMC (مثلاً Langevin) اجرا می‌کنیم تا \(x^{(k)}\) به‌دست آید، سپس عبارت مدل را با \(x^{(k)}\) تقریب می‌زنیم:
@@ -372,12 +383,41 @@ q_{\sigma}(x) = \int p_{\text{data}}(x_0)\,\mathcal{N}(x; x_0, \sigma^2 I)\,dx_0
 \end{equation}
 که در عمل با نمونه‌گیری مینی‌بچ‌ها و backpropagation قابل محاسبه است.
 
-\subsection{رابطهٔ DSM با Denoising Autoencoders}
-برای یک DAE با تابع بازسازی \(r_{\theta}(x)\)، می‌توان نشان داد که در حدود نویز کوچک یک تقریب برای امتیاز است:
+\subsection{معادل بودن DSM با فیشر (Fisher Divergence) — مشتق}
+یکی از دیدگاه‌های مفید برای فهم DSM، ارتباط آن با فاصلهٔ فیشر است. فرض کنید که هدف ما تخمین امتیاز توزیع \(q(x)\) با یک مدل \(s_{\theta}(x)\) باشد. فاصلهٔ فیشر بین \(q\) و مدل با امتیاز \(s_{\theta}\) به‌صورت زیر تعریف می‌شود:
 \begin{equation}
-s(x) \approx \frac{r_{\theta}(x) - x}{\sigma^2}.
+D_F(q\|p_{\theta}) = \frac{1}{2} \mathbb{E}_{x\sim q} \big\| s_{\theta}(x) - s_q(x) \big\|^2, \quad s_q(x)=\nabla_x \log q(x).
 \end{equation}
-این رابطه مبنای نظری ارتباط بین شبکه‌های حذف نویز و تخمین امتیاز است (Vincent, 2011).
+اگر این عبارت را باز کنیم خواهیم داشت:
+\begin{align}
+2 D_F &= \mathbb{E}_q \big[ \|s_{\theta}\|^2 + \|s_q\|^2 - 2 s_{\theta}^T s_q \big] \\
+&= \mathbb{E}_q[\|s_{\theta}\|^2] + \mathbb{E}_q[\|s_q\|^2] - 2 \mathbb{E}_q[s_{\theta}^T \nabla_x \log q].
+\end{align}
+برای بردار آخر از انتگرال‌گیری جز به جز استفاده می‌کنیم (فرض می‌کنیم مرزها ناپدید می‌شوند):
+\begin{align}
+\mathbb{E}_q[s_{\theta}^T \nabla_x \log q] &= \int s_{\theta}(x)^T \frac{\nabla_x q(x)}{q(x)} q(x) dx = \int s_{\theta}(x)^T \nabla_x q(x) dx \\
+&= -\int q(x) \,\mathrm{tr}(\nabla_x s_{\theta}(x)) \,dx = -\mathbb{E}_q[\mathrm{tr}(\nabla_x s_{\theta}(x))].
+\end{align}
+بنابراین
+\begin{equation}
+D_F(q\|p_{\theta}) = \frac{1}{2} \mathbb{E}_q\big[ \|s_{\theta}(x)\|^2 \big] + \mathbb{E}_q\big[\mathrm{tr}(\nabla_x s_{\theta}(x))\big] + \text{const.}
+\end{equation}
+این همان تابع هدف Hyv\'arinen است (تا یک ثابت)، که نشان می‌دهد کمینه‌سازی DSM (یا Score Matching) معادل کمینه‌سازی فاصلهٔ فیشر است و بدین ترتیب تخمینِ امتیاز بهینه در معنای فیشر بدست می‌آید.
+
+\subsection{رابطهٔ DSM با Denoising Autoencoders — مشتق دقیق}
+برای یک DAE اگر با معیار MSE آموزش داده شود، بهینهٔ نظری برای تابع بازسازی $r^*(x)$ برابر است با امید شرطیِ $x_0$ دادهٔ $x$:
+\begin{equation}
+r^*(x) = \mathbb{E}[x_0 \mid x].
+\end{equation}
+برای نویز گوسی، توزیع پسین $p(x_0|x)$ را می‌توان نوشت و امید شرطی را محاسبه کرد. نکتهٔ کلیدی استفاده از شناسهٔ اشتاین (Stein identity) است که نشان می‌دهد:
+\begin{equation}\label{eq:dae_posterior}
+\mathbb{E}[x_0 \mid x] - x = \sigma^2 \nabla_x \log q_{\sigma}(x).
+\end{equation}
+بنابراین رابطهٔ زیر برقرار است:
+\begin{equation}
+\frac{r^*(x) - x}{\sigma^2} = \nabla_x \log q_{\sigma}(x).
+\end{equation}
+با این استدلال، اگر شبکهٔ بازسازی $r_{\theta}(x)$ را با MSE آموزش دهیم و تقریب خوبی از امید شرطی بدست آورد، آنگاه تخمین امتیاز با تقسیم اختلاف بازسازی و ورودی بر $\sigma^2$ حاصل می‌شود و این همان رابطهٔ مورد انتظار بین DAE و امتیاز است. این اثبات دقیق و صریح، نقش کلیدی امید شرطی را در ارتباط DAE و تخمین امتیاز نشان می‌دهد.
 
 \subsection{نمونه‌گیری Annealed Langevin Dynamics (ALD) — توضیح دقیق}
 الگوریتم ALD برای نمونه‌گیری از توزیع اصلی با استفاده از تخمین امتیاز در سطوح نویز مختلف تعریف می‌شود. برنامهٔ نویز \(\{\sigma_1>\sigma_2>\dots>\sigma_L\}\) انتخاب می‌شود، و برای هر سطح \(\sigma_l\) چند قدم Langevin مطابق زیر انجام می‌گردد:

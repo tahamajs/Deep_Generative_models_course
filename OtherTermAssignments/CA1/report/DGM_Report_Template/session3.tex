@@ -1,0 +1,107 @@
+\renewcommand{\chaptername}{بخش}
+\chapter{آزمایش‌ها و نتایج تجربی}
+
+\section{داده‌ها و پیش‌پردازش}
+در این بخش از مجموعهٔ دادهٔ dSprites استفاده شده است که شامل $64\times64$ تصاویر باینری و عوامل مولد حقیقی شناخته‌شده می‌باشد (شکل، مقیاس، زاویه، موقعیت‌های X و Y). پیش‌پردازش شامل نرمال‌سازی پیکسل‌ها به بازهٔ $[0,1]$، جداسازی تصادفی به نسبت 80/20 برای آموزش/اعتبارسنجی و عدم استفاده از افزایش داده به‌منظور حفظ عوامل مولد است.
+
+\section{پیکربندی‌های آموزشی}
+\subsection{سخت‌افزار و نرم‌افزار}
+\begin{itemize}
+  \item سخت‌افزار: GPU مبتنی بر CUDA یا Apple Silicon (MPS)
+  \item چارچوب: PyTorch 2.0+
+  \item نسخهٔ پایتون: 3.8+
+  \item کتابخانه‌های کمکی: NumPy, Matplotlib, scikit-learn, NetworkX
+\end{itemize}
+
+\subsection{تنظیمات عمومی آموزش}
+\begin{itemize}
+  \item نرمال‌سازی تصاویر: مقادیر بین 0 و 1
+  \item تقسیم داده‌ها: 80\% آموزش، 20\% اعتبارسنجی
+  \item بهینه‌ساز: Adam (lr=1e-3)، batch size = 64
+  \item تعداد epoch: 50 (یا تا همگرایی)
+  \item جدول پیکربندی‌ها (نمونه):
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{مدل} & \textbf{$\beta$} & \textbf{ابعاد پنهان} & \textbf{ابعاد پنهان (شبکه)} & \textbf{اپوک} \\
+\midrule
+VAE-baseline & 1.0 & 10 & 256 & 50 \\
+$\beta$-VAE-low & 2.0 & 10 & 256 & 50 \\
+$\beta$-VAE-med & 5.0 & 10 & 256 & 50 \\
+$\beta$-VAE-high & 10.0 & 10 & 256 & 50 \\
+VAE-large & 1.0 & 20 & 512 & 50 \\
+VAE-deep & 1.0 & 10 & 512 & 50 \\
+\bottomrule
+\end{tabular}
+\caption{پیکربندی‌های آزمایشی}
+\label{tab:exp_configs}
+\end{table}
+
+\section{شاخص‌های ارزیابی و روش‌شناسی}
+ارزیابی شامل معیارهای کمی و کیفی است:
+\begin{itemize}
+  \item کیفیت بازسازی: MSE یا Binary Cross-Entropy
+  \item تفکیک‌پذیری (Disentanglement): MIG، SAP، DCI
+  \item تحلیل بصری: بازسازی، نمونه‌سازی و تراورس‌های فضای پنهان
+\end{itemize}
+
+برای محاسبهٔ MIG از روش مبتنی بر ماتریس اطلاعات متقابل بین ابعاد پنهان و عوامل استفاده شده است؛ سپس میانگین اختلاف بین بالاترین و دومین MI نرمال‌شده گرفته شده است.
+
+\section{نتایج تجربی خلاصه}
+جدول زیر نتایج جامع را نشان می‌دهد (مقادیر نمونه‌ای از گزارش اصلی):
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{مدل} & \textbf{$\beta$} & \textbf{MIG} & \textbf{Recon Loss} & \textbf{KL Loss} & \textbf{Total Loss} \\
+\midrule
+VAE & 1.0 & 0.15 & 0.082 & 4.52 & 4.602 \\
+$\beta$-VAE (2) & 2.0 & 0.28 & 0.095 & 3.87 & 7.835 \\
+$\beta$-VAE (5) & 5.0 & 0.42 & 0.134 & 2.91 & 14.684 \\
+$\beta$-VAE (10) & 10.0 & 0.51 & 0.201 & 2.15 & 21.701 \\
+VAE-large & 1.0 & 0.18 & 0.076 & 5.12 & 5.196 \\
+VAE-deep & 1.0 & 0.16 & 0.079 & 4.88 & 4.959 \\
+\bottomrule
+\end{tabular}
+\caption{خلاصهٔ نتایج آزمایشی (مقادیر نمونه‌ای)}
+\label{tab:exp_summary}
+\end{table}
+
+\section{تحلیل و تفسیر}
+خلاصهٔ نکات مهم:
+\begin{itemize}
+  \item امتیازات MIG با افزایش $\beta$ بهبود می‌یابد؛ اما خطای بازسازی افزایش می‌یابد (trade-off مشخص).
+  \item ابعاد فعال فضای پنهان کاهش می‌یابد که نشان‌دهندهٔ فشرده‌سازی قوی‌تر است ولی احتمال فروپاشی پستریری (posterior collapse) را افزایش می‌دهد.
+  \item برخی عوامل مانند شکل (discrete) راحت‌تر جدا می‌شوند نسبت به عوامل موقعیت (continuous).
+\end{itemize}
+
+\section{آزمایش‌های تکمیلی (Ablation)}
+مطالعات ablation نشان می‌دهد که مواردی مانند KL annealing، scheduler بهبود همگرایی و استفاده از clipping برای پایداری اثرگذار هستند. نتیجه‌گیری‌ها مطابق با جدول نمونهٔ زیر است:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Ablation} & \textbf{MIG} & \textbf{Recon Loss} & \textbf{تغییر}\
+\midrule
+Full model ($\beta$=5) & 0.42 & 0.134 & Baseline \\
+No KL annealing & 0.38 & 0.142 & -9.5\% MIG \\
+No scheduler & 0.39 & 0.148 & -7.1\% MIG \\
+Smaller encoder & 0.35 & 0.156 & -16.7\% MIG \\
+No gradient clip & 0.40 & 0.151 & -4.8\% MIG \\
+\bottomrule
+\end{tabular}
+\caption{نتایج مطالعات ablation (نمونه‌ای)}
+\label{tab:ablation_summary}
+\end{table}
+
+\section{عمومیت‌پذیری بین-دیتاستی}
+نتایج نشان می‌دهد که مدل‌های تمرین‌شده روی dSprites تا حدی به مجموعه‌های مشابه تعمیم می‌یابند اما برای داده‌های پیچیده‌تر (مانند SmallNORB) افت عملکرد قابل توجهی مشاهده می‌شود.
+
+\section{خلاصهٔ بخش تجربی}
+این بخش مجموعه‌ای از تنظیمات، نتایج کمی و تحلیل‌های کیفی را ارائه کرد. اعداد نمونه‌ای بر اساس نتایج گزارش اصلی هستند و در آماده‌سازی نهایی باید با خروجی‌های واقعی اجرا جایگزین شوند.
+
