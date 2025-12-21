@@ -1,0 +1,56 @@
+
+%---------------------------------define color-------------------------------
+\definecolor{gray}{rgb}{0.4,0.4,0.4}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.4,0.4,0.4}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\definecolor{mygray}{rgb}{0.9,0.9,0.9}
+\definecolor{myCyan}{rgb}{0,1,1}
+\definecolor{navyBlue}{HTML}{0a065d}
+\definecolor{aliceblue}{rgb}{0.94, 0.97, 1.0}
+%----------------------------------------------------------------------------
+
+
+\setminted{
+    frame=lines,
+    framesep=2mm,
+    baselinestretch=1.0,
+    xrightmargin=0in,
+    xleftmargin=0in,
+    fontsize=\footnotesize,
+    bgcolor=aliceblue,
+    linenos=true
+}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue,
+}
+\setlist[enumerate]{itemsep=-3mm}
+\setlist[itemize]{itemsep=-3mm}
+
+
+\newfloat{program}{thp}{lop}
+\floatname{program}{نمونه کد}
+\newcommand{\programref}[1]{نمونه کد \ref{#1}}
+
+\renewcommand{\chaptername}{جلسه}
+\renewcommand{\baselinestretch}{1.5}
+\newcommand{\grayBox}[1]{\colorbox{gray!10}{\lr{\texttt{#1}}}}
+\newcommand{\grayLBox}[1]{\fbox{\grayBox{\parbox{11.8 cm}{#1}}}}
+
+\AtBeginEnvironment{minted}{\setlength{\parskip}{-20pt}}
+\xpretocmd{\inputminted}{\par\vspace{-10pt}}{}{}
+\xapptocmd{\inputminted}{\par\vspace{-20pt}}{}{}
+
+
+\makeatletter
+\newcommand{\chapterauthor}[1]{%
+    {\parindent0pt\vspace*{-25pt}%
+        \linespread{1.1}\large\scshape#1%
+        \par\nobreak\vspace*{35pt}}
+    \@afterheading%
+}
+\makeatother

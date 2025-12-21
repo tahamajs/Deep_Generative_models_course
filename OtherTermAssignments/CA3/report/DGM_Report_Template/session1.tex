@@ -1,0 +1,129 @@
+
+\def \Subject {عنوان/سوال/یک}
+\def \Session { یک}
+% \setcounter{chapter}{\Session-1}
+\renewcommand{\chaptername}{سوال}
+\chapter{\Subject}
+
+مقدمه سوال اول.
+
+\section{عنوان/بخش}
+توضیحات
+\begin{itemize}
+    \item    
+     پوشش کامل مطالب
+    \item    
+     رعایت قواعد نگارشی دستور زبان فارسی
+    \item    
+     استفاده از اشکال مناسب
+    \item    
+     اشاره به منابع کمک آموزشی
+\end{itemize}
+
+
+برای نوشتن شبه‌کد
+ \footnote{pseudocode}
+ می‌توانید از مثال زیر در الگوریتم
+  \ref{pseudocode1}
+   استفاده کنید :
+
+\begin{latin}
+\begin{algorithm}[H]
+    \KwData{this text}
+    \KwResult{how to write algorithm with \LaTeX2e }
+    initialization\;
+    \While{not at end of this document}{
+        read current\;
+        \eIf{understand}{
+            go to next section\;
+            current section becomes this one\;
+        }{
+            go back to the beginning of current section\;
+        }
+    }
+    \label{pseudocode1}
+    \caption{How to write algorithms}
+\end{algorithm}
+\end{latin}
+
+همچنین برای اضافه کردن شکل می‌توانید از شکل زیر استفاده کنید و برای ارجاع دادن به بصورت شکل
+ \ref{fig:dynamicprogramming}
+ استفاده کنید.
+ همچنین برای درج کلمات انگلیسی در پاراگراف فارسی می‌توان به این شکل
+ \lr{English Text}
+ یا برای تاکید به این شکل
+ \grayBox{English Text}
+ عمل کرد.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\linewidth]{images/dynamic_programming}
+    \caption{عنوان شکل}
+    \label{fig:dynamicprogramming}
+\end{figure}
+
+برای گنجاندن قطعه‌ای از کد به زبان‌های 
+\grayBox{Python} 
+از فایل اصلی کد می‌توانید به شکل زیر عمل کنید.
+ 
+
+با مقایسه متن لاتک و خروجی به این مساله پی‌ خواهید برد که برای اشاره به یک قطعه کد در لاتک لازم است از دستور
+\grayBox{label}
+داخل محیط/بخش 
+\grayBox{program}
+استفاده کرده و برای اشاره به آن بخش از کد از دستور
+\grayBox{programref}
+استفاده نمایید. لازم است پارامتر داده شده به هر دو دستور یکی باشد تا بدرستی به قطعه کد مورد نظر اشاره کنید(\programref{pythonfib}). 
+
+\begin{program}[H]
+\inputminted[frame=none]{python}{sample.py}
+\caption{تابع فیبوناچی در پایتون }
+\label{pythonfib}
+\end{program}
+
+در نهایت استفاده از دستور 
+\grayBox{grayBox}
+نیز می‌تواند کمک شایانی به زیبایی و خوانایی متن شما بکند. این دستور علاوه بر عوض کردن رنگ پس‌زمینه از فونت انگلیسی با عرض ثابت نیز استفاده می‌کند که برای کلمات کلیدی یا اسامی متغیرها در کد قابل استفاده است.
+
+\begin{program}[H]
+\begin{minted}[frame=none]{python}
+class Node: 
+def __init__(self, data): 
+    self.value = data
+    self.next = None  
+\end{minted}
+\label{pythonnode}
+\caption{تعریف لیست پیوندی در ‌پایتون}
+\end{program}
+
+\grayLBox{
+    AAC\\
+    ACG\\
+    GAA\\
+    GTT\\
+    TCG\\
+}
+\\
+\newpage
+هم‌چنین نتایج خود را در قالب جدول به فرم زیر گزارش کنید:
+\begin{table}[h!]
+  \begin{center}
+    \caption{عنوان جدول}
+    \label{tab:table1}
+    \begin{tabular}{l|S|r}
+      \textbf{ مدل ۱} & \textbf{مدل ۲} & \textbf{مدل ۳}\\
+      $\alpha$ & $\beta$ & $\gamma$ \\
+      \hline
+      1 & 1110.1 & a\\
+      2 & 10.1 & b\\
+      3 & 23.113231 & c\\
+      4 & 25.113231 & d\\ % <-- added row here
+    \end{tabular}
+  \end{center}
+\end{table}
+\\
+\\
+\\
+همچنین سعی کنید حتی‌الامکان به منابع و مراحع مناسب ارجاع دهید
+\cite{CLRS}. 
+علاوه بر مراجع چنانچه ابزار یا وب‌سایت قابل توجهی موجود است خوب است به آن هم ارجاع دهید
+\cite{visualizationwebsite}. 

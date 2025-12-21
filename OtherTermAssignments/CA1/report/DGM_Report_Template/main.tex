@@ -1,0 +1,39 @@
+% 
+%       قالب زیر توسط سید صالح اعتمادی جهت جزوه برداری توسط دانشجویان آماده شده است.
+% 		استفاده از این قالب برای عموم با حفظ این دو خط در ابتدای فایل بلا مانع است.
+%
+% تشکر ویژه از آقای علی حیدری که در تهیه این قالب از قالب‌های لاتک تهیه شده توسط ایشان کمک گرفته شده
+
+\documentclass[oneside]{book}
+
+\def \Counter {شماره/تمرین/جایگزین/شود}
+\def \CourseName { مدل‌های مولد عمیق  }
+\def \studentname {نام/خود/را/جایگزین/شود  }
+\def \studentnumber{شماره/دانشجویی/جایگزین/شود}
+\def \Semester {نیم‌سال اول\\سال تحصیلی ۴۰۵-۴۰۴}
+
+\input{packages}
+\input{commands}
+\input{firstpage}
+
+
+\begin{document}
+\pagenumbering{gobble}
+\pagestyle{headings}
+\maketitle
+\pagenumbering{arabic}
+\tableofcontents \clearpage
+\listoffigures \clearpage
+\listoftables  \clearpage
+\input{session1.tex}
+\input{session2.tex}
+
+% \begin{latin}
+% \bibliography{references}  	
+% \bibliographystyle{ieeetr}
+% \end{latin}
+
+\bibliographystyle{unsrt-fa} % or plainnat-fa for author-date
+\bibliography{references}
+
+\end{document}

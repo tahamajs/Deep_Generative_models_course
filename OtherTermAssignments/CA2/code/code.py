@@ -803,7 +803,7 @@ class CapsuleDataset(Dataset):
         self.img_size: int = img_size
         self.images = []
 
-        for fname: str in os.listdir(root_dir):
+        for fname in os.listdir(root_dir):
             if fname.endswith(('.png', '.jpg', '.jpeg')):
                 self.images.append(os.path.join(root_dir, fname))
 
