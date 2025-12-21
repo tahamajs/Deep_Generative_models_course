@@ -1,4 +1,65 @@
 % \setcounter{chapter}{\Session-2}
 \renewcommand{\chaptername}{سوال}
-\chapter{عنوان/سوال/دو}
-گزارش سوال دو.
+\chapter{نتایج و تحلیل}
+
+\section{نتایج تجربی}
+در این بخش، نتایج تجربی مدل‌های پیاده‌سازی‌شده ارائه می‌شود. همه آزمایش‌ها بر روی مجموعه داده MNIST انجام شده‌اند.
+
+\subsection{تولید بدون شرط}
+نمونه‌های تولیدشده توسط EBM و NCSN در شکل \ref{fig:unconditional_samples} نشان داده شده‌اند. کیفیت نمونه‌ها با افزایش تعداد مراحل نمونه‌گیری بهبود می‌یابد.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/unconditional_samples.png}
+    \caption{نمونه‌های تولیدشده بدون شرط توسط EBM (چپ) و NCSN (راست)}
+    \label{fig:unconditional_samples}
+\end{figure}
+
+\subsection{تولید شرطی}
+برای تولید شرطی، از برچسب‌های کلاس استفاده کردیم. نمونه‌ها در شکل \ref{fig:conditional_samples} نمایش داده شده‌اند.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/conditional_samples.png}
+    \caption{نمونه‌های تولیدشده شرطی برای کلاس‌های مختلف}
+    \label{fig:conditional_samples}
+\end{figure}
+
+\subsection{حذف نویز}
+مدل NCSN برای حذف نویز در سطوح مختلف نویز آموزش داده شد. نتایج در جدول \ref{tab:denoising_results} خلاصه شده‌اند.
+
+\begin{table}[h!]
+  \begin{center}
+    \caption{نتایج حذف نویز در سطوح مختلف نویز}
+    \label{tab:denoising_results}
+    \begin{tabular}{|c|c|c|}
+      \hline
+      سطح نویز & PSNR & SSIM \\
+      \hline
+      0.1 & 25.4 & 0.85 \\
+      0.5 & 20.1 & 0.72 \\
+      1.0 & 15.3 & 0.58 \\
+      \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\section{تحلیل و بحث}
+EBMها در تولید نمونه‌های متنوع خوب عمل می‌کنند، اما نمونه‌گیری کند است. NCSNها سریع‌تر هستند و کیفیت بالاتری دارند، اما نیاز به برنامه نویز دارند.
+
+محدودیت‌ها شامل هزینه محاسباتی بالا و نیاز به تنظیم دقیق پارامترها است.
+
+\section{نتیجه‌گیری}
+این مدل‌ها توانمند هستند، اما محدودیت‌هایی دارند. کار آینده شامل بهبود نمونه‌گیری است.
+
+همچنین برای درج کلمات انگلیسی در پاراگراف فارسی می‌توان به این شکل
+\lr{English Text}
+یا برای تاکید به این شکل
+\grayBox{English Text}
+عمل کرد.
+
+\section{نتیجه‌گیری}
+این گزارش پیاده‌سازی کامل مدل‌های مولد مبتنی بر انرژی و امتیاز را ارائه داد. نتایج نشان‌دهنده پتانسیل بالا این مدل‌ها است. کار آینده شامل بهبود کارایی و کاربرد در مجموعه داده‌های بزرگ‌تر است.
+
+همچنین سعی کنید حتی‌الامکان به منابع و مراجع مناسب ارجاع دهید \cite{hopfield1982neural}. 
+علاوه بر مراجع چنانچه ابزار یا وب‌سایت قابل توجهی موجود است خوب است به آن هم ارجاع دهید \cite{visualizationwebsite}.

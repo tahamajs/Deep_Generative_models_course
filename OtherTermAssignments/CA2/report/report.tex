@@ -279,407 +279,119 @@ Unpaired image translation dataset:
 \item Resize to $128 \times 128$ using bilinear interpolation.
 \item Convert to tensor, scale pixel values $\in [0, 1]$.
 \item Apply per-channel standardization: $x' = (x - \mu_{\text{ImageNet}}) / \sigma_{\text{ImageNet}}$.
-\item Flatten to vector $\in \mathbb{R}^{49152}$ for flow input.
-\item Add small noise ($\mathcal{N}(0, 10^{-3})$) for numerical stability (dequantization).
-\end{enumerate}
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{xepersian}
+\settextfont{XB Yas}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
-\subsubsection{CycleGAN Preprocessing}
-\begin{enumerate}
-\item Load RGB image, resize shortest edge to 286.
-\item Random crop to $256 \times 256$ (training); center crop (testing).
-\item Random horizontal flip with probability 0.5 (training only).
-\item Normalize to $[-1, 1]$: $x' = 2 \cdot (x / 255) - 1$.
-\end{enumerate}
+\begin{document}
 
-\subsection{Training Procedures}
-\subsubsection{MAF Training Algorithm}
-\begin{algorithmic}
-\FOR{$\text{epoch} = 1$ to $100$}
-  \FOR{each mini-batch $\{x_i\}$ in training set}
-    \STATE Forward pass: $z = f_{\theta}(x)$
-    \STATE Compute NLL: $-\log p_{\theta}(x) = -\log p_Z(z) - \sum_d \log |\sigma_d|$
-    \STATE Compute gradients: $\nabla_{\theta} \mathcal{L}$
-    \STATE Update parameters: $\theta \leftarrow \theta - \eta \nabla_{\theta} \mathcal{L}$
-  \ENDFOR
-  \STATE Evaluate validation NLL; checkpoint if improved
-\ENDFOR
-\end{algorithmic}
+	itle{مدل‌های مولد عمیق برای برآورد چگالی و ترجمه تصویر بدون جفت: مطالعهٔ تطبیقی MAF و CycleGAN\\
+{\footnotesize یادداشت: تکلیف دوم درس مدل‌های مولد عمیق}
+}
 
-\subsubsection{CycleGAN Training Algorithm}
-\begin{algorithmic}
-\FOR{$\text{epoch} = 1$ to $200$}
-  \FOR{each pair $(x, y)$ from unpaired dataloaders}
-    \STATE Generate translations: $\hat{y} = G_{AB}(x)$, $\hat{x} = G_{BA}(y)$
-    \STATE Compute cycles: $\tilde{x} = G_{BA}(\hat{y})$, $\tilde{y} = G_{AB}(\hat{x})$
-    \STATE Compute identities: $\hat{y}_{\text{id}} = G_{AB}(y)$, $\hat{x}_{\text{id}} = G_{BA}(x)$
-    \STATE Query replay buffer: $\hat{y}_{\text{old}} \sim \text{Buffer}_B(\hat{y})$
-    \STATE Update $D_A$: $\min \mathcal{L}_{D_A}(D_A, x, \hat{x}_{\text{old}})$
-    \STATE Update $D_B$: $\min \mathcal{L}_{D_B}(D_B, y, \hat{y}_{\text{old}})$
-    \STATE Update generators: $\min \mathcal{L}_G = \mathcal{L}_{\text{adv}} + \lambda_{\text{cyc}} \mathcal{L}_{\text{cyc}} + \lambda_{\text{id}} \mathcal{L}_{\text{id}}$
-  \ENDFOR
-  \IF{$\text{epoch} > 100$}
-    \STATE Apply linear learning rate decay
-  \ENDIF
-\ENDFOR
-\end{algorithmic}
+\author{\IEEEauthorblockN{محمد طاها مجلسی}
+\IEEEauthorblockA{\textit{گروه مهندسی کامپیوتر} \\
+	extit{دانشگاه تهران}\\
+Email: taha.majlesi@ut.ac.ir}
+}
 
-\subsection{Evaluation Metrics: Comprehensive Definitions}
-\subsubsection{Negative Log-Likelihood (NLL)}
-For test sample $x$:
-\begin{equation}
-\text{NLL}(x) = -\log p_{\theta}(x) = -\log p_Z(f_{\theta}(x)) - \sum_{k,d} \log \sigma^{(k)}_d.
-\end{equation}
-Lower NLL indicates higher probability under learned distribution; used as anomaly score (higher score $\to$ anomaly).
+\maketitle
 
-\subsubsection{Area Under ROC Curve (AUROC)}
-ROC curve plots True Positive Rate (TPR) vs False Positive Rate (FPR) across threshold $\tau$:
-\begin{align}
-\text{TPR}(\tau) &= \frac{\#\{\text{anomalies with } s(x) > \tau\}}{\#\{\text{total anomalies}\}}, \\
-\text{FPR}(\tau) &= \frac{\#\{\text{normal with } s(x) > \tau\}}{\#\{\text{total normal}\}}.
-\end{align}
-AUROC $\in [0,1]$; random classifier achieves 0.5, perfect classifier achieves 1.0. Threshold-free metric robust to class imbalance.
+\begin{abstract}
+در این گزارش دو پارادایم مکمل در حوزهٔ مدل‌های مولد عمیق بررسی می‌شود: (١) \textbf{MAF} (Masked Autoregressive Flow)، یک جریان نرمال‌سازی‌شدهٔ مبتنی بر تابع احتمال که امکان برآورد صریح چگالی و امتیازدهی ناهنجاری را فراهم می‌آورد؛ و (٢) \textbf{CycleGAN}، چارچوبی مبتنی بر رقابت‌پذیری برای ترجمهٔ تصویر به تصویر در شرایط فاقد جفت که از سازگاری چرخه‌ای و محدودیت‌های هویتی استفاده می‌کند. ابتدا مبانی نظری شامل نگاشت تغییر متغیرها، محاسبهٔ محدب ژاکوبی، و فاکتورسازی اتورگرسیو تشریح می‌گردد. سپس طراحی‌های معماری (از جمله نقاب‌گذاری MADE، ساختارهای ResNet برای تولیدکننده و شبکه‌های PatchGAN برای افتراق‌دهنده) و معیارهای آموزش و پایدارسازی توضیح داده می‌شوند. در ارزیابی تجربی، مدل MAF برای مدل‌سازی چگالی تصاویر صنعتی (مجموعه‌دادهٔ MVTec AD) و CycleGAN برای ترجمهٔ سبک اسب-زِبرا استفاده شده‌اند؛ معیارهای کمی (AUROC ≈ 0.72 برای تشخیص ناهنجاری) و ارزیابی‌های کیفی گزارش شده‌اند. در پایان، محدودیت‌های اساسی، ملاحظات اخلاقی و پیشنهاداتی برای کارهای آینده مطرح می‌گردد.
+\end{abstract}
 
-\subsubsection{Qualitative Translation Metrics}
-\paragraph{Structural Preservation:} Pose, object boundaries, spatial layout should remain intact post-translation.
-\paragraph{Style Fidelity:} Generated images should exhibit target domain texture/color (e.g., zebra stripes).
-\paragraph{Artifact Assessment:} Visual inspection for checkerboard patterns, color bleeding, mode collapse indicators.
+\begin{IEEEkeywords}
+مدل‌های مولد عمیق، جریان‌های نرمال‌سازی‌شده، Masked Autoregressive Flow، CycleGAN، ترجمهٔ تصویر بدون جفت، تشخیص ناهنجاری
+\end{IEEEkeywords}
 
-\subsubsection{Fréchet Inception Distance (FID) — Future Work}
-Measures distribution similarity via Inception-v3 embeddings:
-\begin{equation}
-\text{FID}(X, Y) = \|\mu_X - \mu_Y\|^2 + \text{Tr}(\Sigma_X + \Sigma_Y - 2(\Sigma_X \Sigma_Y)^{1/2}),
-\end{equation}
-where $\mu, \Sigma$ are mean and covariance of embedded features. Lower FID indicates closer distributions.
+\section{مقدمه}
+مسئلهٔ برآورد چگالی و ترجمهٔ تصویر بدون جفت دو حوزهٔ مهم در یادگیری ماشین هستند که کاربردهای گسترده‌ای در تشخیص ناهنجاری، تبدیل سبک، و تولید نمونه‌های واقع‌گرایانه دارند. در این گزارش، هدف ارائهٔ توضیحاتی منسجم و رسمی دربارهٔ اصول نظری، طراحی‌های مهندسی، و نتایج تجربی مربوط به \textbf{MAF} و \textbf{CycleGAN} است. بخش‌ها به ترتیب تئوری پایه، پیاده‌سازی و تنظیمات تجربی، نتایج و تحلیل، و مباحث نهایی و اخلاقی سازمان‌دهی شده‌اند.
 
-\section{Results and Analysis}
-\subsection{MAF Density Estimation Results}
-\subsubsection{Training Convergence}
-Figure \ref{fig:maf_loss} displays negative log-likelihood progression across 100 epochs. Observations:
-\begin{itemize}
-\item Initial NLL: $\approx 12.5$ bits/dim, reflecting random initialization.
-\item Final NLL: $\approx 8.2$ bits/dim after convergence.
-\item Smooth monotonic decrease indicates stable optimization; no gradient explosions observed despite high dimensionality.
-\item Validation NLL tracks training closely, suggesting minimal overfitting.
-\end{itemize}
+\section{پیش‌زمینه و مبانی نظری}
+در این بخش مفاهیم کلیدی که در ادامه مورد استفاده قرار می‌گیرند، معرفی می‌شوند.
 
-\subsubsection{Generated Samples}
-Figure \ref{fig:maf_generated} shows samples drawn from learned distribution via ancestral sampling through inverse MAF blocks. Qualitative assessment:
-\begin{itemize}
-\item Generated images exhibit recognizable capsule-like shapes and color distributions.
-\item Fine texture details remain blurry, likely due to (i) small batch size limiting gradient signal, (ii) high dimensionality challenging density estimation, (iii) absence of spatial inductive biases (flows treat pixels independently).
-\item Future improvements: incorporate convolutional flows (Glow) for spatial coherence.
-\end{itemize}
+\subsection{جریان‌های نرمال‌سازی‌شده و MAF}
+جریان‌های نرمال‌سازی‌شده سازوکاری برای تبدیل یک توزیع سادهٔ اولیه (مثلاً گاوسی) به توزیع هدف از طریق نگاشت‌های معکوس‌پذیر و محاسبهٔ دقیق ژاکوبی هستند. در MAF با استفاده از فاکتورسازی اتورگرسیو توزیع مشترک به حاصل‌ضرب شرطی‌ها تبدیل می‌شود و با اعمال نگاشت‌های محاسبه‌پذیر و ماسک‌گذاری‌شده (MADE) می‌توان چگالی‌های پیچیده را مدل‌سازی کرد. مزیت اصلی این خانواده محاسبهٔ صریح لاگ‌احتمال نمونه‌هاست که برای تشخیص ناهنجاری و ارزیابی مدل ضروری است.
 
-\subsubsection{Anomaly Detection Performance}
-Figure \ref{fig:roc_curve} presents ROC curve for anomaly classification using NLL scores. Key metrics:
-\begin{itemize}
-\item \textbf{AUROC}: 0.72 (95\% CI: [0.66, 0.78]).
-\item \textbf{Interpretation}: Model reliably ranks anomalies higher than normal samples, but imperfect separation indicates:
-  \begin{itemize}
-  \item Some defects subtle enough to maintain high likelihood under learned normal distribution.
-  \item Likelihood may prioritize low-level statistics (color, brightness) over semantic defects.
-  \end{itemize}
-\item \textbf{Baseline comparison}: Random classifier (AUROC=0.5); simple pixel intensity baseline achieves $\approx$0.58, confirming MAF adds value.
-\end{itemize}
+\subsection{شبکه‌های متخاصم و CycleGAN}
+CycleGAN چارچوبی برای ترجمهٔ تصویر بدون نیاز به زوج‌های متناظر در مجموعهٔ آموزش است. دو نگاشت ژنراتور \(G: X\rightarrow Y\) و \(F: Y\rightarrow X\) به همراه دو افتراق‌دهنده آموزش داده می‌شوند. برای پایدارسازی آموزش و حفظ ساختاری از تصاویر، علاوه بر تابع هزینهٔ متعارف GAN، «ضرر سازگاری چرخه‌ای» و «ضرر هویتی» مورد استفاده قرار می‌گیرد تا نگاشت‌ها معنادار و بقای ویژگی‌های بصری حفظ شود.
 
-Figure \ref{fig:score_dist} illustrates score distributions for normal vs anomalous samples:
-\begin{itemize}
-\item Normal samples concentrate at lower NLL (higher probability).
-\item Anomalous samples show right-shifted, broader distribution.
-\item Overlap region suggests threshold-based classification would incur false positives/negatives; AUROC captures ranking performance better than accuracy.
-\end{itemize}
+\section{معماری‌ها و جزئیات پیاده‌سازی}
+در این بخش معماری‌ها و نکات فنی هر مدل شرح داده می‌شود.
 
-\subsection{CycleGAN Translation Results}
-\subsubsection{Training Dynamics}
-Figure \ref{fig:cyclegan_loss} tracks four loss components over 200 epochs:
-\begin{itemize}
-\item \textbf{Generator loss} ($\mathcal{L}_G$): Decreases from $\approx$15 to $\approx$3, indicating improved ability to fool discriminators.
-\item \textbf{Discriminator losses} ($\mathcal{L}_{D_A}, \mathcal{L}_{D_B}$): Oscillate around 0.5–1.0, characteristic of adversarial equilibrium.
-\item \textbf{Cycle consistency loss}: Stabilizes around 0.8, confirming approximate invertibility.
-\item \textbf{Identity loss}: Remains low ($\approx$0.3), validating color preservation when input already in target domain.
-\item Replay buffer prevents oscillatory spikes observed in preliminary runs without buffering.
-\end{itemize}
+\subsection{جزئیات MAF}
+MAF از ترکیب چندین لایهٔ اتورگرسیو تشکیل می‌شود؛ هر لایه شامل یک نگاشت از نوع مقیاس-افزایشی با وابستگی شرطی بر مولفه‌های قبلی است. برای حفظ بازگشت‌پذیری و محاسبهٔ سریع لاگ‌دترمینان ژاکوبی، از نقاب‌گذاری‌های ساخت‌یافته (MADE) استفاده می‌شود. در عمل، تعداد لایه‌ها و اندازهٔ آرشیتکتچر بسته به پیچیدگی داده تنظیم می‌شود و بهینه‌ساز Adam با نرخ یادگیری تنظیم‌شده معمولاً نتایج قابل قبولی می‌دهد.
 
-\subsubsection{Horse $\to$ Zebra Translation}
-Figures \ref{fig:cyclegan_A2B_samples} showcase transformations from horse to zebra domain:
-\begin{itemize}
-\item \textbf{Stripe pattern addition}: Realistic zebra-like stripes overlaid on horse bodies.
-\item \textbf{Pose preservation}: Standing/running poses, head orientations, leg positions maintained.
-\item \textbf{Background integrity}: Grass, sky, fences remain largely unchanged, indicating generator focuses on animal region.
-\item \textbf{Artifacts}: Occasional checkerboard patterns near stripe boundaries (known issue with transposed convolutions); potential fix via bilinear upsampling + convolution.
-\end{itemize}
+\subsection{جزئیات CycleGAN}
+ژنراتورها: معماری مبتنی بر ResNet با بلوک‌های باقیمانده برای حفظ جزئیات و تسهیل جریان گرادیان استفاده می‌شود.
+افتراق‌دهنده‌ها: از PatchGAN برای تمرکز بر ویژگی‌های محلی و بافتی بهره می‌گیریم.
+توابع هزینه: شامل ضررهای GAN، ضرر چرخه (\(\mathcal{L}_{cyc}\)) و ضرر هویتی (\(\mathcal{L}_{id}\)) است؛ وزن‌دهی این اجزا تأثیر زیادی بر کیفیت ترجمه دارد.
 
-\subsubsection{Zebra $\to$ Horse Translation}
-Figures \ref{fig:cyclegan_B2A_samples} demonstrate inverse mapping:
-\begin{itemize}
-\item \textbf{Stripe removal}: Zebra stripes successfully converted to uniform brown/tan coloring.
-\item \textbf{Texture smoothing}: Horse fur appears naturally textured without residual stripe artifacts.
-\item \textbf{Anatomy consistency}: Zebra body proportions preserved (no morphological changes).
-\item \textbf{Lighting coherence}: Shadows and illumination gradients transferred correctly.
-\end{itemize}
+\section{داده‌ها و تنظیمات تجربی}
+برای ارزیابی، دو آزمایش مستقل اجرا شد:
+- برآورد چگالی و تشخیص ناهنجاری با استفاده از مجموعه‌دادهٔ صنعتی MVTec AD: تصاویر کپسول و کالاهای صنعتی برای سنجش قابلیت مدل در شناسایی نمونه‌های معیوب.
+- ترجمهٔ تصویر سبک اسب به زِبرا با استفاده از مجموعه‌دادهٔ رایج اسب-زِبرا برای بررسی کیفیت بصری و حفظ ساختار.
 
-\subsubsection{Cycle Reconstruction Quality}
-Visual inspection of $x \to G(x) \to F(G(x))$ reveals:
-\begin{itemize}
-\item High fidelity reconstruction with PSNR $\approx$ 28–32 dB.
-\item Subtle color shifts in some backgrounds, indicating imperfect cycle closure.
-\item Overall, cycle loss effectively constrains generators to preserve semantic content.
-\end{itemize}
+تنظیمات عمومی: شبکه‌ها با استفاده از کارت گرافیک و پیاده‌سازی در چارچوب PyTorch اجرا شدند؛ هایپرپارامترها (مانند نرخ یادگیری، اندازه بچ و تعداد اپک‌ها) برای هر آزمایش جداگانه تنظیم شد. برای ارزیابی تشخیص ناهنجاری از معیار AUROC استفاده شد.
 
-\subsection{Comparative Performance Analysis}
-\begin{table}[!t]
-\caption{Quantitative Comparison with Baseline Methods}
-\label{tab:comparison}
-\centering
-\begin{tabular}{lcc}
-\hline
-\textbf{Method} & \textbf{Anomaly AUROC} & \textbf{Translation Quality} \\
-\hline
-Random classifier & 0.50 & N/A \\
-Pixel intensity baseline & 0.58 & N/A \\
-\textbf{MAF (proposed)} & \textbf{0.72} & N/A \\
-\hline
-Pix2pix (paired) & N/A & High \\
-CycleGAN baseline & N/A & Medium-High \\
-\textbf{CycleGAN (proposed)} & N/A & \textbf{Medium-High} \\
-\hline
-\end{tabular}
-\end{table}
+\section{نتایج}
+نتایج کمی و کیفی به‌صورت خلاصه در این‌جا آورده شده است.
 
-\section{Extended Discussion}
-\subsection{Likelihood-Based Anomaly Detection: Challenges and Opportunities}
-\subsubsection{Calibration Issues}
-High likelihood under flow model does not guarantee semantic normality. Observed phenomena:
-\begin{itemize}
-\item \textbf{Typicality problem}: Flows may assign high density to out-of-distribution (OOD) samples sharing low-level statistics (color histograms, edge distributions) with training data.
-\item \textbf{Manifold hypothesis}: Natural images occupy low-dimensional manifolds; likelihood reflects proximity to manifold but not semantic category.
-\item \textbf{Resolution dependence}: Bits-per-dimension scales with image size; cross-resolution comparisons require careful normalization.
-\end{itemize}
+\subsection{تشخیص ناهنجاری با MAF}
+MAF توانست رفتار توزیع نرمال نمونه‌ها را مدل‌سازی کند و ناهنجاری‌ها را با استفاده از لاگ‌احتمال‌ها امتیازدهی کند. در آزمایش روی زیرمجموعه‌ای از MVTec AD، مقدار AUROC حدود 0.72 ثبت شد که نشان‌دهندهٔ عملکرد معقول مدل در تشخیص نمونه‌های معیوب می‌باشد. تحلیل دقیق‌تر نشان می‌دهد که مدل در تشخیص ناهنجاری‌های ظریف‌تر نیازمند شبکه‌های عمیق‌تر یا ترکیب با ویژگی‌های وابسته به بافت است.
 
-\subsubsection{Potential Improvements}
-\begin{itemize}
-\item \textbf{Hybrid models}: Combine likelihood with discriminative classifier embeddings (e.g., Mahalanobis distance in feature space).
-\item \textbf{Likelihood ratios}: Compare $p_{\text{model}}(x)$ against background distribution $p_{\text{null}}(x)$ trained on diverse natural images.
-\item \textbf{Multi-scale flows}: Model coarse structures explicitly (e.g., Glow's multi-scale architecture) to better capture semantic anomalies.
-\item \textbf{Conditional flows}: Incorporate class labels when available, enabling $p(x|y)$ modeling and class-conditional anomaly scoring.
-\end{itemize}
+\subsection{ترجمهٔ تصویر با CycleGAN}
+در ترجمهٔ اسب به زِبرا، CycleGAN تصاویر هدف‌دار و بافت‌های کلی را به‌طور مناسبی بازیابی کرد؛ با این‌حال، در برخی نمونه‌ها دگرگونی‌های هندسی و تغییرات ساختاری نامطلوب مشاهده شد که نشان می‌دهد محدودیت‌های مدل در یادگیری نگاشت‌های پیچیدهٔ هندسی وجود دارد. ارزیابی کیفی نشان‌دهندهٔ حفظ رنگ و بافت در بسیاری از نمونه‌هاست، اما بهبود‌های بیشتر در معماری ژنراتور و تلفیق معیارهای برداشت ساختاری می‌تواند کیفیت را افزایش دهد.
 
-\subsection{CycleGAN: Constraints, Failure Modes, Extensions}
-\subsubsection{Geometric Transformation Limitations}
-Cycle consistency $\|F(G(x)) - x\|_1 \approx 0$ enforces information preservation:
-\begin{itemize}
-\item \textbf{Invertibility requirement}: $G$ must encode sufficient information for reconstruction by $F$.
-\item \textbf{Consequence}: Large shape deformations (e.g., dog $\to$ cat, standing $\to$ sitting) incur high cycle loss; model defaults to texture-only changes.
-\item \textbf{Mathematical formulation}: If $G$ performs non-injective mapping (many-to-one), $F$ cannot uniquely invert, raising L1 reconstruction error.
-\end{itemize}
+\section{بحث}
+تحلیل نتایج نشان می‌دهد:
+- مزایا: MAF امکان محاسبهٔ صریح و قابل‌تفسیر لاگ‌احتمال را فراهم می‌آورد که برای تشخیص ناهنجاری سودمند است. CycleGAN بدون نیاز به دادهٔ جفت‌شده توان ترجمهٔ سبک را به‌دست می‌دهد.
+- محدودیت‌ها: جریان‌های نرمال‌سازی‌شده ممکن است چالش‌هایی در مقیاس‌پذیری روی تصاویر با ابعاد بزرگ داشته باشند و همچنین احتمال دارد لاگ‌احتمال برای داده‌های واقعی کالیبره نباشد. CycleGAN در مواردی که نگاشت نیازمند تغییرات هندسی پیچیده است، محدودیت نشان می‌دهد.
 
-\paragraph{Example Failure Case:} Dog $\to$ Cat translation:
-\begin{itemize}
-\item Ideal: Change ear shape, muzzle, body proportions.
-\item Actual: Apply cat fur texture to dog structure (``cat-textured dog'').
-\item Reason: Cycle loss penalizes structural changes that lose reconstruction information.
-\end{itemize}
+پیشنهادها: ترکیب جریان‌ها با مدل‌های ویژگی‌محور (مثلاً استخراج‌گرهای CNN پیش‌آموزش‌دیده) یا استفاده از معیارهای ساختاری و تلفیقی در تابع خطا می‌تواند به بهبود عملکرد کمک کند.
 
-\subsubsection{Extensions for Geometric Flexibility}
-\begin{itemize}
-\item \textbf{Relaxed cycle consistency}: Replace L1 with perceptual loss (VGG feature space) allowing geometric slack while preserving semantic similarity.
-\item \textbf{Keypoint supervision}: Add sparse landmark constraints (e.g., eye, nose positions) guiding structural alignment.
-\item \textbf{Disentangled models}: MUNIT, DRIT separate content (geometry) and style (texture) codes; translate style while preserving content.
-\item \textbf{3D-aware methods}: Explicitly model 3D shape, manipulate viewpoint or surface properties independently.
-\end{itemize}
+\section{ملاحظات اخلاقی و کاربردی}
+استفادهٔ عملی از مدل‌های مولد و سیستم‌های تشخیص ناهنجاری مستلزم توجه به مسائل حریم خصوصی، تاثیرات اجتماعی و خطرات سوءاستفاده است. هنگام به‌کارگیری در محیط‌های حساس باید شفافیت مدل، ممیزی نتایج، و مکانیزم‌های بازبینی انسانی در نظر گرفته شود. همچنین در ترجمهٔ تصویر، تضمین عدم تولید محتواهای گمراه‌کننده یا نقض کپی‌رایت اهمیت دارد.
 
-\subsection{Training Stability and Convergence}
-\subsubsection{Adversarial Training Challenges}
-\begin{itemize}
-\item \textbf{Mode collapse}: Generator produces limited diversity; mitigated by cycle consistency and replay buffer.
-\item \textbf{Vanishing gradients}: Discriminator overpowers generator; addressed via LSGAN (least-squares loss) smoother gradients than original BCE.
-\item \textbf{Oscillation}: Without replay buffer, discriminator forgets past generator modes, causing cyclical behavior.
-\end{itemize}
+\section{نتیجه‌گیری}
+در این گزارش، مبانی نظری و پیاده‌سازی‌های عملی دو رویکرد مکمل — MAF برای برآورد چگالی و CycleGAN برای ترجمهٔ تصویر بدون جفت — تشریح شد. نتایج تجربی نشان می‌دهد هر یک توانمندی‌ها و محدودیت‌های مشخصی دارند و انتخاب یا ترکیب آن‌ها باید متناسب با هدف کاربردی و طبیعت داده انجام شود. جهت تحقیقات آینده، پیشنهاد می‌شود روی تلفیق ویژگی‌های استخراج‌شده، بهبود کالیبراسیون احتمال در جریان‌ها، و توسعهٔ معیارهای ساختاری برای ترجمهٔ تصویر کار شود.
 
-\subsubsection{Hyperparameter Sensitivity}
-\begin{itemize}
-\item \textbf{$\lambda_{\text{cyc}}$ too small} ($<1$): Mode collapse, unrealistic outputs.
-\item \textbf{$\lambda_{\text{cyc}}$ too large} ($>50$): Minimal translation, near-identity mapping.
-\item \textbf{Optimal range}: Empirically $\lambda_{\text{cyc}} \in [5, 15]$; $\lambda_{\text{id}} = 0.5 \lambda_{\text{cyc}}$.
-\item \textbf{Learning rate}: Too high causes oscillation; too low slows convergence. Decay schedule essential for stable equilibrium.
-\end{itemize}
+\section*{سپاسگزاری}
+نویسنده از پشتیبانی علمی اساتید و دسترسی به منابع محاسباتی دانشگاه تشکر می‌کند.
 
-\subsection{Computational Considerations}
-\subsubsection{MAF Scalability}
-\begin{itemize}
-\item \textbf{Memory}: $\mathcal{O}(D^2)$ for weight matrices; challenging for high-resolution images.
-\item \textbf{Solution}: Convolutional flows (Glow) reduce parameters via $1 \times 1$ convolutions with weight sharing.
-\item \textbf{Sampling speed}: Autoregressive inversion sequential; parallel sampling infeasible. IAF offers fast sampling alternative.
-\end{itemize}
+\begin{thebibliography}{9}
 
-\subsubsection{CycleGAN Resource Requirements}
-\begin{itemize}
-\item \textbf{Training time}: $\approx$4–6 hours on single GPU (V100) for 200 epochs at $256^2$ resolution.
-\item \textbf{Inference}: Real-time capable ($\approx$50 FPS) for generator forward pass.
-\item \textbf{Memory}: Four networks ($2G + 2D$) require $\approx$6 GB VRAM; batch size 1 manageable on consumer GPUs.
-\end{itemize}
+@book{CLRS,
+    author = {Cormen, Thomas H. and Leiserson, Charles E. and Rivest, Ronald L. and Stein, Clifford},
+    title = {Introduction to Algorithms, Third Edition},
+    year = {2009},
+    isbn = {0262033844, 9780262033848},
+    edition = {3rd},
+    publisher = {The MIT Press},
+} 
 
-\subsection{Ethical and Practical Considerations}
-\subsubsection{Anomaly Detection Ethics}
-\begin{itemize}
-\item \textbf{False negatives}: Missing critical defects (medical imaging, safety inspection) carries high risk. Likelihood scores should augment, not replace, expert judgment.
-\item \textbf{Bias}: Training on limited normal samples may embed demographic or manufacturing biases; validation across diverse subpopulations essential.
-\item \textbf{Transparency}: Black-box likelihood scores difficult to interpret; explainability methods (saliency maps, counterfactual generation) improve trust.
-\end{itemize}
+@misc{visualizationwebsite,
+    title = {Data Structure Visualizations},
+    author = {David Galles},
+    howpublished = {\url{https://www.cs.usfca.edu/~galles/visualization/StackArray.html}},
+    note = {Accessed: 2019-12-10}
+} 
 
-\subsubsection{Image Translation Concerns}
-\begin{itemize}
-\item \textbf{Semantic manipulation}: Style transfer may inadvertently alter content (e.g., gender, age, identity in face translation); careful validation needed.
-\item \textbf{Deepfakes}: Unpaired translation enables malicious applications (fake imagery); detection methods and watermarking under active research.
-\item \textbf{Cultural sensitivity}: Artistic style transfer (e.g., religious imagery, historical paintings) may offend; contextual awareness required.
-\item \textbf{Medical imaging}: Cross-modality translation (MRI $\to$ CT) for planning must be clinically validated; hallucinated artifacts could mislead diagnosis.
-\end{itemize}
+\end{thebibliography}
 
-\subsubsection{Responsible Deployment}
-\begin{itemize}
-\item Establish human-in-the-loop review for high-stakes decisions.
-\item Document known failure modes and edge cases prominently.
-\item Provide uncertainty quantification (e.g., ensemble predictions, Bayesian flows).
-\item Ensure compliance with data privacy regulations (GDPR, HIPAA) when handling sensitive imagery.
-\end{itemize}
-
-\section{Appendix}
-\subsection{Mathematical Derivations}
-\subsubsection{Change of Variables: Detailed Proof}
-Given smooth bijection $f: X \to Z$, let $x \in X, z = f(x) \in Z$. For infinitesimal volume $dx$ around $x$:
-\begin{equation}
-p_X(x) \, dx = p_Z(z) \, dz.
-\end{equation}
-Jacobian $J = \frac{\partial f}{\partial x}$ transforms volume elements: $dz = |\det J| \, dx$. Thus:
-\begin{equation}
-p_X(x) = p_Z(f(x)) \left| \det \frac{\partial f(x)}{\partial x} \right|.
-\end{equation}
-For inverse $x = f^{-1}(z)$, chain rule gives $\frac{\partial f^{-1}}{\partial z} = \left(\frac{\partial f}{\partial x}\right)^{-1}$, hence $\det \frac{\partial f^{-1}}{\partial z} = \left(\det \frac{\partial f}{\partial x}\right)^{-1}$.
-
-\subsubsection{Autoregressive Jacobian Triangularity}
-For transformation $z_d = \mu_d(x_{<d}) + \sigma_d(x_{<d}) x_d$:
-\begin{equation}
-\frac{\partial z_i}{\partial x_j} = \begin{cases}
-0 & j > i \text{ (autoregressive property)} \\
-\sigma_i(x_{<i}) & j = i \text{ (diagonal)} \\
-* & j < i \text{ (lower triangular)}
-\end{cases}.
-\end{equation}
-Triangular Jacobian yields $\det J = \prod_{d=1}^{D} \sigma_d(x_{<d})$, computable in $\mathcal{O}(D)$.
-
-\subsubsection{Cycle Consistency Gradient Flow}
-Consider generator loss term $\|F(G(x)) - x\|_1$. Gradient w.r.t. $G$ parameters:
-\begin{equation}
-\frac{\partial}{\partial \theta_G} \|F(G(x)) - x\|_1 = \text{sign}(F(G(x)) - x) \cdot \frac{\partial F}{\partial G(x)} \cdot \frac{\partial G}{\partial \theta_G}.
-\end{equation}
-Backpropagation through $F$ and $G$ couples their learning; $G$ adjusts to produce outputs facilitating $F$'s reconstruction.
-
-\subsection{Implementation Pseudocode}
-\subsubsection{MADE Forward Pass}
-\begin{verbatim}
-def made_forward(x, masks, weights, biases):
-    h = x
-    for W, b, M in zip(weights[:-1], biases[:-1], masks[:-1]):
-        h = relu((W * M) @ h + b)
-    out = (weights[-1] * masks[-1]) @ h + biases[-1]
-    mu, log_sigma = split(out, dim=-1)
-    return mu, log_sigma
-\end{verbatim}
-
-\subsubsection{CycleGAN Generator Update}
-\begin{verbatim}
-fake_B = G_AB(real_A)
-rec_A = G_BA(fake_B)
-idt_B = G_AB(real_B)
-
-loss_GAN = MSE(D_B(fake_B), target=1)
-loss_cycle = L1(rec_A, real_A)
-loss_idt = L1(idt_B, real_B)
-
-loss_G = loss_GAN + lambda_cyc * loss_cycle + lambda_idt * loss_idt
-loss_G.backward()
-optimizer_G.step()
-\end{verbatim}
-
-\subsection{Hyperparameter Tuning Guidelines}
-\begin{table}[!t]
-\caption{Recommended Hyperparameter Tuning Strategies}
-\label{tab:tuning}
-\centering
-\begin{tabular}{p{2.5cm}p{5cm}}
-\hline
-\textbf{Parameter} & \textbf{Tuning Strategy} \\
-\hline
-MAF blocks & Start with 5; increase if validation NLL plateaus; diminishing returns beyond 10 blocks \\
-MAF hidden dim & Scale with $\sqrt{D}$; range 512–1024 typical for image flows \\
-$\lambda_{\text{cyc}}$ & Grid search over $[5, 10, 15, 20]$; balance realism versus identity preservation \\
-$\lambda_{\text{id}}$ & Set as $0.5 \lambda_{\text{cyc}}$; omit for applications requiring color shifts \\
-Learning rate & Halve if loss oscillates; increase if convergence slow; monitor first 10 epochs \\
-Batch size & Maximize within GPU memory constraints; instance norm less batch-size sensitive than batch norm \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsection{Reproducibility Checklist}
-\subsubsection{Environment Specification}
-\begin{itemize}
-\item \textbf{Python}: 3.8+
-\item \textbf{PyTorch}: 2.0.0 with CUDA 11.8
-\item \textbf{torchvision}: 0.15.0
-\item \textbf{NumPy}: 1.24.0
-\item \textbf{Matplotlib}: 3.7.0
-\item \textbf{scikit-learn}: 1.2.0 (for AUROC computation)
-\end{itemize}
-
-\subsubsection{Reproducibility Protocol}
-\begin{enumerate}
-\item Set random seeds: \texttt{torch.manual\_seed(42)}, \texttt{np.random.seed(42)}, \texttt{random.seed(42)}.
-\item Pin CUDA determinism: \texttt{torch.backends.cudnn.deterministic = True}.
-\item Document GPU model and driver version.
-\item Save complete hyperparameter config as JSON alongside checkpoints.
-\item Version-control data preprocessing scripts.
-\item Log training curves to TensorBoard or WandB for transparency.
-\end{enumerate}
-
-\subsubsection{Code and Data Availability}
-\begin{itemize}
-\item Code: Implementations provided in accompanying Jupyter notebook \texttt{code.ipynb}.
-\item Data: MVTec AD available at \url{https://www.mvtec.com/company/research/datasets/mvtec-ad}; horse2zebra via \url{https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/}.
-\item Pre-trained weights: Available upon request for academic use.
-\end{itemize}
-
-\subsection{Additional Experimental Details}
-\subsubsection{Compute Resources}
-\begin{itemize}
-\item \textbf{Hardware}: NVIDIA RTX 3090 (24 GB VRAM) or equivalent.
-\item \textbf{Training time}: MAF 100 epochs $\approx$ 3 hours; CycleGAN 200 epochs $\approx$ 5 hours.
-\item \textbf{Memory footprint}: MAF peak 8 GB; CycleGAN peak 6 GB.
-\end{itemize}
-
-\subsubsection{Failed Experiments and Lessons}
-\begin{itemize}
-\item \textbf{Higher resolution MAF ($256^2$)}: Out-of-memory errors with batch size 1; limited expressiveness for large $D$ without convolutional structure.
-\item \textbf{CycleGAN without replay buffer}: Severe oscillation; discriminator loss spikes; unstable translation quality.
-\item \textbf{$\lambda_{\text{cyc}} = 1$}: Mode collapse after 50 epochs; generators produced same output for diverse inputs.
-\item \textbf{Learning rate $5 \times 10^{-4}$}: Divergence in CycleGAN; discriminators dominated, generators failed to improve.
-\end{itemize}
-
-\subsection{Future Research Directions}
-\subsubsection{Flow-Based Models}
-\begin{itemize}
-\item \textbf{Continuous Normalizing Flows (CNF)}: Replace discrete bijections with ODE-defined transforms; memory-efficient via adjoint method.
-\item \textbf{Neural Spline Flows}: Use monotonic splines for flexible univariate transformations; superior to affine coupling.
-\item \textbf{Residual Flows}: Incorporate Lipschitz-constrained residuals enabling more flexible architectures.
-\item \textbf{Hybrid VAE-Flow}: Combine latent variable models with flow priors for structured representations.
-\end{itemize}
-
-\subsubsection{CycleGAN Extensions}
-\begin{itemize}
-\item \textbf{StarGAN, StarGAN v2}: Multi-domain translation with single generator.
-\item \textbf{Contrastive Unpaired Translation (CUT)}: Replace cycle loss with contrastive learning; faster training.
-\item \textbf{Attention mechanisms}: Self-attention in generators for long-range dependencies.
-\item \textbf{Few-shot translation}: Meta-learning for rapid adaptation to new domains.
-\end{itemize}
+\end{document}
 
 \subsubsection{Unified Frameworks}
 \begin{itemize}
