@@ -21,8 +21,22 @@ def load_model(checkpoint: Path, device: torch.device) -> ConvEnergyModel:
 
 
 def generate_and_denoise(
-    checkpoint: Path, output_dir: Path, data_cfg: DataConfig, ebm_cfg: EBMConfig
+    checkpoint: Path,
+    output_dir: Path,
+    data_cfg: DataConfig,
+    ebm_cfg: EBMConfig,
+    noise_levels: list = None,
 ) -> None:
+    """Generate samples and perform denoising at specified noise levels.
+
+    Args:
+        checkpoint: path to checkpoint .pt
+        output_dir: directory to save outputs
+        data_cfg: DataConfig for loading data
+        ebm_cfg: EBMConfig for sampler and device
+        noise_levels: list of noise std values to use for denoising (e.g., [0.2,0.4,0.6]).
+                      If None, defaults to [0.3].
+    """
     set_seed(data_cfg.seed)
     train_loader, _ = mnist_dataloaders(data_cfg)
     ensure_dir(output_dir)
@@ -33,15 +47,20 @@ def generate_and_denoise(
     samples = sample_from_noise(model, ebm_cfg, (16, 1, 28, 28))
     save_grid(samples.detach().cpu(), output_dir / "ebm_samples_final.png", nrow=4)
 
-    # Denoise a few training digits
+    # Denoise a few training digits using several noise levels
     x_real, _ = next(iter(train_loader))
     x_real = x_real[:16].to(ebm_cfg.device)
-    noise = torch.randn_like(x_real) * 0.3
-    noisy = (x_real + noise).clamp(0.0, 1.0)
-    denoised = sampler(noisy)
-    save_grid(x_real.detach().cpu(), output_dir / "ebm_real.png", nrow=4)
-    save_grid(noisy.detach().cpu(), output_dir / "ebm_noisy.png", nrow=4)
-    save_grid(denoised.detach().cpu(), output_dir / "ebm_denoised.png", nrow=4)
+
+    if noise_levels is None:
+        noise_levels = [0.3]
+
+    for nl in noise_levels:
+        noise = torch.randn_like(x_real) * nl
+        noisy = (x_real + noise).clamp(0.0, 1.0)
+        denoised = sampler(noisy)
+        save_grid(x_real.detach().cpu(), output_dir / f"ebm_real_{nl:.2f}.png", nrow=4)
+        save_grid(noisy.detach().cpu(), output_dir / f"ebm_noisy_{nl:.2f}.png", nrow=4)
+        save_grid(denoised.detach().cpu(), output_dir / f"ebm_denoised_{nl:.2f}.png", nrow=4)
 
 
 def sample_and_save_trajectory(
