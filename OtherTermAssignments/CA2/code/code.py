@@ -1,40 +1,9 @@
-# Setup and Configuration
-import random
-import os
-import shutil
-import time
-import warnings
-warnings.filterwarnings('ignore')
+# This module has been refactored. Use `run.py` to run experiments.
+# Examples:
+#   python run.py maf --mode train --epochs 2 --quick
+#   python run.py cyclegan --mode train --epochs 2 --quick
 
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
-
-from sklearn.metrics import roc_auc_score, roc_curve
-from tqdm import tqdm
-
-# Set random seeds for reproducibility
-seed = 42
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
-if torch.cuda.is_available():
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-# Device configuration
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f"Using device: {device}")
-
-# Configuration parameters
-# (Add hyperparameters here as needed for training)
+print("This file is kept for compatibility. Use `run.py` to run experiments.")
 
 
 import torch
@@ -66,7 +35,7 @@ def create_masks(input_dim, hidden_dims, output_dim):
     mask = (m_input.unsqueeze(1) <= m_hidden[0].unsqueeze(0)).float()
     masks.append(mask)
 
-    for i: int in range(len(hidden_dims) - 1):
+    for i in range(len(hidden_dims) - 1):
         mask = (m_hidden[i].unsqueeze(1) <= m_hidden[i+1].unsqueeze(0)).float()
         masks.append(mask)
 
@@ -86,7 +55,7 @@ class MADE(nn.Module):
         self.layers = nn.ModuleList()
         dims: list[Any] = [input_dim] + hidden_dims + [output_dim]
 
-        for i: int in range(len(dims) - 1):
+        for i in range(len(dims) - 1):
             self.layers.append(MaskedLinear(dims[i], dims[i+1], masks[i]))
 
     def forward(self, x):
@@ -126,7 +95,7 @@ class MAFBlock(nn.Module):
         batch_size = z.shape[0]
         x = torch.zeros_like(z)
 
-        for i: int in range(self.input_dim):
+        for i in range(self.input_dim):
             s_and_t = self.made(x)
             s, t = s_and_t.chunk(2, dim=1)
             s = torch.sigmoid(s + 2.0)
@@ -179,11 +148,11 @@ class MADE(nn.Module):
         masks.append(m)
 
         # Hidden to hidden
-        for i: int in range(len(hidden_dims) - 1):
+        for i in range(len(hidden_dims) - 1):
             in_dim = hidden_dims[i]
             out_dim = hidden_dims[i+1]
             m = torch.zeros(out_dim, in_dim)
-            for d: int in range(out_dim):
+            for d in range(out_dim):
                 m[d, :min(d+1, in_dim)] = 1
             masks.append(m)
 
@@ -207,7 +176,7 @@ class MAF(nn.Module):
         self.num_blocks: int = num_blocks
 
         self.blocks = nn.ModuleList()
-        for _: int in range(num_blocks):
+        for _ in range(num_blocks):
             self.blocks.append(MAFBlock(input_dim, hidden_dims))
 
         self.base_dist = torch.distributions.Normal(0, 1)
@@ -270,7 +239,7 @@ def train_maf(model, train_loader, num_epochs=100, lr=0.0001, device='cpu'):
 
     losses = []
 
-    for epoch: int in range(num_epochs):
+    for epoch in range(num_epochs):
         model.train()
         epoch_loss = 0
 
@@ -390,7 +359,7 @@ class Generator(nn.Module):
             nn.ReLU(inplace=True)
         ]
 
-        for _: int in range(num_residual_blocks):
+        for _ in range(num_residual_blocks):
             model += [ResidualBlock(ngf * 4)]
 
         model += [
@@ -521,7 +490,7 @@ def train_cyclegan(G_AB, G_BA, D_A, D_B, train_loader_A, train_loader_B,
         'identity_loss': []
     }
 
-    for epoch: int in range(num_epochs):
+    for epoch in range(num_epochs):
         G_AB.train()
         G_BA.train()
         D_A.train()
@@ -539,7 +508,7 @@ def train_cyclegan(G_AB, G_BA, D_A, D_B, train_loader_A, train_loader_B,
         num_batches: int = min(len(train_loader_A), len(train_loader_B))
         pbar: tqdm[int] = tqdm(range(num_batches), desc=f'Epoch {epoch+1}/{num_epochs}')
 
-        for i: int in pbar:
+        for i in pbar:
             try:
                 real_A = next(data_iter_A).to(device)
                 real_B = next(data_iter_B).to(device)
@@ -690,13 +659,13 @@ def test_cyclegan(G_AB, G_BA, test_loader_A, test_loader_B, device='cpu', num_sa
         fake_A = G_BA(real_B)
         recovered_B = G_AB(fake_A)
 
-    for i: int in range(num_samples):
+    for i in range(num_samples):
         visualize_samples(
             [real_A[i], fake_B[i], recovered_A[i]],
             titles=['Real A', 'Fake B', 'Recovered A']
         )
 
-    for i: int in range(num_samples):
+    for i in range(num_samples):
         visualize_samples(
             [real_B[i], fake_A[i], recovered_B[i]],
             titles=['Real B', 'Fake A', 'Recovered B']
@@ -1063,7 +1032,7 @@ def visualize_samples(images, titles=None, fig=None, axes=None) -> None:
         if titles and i < len(titles):
             axes[row, col].set_title(titles[i], fontsize=10)
 
-    for i: int in range(len(images), len(axes.flat)):
+    for i in range(len(images), len(axes.flat)):
         row, col = divmod(i, axes.shape[1]) if len(axes.shape) > 1 else (0, i)
         axes[row, col].axis('off')
 
