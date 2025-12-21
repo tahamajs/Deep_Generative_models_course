@@ -33,7 +33,7 @@ def save_grid(
 ) -> None:
     ensure_dir(path.parent)
     grid = make_grid(images, nrow=nrow, normalize=normalize, value_range=(0, 1))
-    save_image(grid, path)
+    save_image(grid.detach().cpu(), path)
 
 
 def _repo_root() -> Path:
