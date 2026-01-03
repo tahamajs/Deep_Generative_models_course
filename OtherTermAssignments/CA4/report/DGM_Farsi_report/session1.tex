@@ -48,6 +48,363 @@ q(x_t|x_{t-1})=\mathcal{N}(x_t;\sqrt{\alpha_t}x_{t-1},(1-\alpha_t)I)
 \begin{equation}
 x_t=\sqrt{\alpha_t}x_{t-1}+\sqrt{1-\alpha_t}\,\epsilon_{t-1},\quad \epsilon_{t-1}\sim\mathcal{N}(0,I)
 \end{equation}
+
+% ==========================
+% بخش ۲: جزئیات پیاده‌سازی (Implementation Details)
+% ==========================
+\section{جزئیات پیاده‌سازی و معماری‌ها}
+
+\subsection{معماری U-Net برای DDPM}
+
+\textbf{معماری کلی U-Net:}
+\begin{itemize}
+    \item \textbf{ورودی:} ۳۲×۳۲×۳ تصویر (CIFAR-10)
+    \item \textbf{کانال‌ها:} [۶۴, ۱۲۸, ۲۵۶, ۵۱۲]
+    \item \textbf{شرط‌گذاری زمانی:} embedding سینوسی → خطی → SiLU
+    \item \textbf{توجه:} self-attention چندسر در bottleneck
+\end{itemize}
+
+\textbf{بلوک ResNet با شرط‌گذاری زمانی:}
+\begin{minted}[fontsize=\footnotesize]{python}
+class ResNetBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, time_emb_dim):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, 3, padding=1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
+        self.time_emb = nn.Linear(time_emb_dim, out_channels)
+        self.norm1 = nn.GroupNorm(32, in_channels)
+        self.norm2 = nn.GroupNorm(32, out_channels)
+        
+        if in_channels != out_channels:
+            self.shortcut = nn.Conv2d(in_channels, out_channels, 1)
+        else:
+            self.shortcut = nn.Identity()
+    
+    def forward(self, x, t_emb):
+        h = self.norm1(x)
+        h = F.silu(h)
+        h = self.conv1(h)
+        
+        # Add time conditioning
+        t_emb = self.time_emb(t_emb)
+        t_emb = t_emb.unsqueeze(-1).unsqueeze(-1)  # [B, C, 1, 1]
+        h = h + t_emb
+        
+        h = self.norm2(h)
+        h = F.silu(h)
+        h = self.conv2(h)
+        
+        return h + self.shortcut(x)
+\end{minted}
+
+\textbf{Embedding زمانی سینوسی:}
+\begin{minted}[fontsize=\footnotesize]{python}
+class SinusoidalEmbedding(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.dim = dim
+    
+    def forward(self, t):
+        device = t.device
+        half_dim = self.dim // 2
+        emb = math.log(10000) / (half_dim - 1)
+        emb = torch.exp(torch.arange(half_dim, device=device) * -emb)
+        emb = t.unsqueeze(-1) * emb.unsqueeze(0)
+        emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=-1)
+        return emb
+\end{minted}
+
+\textbf{کلاس کامل U-Net:}
+\begin{minted}[fontsize=\footnotesize]{python}
+class UNet(nn.Module):
+    def __init__(self, in_channels=3, time_emb_dim=256):
+        super().__init__()
+        
+        # Time embedding
+        self.time_emb = nn.Sequential(
+            SinusoidalEmbedding(time_emb_dim),
+            nn.Linear(time_emb_dim, time_emb_dim),
+            nn.SiLU(),
+            nn.Linear(time_emb_dim, time_emb_dim)
+        )
+        
+        # Encoder
+        self.enc1 = ResNetBlock(in_channels, 64, time_emb_dim)
+        self.enc2 = ResNetBlock(64, 128, time_emb_dim)
+        self.enc3 = ResNetBlock(128, 256, time_emb_dim)
+        self.enc4 = ResNetBlock(256, 512, time_emb_dim)
+        
+        # Bottleneck with attention
+        self.bottleneck = ResNetBlock(512, 512, time_emb_dim)
+        self.attn = nn.MultiheadAttention(512, 8, batch_first=True)
+        
+        # Decoder
+        self.dec4 = ResNetBlock(1024, 256, time_emb_dim)
+        self.dec3 = ResNetBlock(512, 128, time_emb_dim)
+        self.dec2 = ResNetBlock(256, 64, time_emb_dim)
+        self.dec1 = ResNetBlock(128, 64, time_emb_dim)
+        
+        # Output
+        self.final = nn.Conv2d(64, in_channels, 1)
+        
+        # Down/Up sampling
+        self.down = nn.MaxPool2d(2)
+        self.up = nn.Upsample(scale_factor=2, mode='bilinear')
+    
+    def forward(self, x, t):
+        # Time embedding
+        t_emb = self.time_emb(t)
+        
+        # Encoder
+        e1 = self.enc1(x, t_emb)
+        e2 = self.enc2(self.down(e1), t_emb)
+        e3 = self.enc3(self.down(e2), t_emb)
+        e4 = self.enc4(self.down(e3), t_emb)
+        
+        # Bottleneck
+        b = self.bottleneck(self.down(e4), t_emb)
+        b = b.flatten(2).transpose(1, 2)  # [B, H*W, C]
+        b, _ = self.attn(b, b, b)
+        b = b.transpose(1, 2).view(b.shape[0], -1, 4, 4)
+        
+        # Decoder
+        d4 = self.dec4(torch.cat([self.up(b), e4], dim=1), t_emb)
+        d3 = self.dec3(torch.cat([self.up(d4), e3], dim=1), t_emb)
+        d2 = self.dec2(torch.cat([self.up(d3), e2], dim=1), t_emb)
+        d1 = self.dec1(torch.cat([self.up(d2), e1], dim=1), t_emb)
+        
+        return self.final(d1)
+\end{minted}
+
+\textbf{پارامترهای DDPM:}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{پارامتر} & \textbf{مقدار} \\
+        \midrule
+        تعداد گام‌های زمانی & ۱۰۰۰ \\
+        $\beta_{start}$ & ۰.۰۰۰۱ \\
+        $\beta_{end}$ & ۰.۰۲ \\
+        اندازه دسته & ۱۲۸ \\
+        نرخ یادگیری & ۱e-۴ \\
+        تعداد دوره‌ها & ۱۰۰ \\
+        بهینه‌ساز & AdamW \\
+        \bottomrule
+    \end{tabular}
+    \caption{پارامترهای آموزش DDPM}
+\end{table}
+
+\subsection{DDIM Sampling}
+
+\textbf{فرمول DDIM:}
+برای $\eta = 0$ (تعیین‌گر):
+\begin{equation}
+x_{t-1} = \sqrt{\alpha_{t-1}} \left( \frac{x_t - \sqrt{1-\bar{\alpha}_t} \epsilon_\theta(x_t, t)}{\sqrt{\bar{\alpha}_t}} + \sqrt{1-\frac{\bar{\alpha}_{t-1}}{\bar{\alpha}_t}} \epsilon_\theta(x_t, t) \right)
+\end{equation}
+
+\textbf{پیاده‌سازی DDIM:}
+\begin{minted}[fontsize=\footnotesize]{python}
+def ddim_sample(self, model, x_t, t, t_prev, eta=0.0):
+    """
+    DDIM sampling step
+    """
+    # Predict noise
+    epsilon = model(x_t, t)
+    
+    # Get alphas
+    alpha_t = self.alphas_cumprod[t]
+    alpha_t_prev = self.alphas_cumprod[t_prev] if t_prev >= 0 else 1.0
+    
+    # DDIM formulas
+    pred_x0 = (x_t - torch.sqrt(1 - alpha_t) * epsilon) / torch.sqrt(alpha_t)
+    
+    dir_xt = torch.sqrt(1 - alpha_t_prev) * epsilon
+    if eta > 0:
+        # Add noise for stochasticity
+        noise = torch.randn_like(x_t)
+        dir_xt = dir_xt + eta * torch.sqrt((1 - alpha_t/alpha_t_prev) * (1 - alpha_t_prev)) * noise
+    
+    x_t_prev = torch.sqrt(alpha_t_prev) * pred_x0 + dir_xt
+    
+    return x_t_prev
+\end{minted}
+
+\subsection{Stable Diffusion با DreamBooth}
+
+\textbf{معماری Stable Diffusion:}
+\begin{itemize}
+    \item \textbf{ورودی:} ۶۴×۶۴×۴ latent space
+    \item \textbf{Embedding زمانی:} ۱۲۸۰-dim sinusoidal + linear projection
+    \item \textbf{شرط‌گذاری متنی:} cross-attention با embeddings CLIP (۷۶۸-dim)
+    \item \textbf{معماری:} مشابه U-Net DDPM اما با:
+        \begin{itemize}
+            \item بلوک‌های Transformer با self/cross-attention
+            \item ۴ سر توجه در هر بلوک
+            \item کانال‌ها: [۳۲۰, ۶۴۰, ۱۲۸۰, ۱۲۸۰]
+        \end{itemize}
+\end{itemize}
+
+\textbf{کلاس Dataset برای DreamBooth:}
+\begin{minted}[fontsize=\footnotesize]{python}
+class DreamBoothDataset(Dataset):
+    def __init__(self, instance_data_root, instance_prompt, tokenizer,
+                 class_data_root=None, class_prompt=None, size=512):
+        self.instance_data_root = Path(instance_data_root)
+        self.instance_prompt = instance_prompt
+        self.class_prompt = class_prompt
+        self.tokenizer = tokenizer
+        self.size = size
+        
+        # Load instance images
+        self.instance_images = []
+        for ext in ['*.jpg', '*.jpeg', '*.png']:
+            self.instance_images.extend(list(self.instance_data_root.glob(ext)))
+        
+        # Load class images (for prior preservation)
+        self.class_images = []
+        if class_data_root:
+            class_path = Path(class_data_root)
+            for ext in ['*.jpg', '*.jpeg', '*.png']:
+                self.class_images.extend(list(class_path.glob(ext)))
+        
+        # Image transforms
+        self.transforms = transforms.Compose([
+            transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR),
+            transforms.CenterCrop(size),
+            transforms.ToTensor(),
+            transforms.Normalize([0.5], [0.5])
+        ])
+    
+    def __len__(self):
+        return max(len(self.instance_images), len(self.class_images))
+    
+    def __getitem__(self, idx):
+        # Instance image
+        instance_idx = idx % len(self.instance_images)
+        instance_image = Image.open(self.instance_images[instance_idx]).convert("RGB")
+        instance_pixel_values = self.transforms(instance_image)
+        
+        # Instance prompt tokenization
+        instance_inputs = self.tokenizer(
+            self.instance_prompt,
+            padding="max_length",
+            max_length=self.tokenizer.model_max_length,
+            truncation=True,
+            return_tensors="pt"
+        )
+        
+        example = {
+            "pixel_values": instance_pixel_values,
+            "input_ids": instance_inputs.input_ids.squeeze()
+        }
+        
+        # Class image (prior preservation)
+        if self.class_images:
+            class_idx = idx % len(self.class_images)
+            class_image = Image.open(self.class_images[class_idx]).convert("RGB")
+            class_pixel_values = self.transforms(class_image)
+            
+            class_inputs = self.tokenizer(
+                self.class_prompt,
+                padding="max_length",
+                max_length=self.tokenizer.model_max_length,
+                truncation=True,
+                return_tensors="pt"
+            )
+            
+            example.update({
+                "class_pixel_values": class_pixel_values,
+                "class_input_ids": class_inputs.input_ids.squeeze()
+            })
+        
+        return example
+\end{minted}
+
+\textbf{کلاس Trainer برای DreamBooth:}
+\begin{minted}[fontsize=\footnotesize]{python}
+class DreamBoothTrainer:
+    def __init__(self, model_id="runwayml/stable-diffusion-v1-5", 
+                 lora_rank=4, learning_rate=1e-4):
+        # Load components
+        self.tokenizer = CLIPTokenizer.from_pretrained(f"{model_id}/tokenizer")
+        self.text_encoder = CLIPTextModel.from_pretrained(f"{model_id}/text_encoder")
+        self.vae = AutoencoderKL.from_pretrained(f"{model_id}/vae")
+        self.unet = UNet2DConditionModel.from_pretrained(f"{model_id}/unet")
+        self.noise_scheduler = DDPMScheduler.from_pretrained(f"{model_id}/scheduler")
+        
+        # Freeze components
+        self.vae.requires_grad_(False)
+        self.text_encoder.requires_grad_(False)
+        
+        # Apply LoRA
+        lora_config = LoraConfig(
+            r=lora_rank,
+            lora_alpha=lora_rank,
+            target_modules=["to_k", "to_q", "to_v", "to_out.0"],
+            init_lora_weights="gaussian"
+        )
+        self.unet = get_peft_model(self.unet, lora_config)
+        
+        # Optimizer (only LoRA parameters)
+        self.optimizer = torch.optim.AdamW(
+            self.unet.parameters(), lr=learning_rate, weight_decay=1e-2
+        )
+        
+        self.scaler = torch.cuda.amp.GradScaler()
+    
+    def train_step(self, batch):
+        pixel_values = batch["pixel_values"].to(self.device)
+        input_ids = batch["input_ids"].to(self.device)
+        
+        # Encode to latents
+        latents = self.vae.encode(pixel_values).latent_dist.sample() * 0.18215
+        
+        # Sample noise and timesteps
+        noise = torch.randn_like(latents)
+        timesteps = torch.randint(0, 1000, (latents.shape[0],), device=self.device)
+        
+        # Add noise
+        noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
+        
+        # Encode text
+        encoder_hidden_states = self.text_encoder(input_ids)[0]
+        
+        # Predict noise
+        with torch.cuda.amp.autocast():
+            noise_pred = self.unet(noisy_latents, timesteps, encoder_hidden_states).sample
+            loss = F.mse_loss(noise_pred, noise)
+        
+        # Backprop
+        self.optimizer.zero_grad()
+        self.scaler.scale(loss).backward()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
+        
+        return loss.item()
+\end{minted}
+
+\textbf{پارامترهای DreamBooth:}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{پارامتر} & \textbf{مقدار} \\
+        \midrule
+        مدل & Stable Diffusion v1-5 \\
+        نرخ یادگیری & ۱e-۴ \\
+        اندازه دسته & ۴ \\
+        انباشت گرادیان & ۴ \\
+        گام‌های آموزش & ۸۰۰ \\
+        وزن حفظ اولویت & ۱.۰ \\
+        prompt نمونه & "a photo of sks person" \\
+        prompt کلاس & "a photo of a person" \\
+        رتبه LoRA & ۴ \\
+        آلفای LoRA & ۴ \\
+        \bottomrule
+    \end{tabular}
+    \caption{پارامترهای آموزش DreamBooth}
+\end{table}
 با جایگذاری بازگشتی $x_{t-1},x_{t-2},\dots$ و استفاده از این حقیقت که جمع نویزهای گاوسی مستقل نیز گاوسی است (با واریانس جمع‌شونده)، در نهایت به شکل القایی می‌رسیم:
 \begin{equation}
 x_t=\sqrt{\bar{\alpha}_t}\,x_0+\sqrt{1-\bar{\alpha}_t}\,\epsilon,\quad \epsilon\sim\mathcal{N}(0,I)
