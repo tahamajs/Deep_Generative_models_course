@@ -15,7 +15,7 @@ from utils import device, save_fig, REPORT_FIG_DIR
 
 # Hyperparameters for DDPM training
 DDPM_CONFIG = {
-    'image_size': 28,  # Changed from 32 for MNIST
+    'image_size': 32,  # Changed back to 32 for better divisibility with padding
     'channels': 1,     # Changed from 3 for MNIST (grayscale)
     'batch_size': 128,
     'learning_rate': 1e-4,
@@ -48,37 +48,37 @@ class ResidualBlock(nn.Module):
     """
     Residual block with time embedding injection.
     """
-    def __init__(self, in_channels, out_channels, time_emb_dim, up=False, kernel_size=4):
+    def __init__(self, in_channels, out_channels, time_emb_dim, kernel_size=4):
         super().__init__()
-
+        
+        self.act = nn.SiLU() 
         self.time_mlp = nn.Linear(time_emb_dim, out_channels)
 
-        if up:
-            self.conv1 = nn.Conv2d(2 * in_channels, out_channels, 3, padding=1)
-            self.transform = nn.ConvTranspose2d(out_channels, out_channels, kernel_size, 2, 1)
-        else:
-            self.conv1 = nn.Conv2d(in_channels, out_channels, 3, padding=1)
-            self.transform = nn.Conv2d(out_channels, out_channels, kernel_size, 2, 1)
-
+        # اصلاح مهم: حذف شرط up=True/False برای تعیین in_channels
+        # اکنون ما تعداد دقیق کانال ورودی (in_channels) را از بیرون می‌دهیم
+        self.conv1 = nn.Conv2d(in_channels, out_channels, 3, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU()
+        
+        # برای لایه آخر (Upsample یا Downsample)
+        # اگر سایز ورودی و خروجی یکی نباشد یا بخواهیم سایز تصویر را تغییر دهیم
+        self.transform = nn.Conv2d(out_channels, out_channels, kernel_size, 2, 1)
+        # توجه: ما برای Upsample از ConvTranspose2d در خود UNet یا اینجا استفاده می‌کنیم
+        # اما برای سادگی، لایه transform را فقط برای تغییر رزولوشن نگه می‌داریم
+        # و Upsample اصلی را با ConvTranspose جایگزین می‌کنیم (در پایین ببینید).
+
+        num_groups = 32 if out_channels % 32 == 0 else min(out_channels // 4, 8)
+        self.bn1 = nn.GroupNorm(num_groups, out_channels)
+        self.bn2 = nn.GroupNorm(num_groups, out_channels)
 
     def forward(self, x, t):
-        # First convolution
-        h = self.bn1(self.relu(self.conv1(x)))
-
-        # Add time embedding
-        time_emb = self.relu(self.time_mlp(t))
-        time_emb = time_emb[(...,) + (None,) * 2]  # Expand dims for broadcasting
+        h = self.act(self.bn1(self.conv1(x)))
+        
+        time_emb = self.act(self.time_mlp(t))
+        time_emb = time_emb[(...,) + (None,) * 2]
         h = h + time_emb
-
-        # Second convolution
-        h = self.bn2(self.relu(self.conv2(h)))
-
-        # Downsample or upsample
-        return self.transform(h)
+        
+        h = self.act(self.bn2(self.conv2(h)))
+        return h
 
 
 class SelfAttention(nn.Module):
@@ -108,87 +108,119 @@ class SelfAttention(nn.Module):
 
 
 class UNet(nn.Module):
-    """
-    U-Net architecture for DDPM noise prediction.
-
-    Architecture:
-    - Encoder: Downsampling path with residual blocks
-    - Bottleneck: Self-attention + residual blocks
-    - Decoder: Upsampling path with skip connections
-    """
-    def __init__(self, c_in=3, c_out=3, time_dim=256, base_channels=64):
+    def __init__(self, c_in=1, c_out=1, time_dim=256, base_channels=64):
         super().__init__()
 
-        # Time embedding
-        self.time_dim = time_dim
         self.time_mlp = nn.Sequential(
             SinusoidalPositionEmbeddings(time_dim),
             nn.Linear(time_dim, time_dim),
-            nn.ReLU()
+            nn.SiLU(),
+            nn.Linear(time_dim, time_dim),
         )
 
-        # Initial convolution
         self.inc = nn.Conv2d(c_in, base_channels, kernel_size=3, padding=1)
 
-        # Downsampling path
+        # --- Encoder (Downsampling) ---
+        # Down 1: 64 -> 128
         self.down1 = ResidualBlock(base_channels, base_channels * 2, time_dim)
+        self.pool1 = nn.Conv2d(base_channels * 2, base_channels * 2, 4, 2, 1) # Downsample
         self.sa1 = SelfAttention(base_channels * 2)
+        
+        # Down 2: 128 -> 256
         self.down2 = ResidualBlock(base_channels * 2, base_channels * 4, time_dim)
+        self.pool2 = nn.Conv2d(base_channels * 4, base_channels * 4, 4, 2, 1) # Downsample
         self.sa2 = SelfAttention(base_channels * 4)
+        
+        # Down 3: 256 -> 256 (Keep channels same to avoid explosion)
         self.down3 = ResidualBlock(base_channels * 4, base_channels * 4, time_dim)
+        self.pool3 = nn.Conv2d(base_channels * 4, base_channels * 4, 4, 2, 1) # Downsample
         self.sa3 = SelfAttention(base_channels * 4)
 
-        # Bottleneck
-        self.bot1 = nn.Conv2d(base_channels * 4, base_channels * 8, 3, padding=1)
-        self.bot2 = nn.Conv2d(base_channels * 8, base_channels * 8, 3, padding=1)
-        self.bot3 = nn.Conv2d(base_channels * 8, base_channels * 4, 3, padding=1)
+        # --- Bottleneck ---
+        self.bot1 = ResidualBlock(base_channels * 4, base_channels * 8, time_dim)
+        self.bot2 = ResidualBlock(base_channels * 8, base_channels * 8, time_dim)
+        self.bot3 = ResidualBlock(base_channels * 8, base_channels * 4, time_dim)
+        self.bot_sa = SelfAttention(base_channels * 4)
 
-        # Upsampling path
-        self.up1 = ResidualBlock(base_channels * 4, base_channels * 2, time_dim, up=True)
+        # --- Decoder (Upsampling) ---
+        
+        # UP 1
+        self.up_trans1 = nn.ConvTranspose2d(base_channels * 4, base_channels * 4, 4, 2, 1)
+        # Input: bot_out(256) + skip_h3(256) = 512 channels
+        self.up1 = ResidualBlock(base_channels * 8, base_channels * 2, time_dim) 
         self.sa4 = SelfAttention(base_channels * 2)
-        self.up2 = ResidualBlock(base_channels * 2, base_channels, time_dim, up=True)
+        
+        # UP 2
+        self.up_trans2 = nn.ConvTranspose2d(base_channels * 2, base_channels * 2, 4, 2, 1)
+        # Input: up1_out(128) + skip_h2(256) = 384 channels
+        self.up2 = ResidualBlock(base_channels * 2 + base_channels * 4, base_channels, time_dim)
         self.sa5 = SelfAttention(base_channels)
-        self.up3 = ResidualBlock(base_channels, base_channels, time_dim, up=True, kernel_size=8)
+
+        # UP 3
+        self.up_trans3 = nn.ConvTranspose2d(base_channels, base_channels, 4, 2, 1)
+        # Input: up2_out(64) + skip_h1(128) = 192 channels
+        self.up3 = ResidualBlock(base_channels + base_channels * 2, base_channels, time_dim)
         self.sa6 = SelfAttention(base_channels)
 
-        # Output
         self.outc = nn.Conv2d(base_channels, c_out, kernel_size=1)
 
+    def _safe_concat(self, x1, x2):
+        """
+        Helper to handle shape mismatches (e.g. 28x28 padding issues).
+        Resizes x2 to match x1 spatial size before concatenation.
+        """
+        diffY = x2.size()[2] - x1.size()[2]
+        diffX = x2.size()[3] - x1.size()[3]
+        
+        if diffX != 0 or diffY != 0:
+            x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                            diffY // 2, diffY - diffY // 2])
+        return torch.cat([x1, x2], dim=1)
+
     def forward(self, x, t):
-        # Time embedding
         t = self.time_mlp(t)
-
-        # Initial convolution
+        
+        # Encoder
         x1 = self.inc(x)
-
-        # Downsampling
-        x2 = self.down1(x1, t)
-        x2 = self.sa1(x2)
-        x3 = self.down2(x2, t)
-        x3 = self.sa2(x3)
-        x4 = self.down3(x3, t)
-        x4 = self.sa3(x4)
+        
+        h1 = self.down1(x1, t)
+        h1 = self.sa1(h1)
+        x2 = self.pool1(h1)
+        
+        h2 = self.down2(x2, t)
+        h2 = self.sa2(h2)
+        x3 = self.pool2(h2)
+        
+        h3 = self.down3(x3, t)
+        h3 = self.sa3(h3)
+        x4 = self.pool3(h3)
 
         # Bottleneck
-        x4 = F.relu(self.bot1(x4))
-        x4 = F.relu(self.bot2(x4))
-        x4 = F.relu(self.bot3(x4))
+        mid = self.bot1(x4, t)
+        mid = self.bot2(mid, t)
+        mid = self.bot3(mid, t)
+        mid = self.bot_sa(mid)
 
-        # Upsampling with skip connections
-        x = self.up1(torch.cat([x4, x4], dim=1), t)
+        # Decoder
+        # Up 1
+        x = self.up_trans1(mid)
+        x = self._safe_concat(x, h3) # Concat mid(up) with h3
+        x = self.up1(x, t)
         x = self.sa4(x)
-        # Upsample x3 to match x's spatial dimensions
-        x3_upsampled = F.interpolate(x3, size=x.shape[2:], mode='bilinear', align_corners=False)
-        x = self.up2(torch.cat([x, x3_upsampled[:, :x.shape[1]]], dim=1), t)
+
+        # Up 2
+        x = self.up_trans2(x)
+        x = self._safe_concat(x, h2) # Concat x with h2
+        x = self.up2(x, t)
         x = self.sa5(x)
-        # Upsample x2 to match x's spatial dimensions
-        x2_upsampled = F.interpolate(x2, size=x.shape[2:], mode='bilinear', align_corners=False)
-        x = self.up3(torch.cat([x, x2_upsampled[:, :x.shape[1]]], dim=1), t)
+
+        # Up 3
+        x = self.up_trans3(x)
+        x = self._safe_concat(x, h1) # Concat x with h1
+        x = self.up3(x, t)
         x = self.sa6(x)
 
-        # Output
-        output = self.outc(x)
-        return output
+        return self.outc(x)
 
 
 class DDPMScheduler:

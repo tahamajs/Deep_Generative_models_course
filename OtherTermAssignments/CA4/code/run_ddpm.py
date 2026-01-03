@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # Image transformations
     transform = transforms.Compose([
-        transforms.Resize(DDPM_CONFIG['image_size']),
+        transforms.Pad(2),  # Pad 28x28 MNIST to 32x32
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize([0.5], [0.5])  # Normalize to [-1, 1]
