@@ -1,0 +1,466 @@
+\documentclass[a4paper,12pt]{article}
+
+% =========================================
+% PACKAGES
+% =========================================
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{listings} % For code snippets
+\usepackage{xcolor}
+\usepackage{tcolorbox} % For the answer boxes
+
+% =========================================
+% SETTINGS
+% =========================================
+\geometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+
+% Hyperlink settings
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
+
+% Answer Box Settings
+\newtcolorbox{solutionbox}{
+    colback=gray!5, 
+    colframe=gray!40, 
+    title=\textbf{Solution:}, 
+    breakable,
+    enhanced
+}
+
+% Code Listing Settings
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{purple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+% Header and Footer
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Deep Generative Models}
+\rhead{Homework 4 Report}
+\cfoot{\thepage}
+
+% =========================================
+% TITLE PAGE
+% =========================================
+\title{
+    \vspace{-2cm}
+    \textbf{University of Tehran} \\
+    \large College of Engineering \\
+    School of Electrical and Computer Engineering \\
+    \vspace{1cm}
+    \textbf{Deep Generative Models Course} \\
+    \large Instructor: Dr. Mostafa Tavassolipour \\
+    \vspace{1cm}
+    \textbf{Homework Assignment 4 Report}
+}
+\author{
+    \textbf{Name:} [Your Name Here] \\
+    \textbf{Student Number:} [Your ID Here]
+}
+\date{January 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+\tableofcontents
+\newpage
+
+% =======================================================
+% QUESTION ONE
+% =======================================================
+\section{Question One: Diffusion Models}
+
+\subsection{Part One: Theory Questions}
+
+\subsubsection*{Question 1: Closed Form Proof}
+\textit{Show that $q(x_t | x_0) = \mathcal{N}(\sqrt{\bar{\alpha}_t} x_0, (1 - \bar{\alpha}_t) I)$.}
+
+\begin{solutionbox}
+    To prove the closed form, we start with the single-step transition kernel defined in the DDPM paper:
+    \begin{equation}
+        q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{\alpha_t} x_{t-1}, (1 - \alpha_t) I)
+    \end{equation}
+    Using the reparameterization trick, we can express a sample $x_t$ as:
+    \begin{equation}
+        x_t = \sqrt{\alpha_t} x_{t-1} + \sqrt{1 - \alpha_t} \epsilon_{t-1}, \quad \text{where } \epsilon_{t-1} \sim \mathcal{N}(0, I)
+    \end{equation}
+    Now, let us expand $x_{t-1}$ recursively using the previous step $x_{t-2}$:
+    \begin{equation}
+        x_{t-1} = \sqrt{\alpha_{t-1}} x_{t-2} + \sqrt{1 - \alpha_{t-1}} \epsilon_{t-2}
+    \end{equation}
+    Substituting this back into the equation for $x_t$:
+    \begin{align*}
+        x_t &= \sqrt{\alpha_t} (\sqrt{\alpha_{t-1}} x_{t-2} + \sqrt{1 - \alpha_{t-1}} \epsilon_{t-2}) + \sqrt{1 - \alpha_t} \epsilon_{t-1} \\
+        &= \sqrt{\alpha_t \alpha_{t-1}} x_{t-2} + \sqrt{\alpha_t (1 - \alpha_{t-1})} \epsilon_{t-2} + \sqrt{1 - \alpha_t} \epsilon_{t-1}
+    \end{align*}
+    We now merge the two independent Gaussian noise terms. Recall that the sum of two independent Gaussians $\mathcal{N}(0, \sigma_1^2)$ and $\mathcal{N}(0, \sigma_2^2)$ is $\mathcal{N}(0, \sigma_1^2 + \sigma_2^2)$. The variance of the combined noise is:
+    \begin{align*}
+        \text{Var} &= (\sqrt{\alpha_t (1 - \alpha_{t-1})})^2 + (\sqrt{1 - \alpha_t})^2 \\
+        &= \alpha_t (1 - \alpha_{t-1}) + (1 - \alpha_t) \\
+        &= \alpha_t - \alpha_t \alpha_{t-1} + 1 - \alpha_t \\
+        &= 1 - \alpha_t \alpha_{t-1}
+    \end{align*}
+    Thus, we can rewrite the equation as:
+    \begin{equation}
+        x_t = \sqrt{\alpha_t \alpha_{t-1}} x_{t-2} + \sqrt{1 - \alpha_t \alpha_{t-1}} \bar{\epsilon}
+    \end{equation}
+    By induction, extending this back to $x_0$, we accumulate the product of alphas such that $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$:
+    \begin{equation}
+        x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0, I)
+    \end{equation}
+    This equation describes a Gaussian distribution with mean $\sqrt{\bar{\alpha}_t} x_0$ and variance $(1 - \bar{\alpha}_t) I$. Therefore:
+    \begin{equation}
+        q(x_t | x_0) = \mathcal{N}(x_t; \sqrt{\bar{\alpha}_t} x_0, (1 - \bar{\alpha}_t) I)
+    \end{equation}
+\end{solutionbox}
+
+% Q2
+\subsubsection*{Question 2: Advantage of Noise Prediction}
+\textit{Write down two advantages of predicting $\epsilon$ instead of $\mu_\theta$.}
+
+\begin{solutionbox}
+    \begin{enumerate}
+        \item \textbf{Numerical Stability and Consistent Scaling:} 
+        Predicting the noise $\epsilon$ is numerically more stable than predicting the mean $\mu_\theta$ or the original image $x_0$. Since the target noise is always drawn from a standard Gaussian distribution $\mathcal{N}(0, I)$ regardless of the timestep $t$, the output scale remains consistent throughout the training process. In contrast, predicting $\mu_\theta$ or $x_0$ would require the model to handle vastly different scales of signal versus noise as $t$ changes (especially when $t \to T$ and the signal is nearly destroyed).
+        
+        \item \textbf{Improved Sample Quality via Reweighted Loss:}
+        Ho et al. (DDPM, 2020) empirically demonstrated that predicting $\epsilon$ leads to higher quality sample generation. Mathematically, predicting $\epsilon$ corresponds to a specific reweighting of the Variational Lower Bound (VLB) terms. This "simplified" loss function ($\mathcal{L}_{\text{simple}}$) implicitly down-weights the loss at very low noise levels (small $t$) where the task is trivial, allowing the model to focus on the more difficult, structure-defining denoising steps at higher $t$.
+    \end{enumerate}
+\end{solutionbox}
+
+% Q3
+\subsubsection*{Question 3: Cost Function Analysis (VLB)}
+\textit{(A) What do the KL terms encourage? (B) Why ignore them in practice?}
+
+\begin{solutionbox}
+    \textbf{A) Encouraging Consistency with the Forward Process:}
+    Conceptually, the KL divergence terms in the Variational Lower Bound (VLB), specifically $D_{KL}(q(x_{t-1}|x_t, x_0) || p_\theta(x_{t-1}|x_t))$, encourage the learned reverse process distribution $p_\theta(x_{t-1}|x_t)$ to match the true posterior of the forward process $q(x_{t-1}|x_t, x_0)$. Since the forward posterior is a Gaussian tractable distribution, minimizing these KL terms forces the neural network (which predicts the parameters of $p_\theta$) to output a mean and variance that align as closely as possible with the actual path taken by the data when noise was added. Essentially, it ensures the model learns to "undo" the noise steps correctly.
+
+    \textbf{B) Practical Justification for Ignoring Terms:}
+    In practice, ignoring the specific weighting of the KL terms and using the simplified MSE loss ($\mathcal{L}_{\text{simple}} = \|\epsilon - \epsilon_\theta(x_t, t)\|^2$) is acceptable and even beneficial for two main reasons:
+    \begin{enumerate}
+        \item \textbf{Dominance of Noise Prediction:} The mathematically derived VLB terms ultimately simplify down to a weighted squared error between the predicted noise and the actual noise. The weighting factor in the strict VLB varies heavily with $t$ (becoming very small for small $t$). Ignoring these weights leads to a more stable training objective that pays more attention to "difficult" denoising steps rather than trivial ones.
+        \item \textbf{Sample Quality vs. Likelihood:} While the exact VLB optimizes for Log-Likelihood (compression), the simplified objective is found empirically to produce higher perceptual quality samples (generation). Since the goal is usually high-fidelity image generation rather than perfect density estimation, the simplified loss is preferred.
+    \end{enumerate}
+\end{solutionbox}
+% Q4
+\subsubsection*{Question 4: DDIM Sampling}
+\textit{(A) How does DDIM make sampling deterministic? (B) Why is it faster?}
+
+\begin{solutionbox}
+    \textbf{A) Deterministic Sampling via Implicit Model:}
+    DDIM (Denoising Diffusion Implicit Models) makes sampling deterministic by redefining the reverse process as a non-Markovian process. In the standard DDPM reverse step:
+    \[ x_{t-1} = \frac{1}{\sqrt{\alpha_t}} \left( x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}} \epsilon_\theta(x_t, t) \right) + \sigma_t z \]
+    where $z \sim \mathcal{N}(0, I)$ represents random noise injection. DDIM sets the variance parameter $\sigma_t$ (or $\eta$) to $0$. By removing this random noise term, the mapping from $x_t$ to $x_{t-1}$ becomes a deterministic function of the predicted noise $\epsilon_\theta$ and the current state $x_t$. This effectively turns the generative process into an Ordinary Differential Equation (ODE) trajectory rather than a stochastic random walk.
+
+    \textbf{B) Faster Sampling via Step Skipping:}
+    DDIM is faster because the deterministic formulation allows for "strided" sampling. Since the process is defined as an implicit non-Markovian mapping, we are not mathematically bound to visit every intermediate timestep $t, t-1, t-2, \dots$ required by the probabilistic chain of DDPM. Instead, we can skip steps (e.g., jump from $t=1000$ to $t=900$) and update $x_{t_{\text{prev}}}$ directly using the predicted noise from $x_t$. This allows generating high-quality samples in far fewer steps (e.g., 50 steps) compared to the 1000 steps typically needed for DDPM, reducing inference time by an order of magnitude.
+\end{solutionbox}
+% Q5
+\subsubsection*{Question 5: Classifier-Free Guidance (CFG)}
+\textit{(A) Main idea of CFG? (B) Effect of guidance scale on quality and diversity?}
+
+\begin{solutionbox}
+    \textbf{A) The Main Idea (Implicit Classifier):}
+    The core idea of Classifier-Free Guidance (CFG) is to perform guided generation without training a separate classifier model. Instead, a single diffusion model is trained to handle both conditional and unconditional generation. During training, the conditioning information (e.g., the text prompt $c$) is randomly dropped with a fixed probability (e.g., 10\%) and replaced with a null token ($\emptyset$).
+    
+    During sampling, the final noise prediction $\tilde{\epsilon}$ is computed as a linear extrapolation between the unconditional prediction $\epsilon_\theta(x_t|\emptyset)$ and the conditional prediction $\epsilon_\theta(x_t|c)$:
+    \[ \tilde{\epsilon}_\theta(x_t, c) = \epsilon_\theta(x_t|\emptyset) + w \cdot (\epsilon_\theta(x_t|c) - \epsilon_\theta(x_t|\emptyset)) \]
+    where $w$ is the guidance scale. This pushes the generation direction away from the generic unconditional mean and towards the conditional mean, effectively acting like a classifier gradient but without the extra computational cost or complexity of a second model.
+
+    \textbf{B) Effect of Guidance Scale ($w$):}
+    \begin{itemize}
+        \item \textbf{Quality (Fidelity):} Increasing the guidance scale ($w > 1$) generally improves the visual quality and sharpness of the samples. It forces the model to adhere more strictly to the prompt (conditioning), reducing artifacts that do not align with the description. However, setting $w$ too high (e.g., $w > 10$ or $20$) often leads to "burn-in" artifacts, oversaturated colors, and unnatural textures.
+        \item \textbf{Diversity:} There is a trade-off. Increasing the guidance scale significantly \textit{reduces} the diversity of the generated samples. The model converges to the "modes" of the distribution that most strongly represent the prompt, ignoring less probable variations. Lower scales preserve more diversity but may result in images that are less coherent or less faithful to the prompt.
+    \end{itemize}
+\end{solutionbox}
+\newpage
+
+\subsection{Part Two: Practical Questions}
+
+\subsubsection{Subsection 1: DDPM and DDIM Implementation}
+
+\textbf{Step 1: Noise Schedule Implementation}
+\begin{solutionbox}
+    % Paste your beta_t initialization code here
+\begin{lstlisting}[language=Python]
+# Paste your code for beta_t here
+\end{lstlisting}
+\end{solutionbox}
+
+\textbf{Step 2: \texttt{perturb\_input} Implementation}
+\begin{solutionbox}
+    % Paste your perturb_input function here
+\begin{lstlisting}[language=Python]
+# Paste your perturb_input code here
+\end{lstlisting}
+\end{solutionbox}
+
+\textbf{Step 3: Training Loop Implementation}
+\begin{solutionbox}
+    % Briefly describe your training loop implementation
+    % Include the loss calculation part
+\begin{lstlisting}[language=Python]
+# Key parts of your training loop
+\end{lstlisting}
+\end{solutionbox}
+
+\textbf{Step 4: Sampling Implementation}
+\begin{solutionbox}
+    % Paste your sampling code here
+\begin{lstlisting}[language=Python]
+# Sampling function code
+\end{lstlisting}
+\end{solutionbox}
+
+\newpage
+
+\subsubsection{Subsection 2: Stable Diffusion and DreamBooth}
+
+\textbf{Step 1: Data Preparation}
+\begin{solutionbox}
+    \textbf{Selected Subject:} [e.g., My Cat] \\
+    \textbf{Instance Prompt:} [e.g., a photo of a sks cat] \\
+    \textbf{Class Prompt:} [e.g., a photo of a cat]
+    
+    \begin{figure}[H]
+        \centering
+        % \includegraphics[width=0.4\textwidth]{your_image.jpg}
+        \fbox{\parbox{0.4\textwidth}{\centering \vspace{3cm} Insert one training image here \vspace{3cm}}}
+        \caption{Sample Training Image}
+    \end{figure}
+\end{solutionbox}
+
+\textbf{Step 2: Dataset Class}
+\begin{solutionbox}
+    % Paste your __getitem__ method here
+\begin{lstlisting}[language=Python]
+# __getitem__ method code
+\end{lstlisting}
+\end{solutionbox}
+
+\textbf{Step 4: Training Loop (LoRA)}
+\begin{solutionbox}
+    % Describe any challenges or observations during training
+    \vspace{3cm}
+\end{solutionbox}
+
+\textbf{Step 5: Test and Inference Results}
+\begin{solutionbox}
+    % Insert generated images here
+    \begin{figure}[H]
+        \centering
+        % \includegraphics[width=0.8\textwidth]{results.jpg}
+        \fbox{\parbox{0.8\textwidth}{\centering \vspace{4cm} Insert Generated Images (Grid) \vspace{4cm}}}
+        \caption{Generated Images with prompt "..."}
+    \end{figure}
+    
+    \textbf{Analysis of Results:}
+    % Type your analysis here
+\end{solutionbox}
+
+\newpage
+
+% =======================================================
+% QUESTION TWO
+% =======================================================
+\section{Question Two: Flow Matching and Time Series}
+
+\subsection{Part One: Theory Questions}
+
+\subsubsection*{Question 1: Vector Field}
+\textit{(A) Role of vector field? (B) Flow Matching vs Diffusion?}
+
+\begin{solutionbox}
+    \textbf{A) Role in Transporting Samples:}
+    In Flow Matching models, the vector field $v_\theta(x, t)$ defines the instantaneous velocity of probability mass moving through space over time. Instead of relying on a stochastic process, the vector field dictates a deterministic path (an Ordinary Differential Equation, ODE) that continuously transforms the initial distribution $p_0$ (usually simple Gaussian noise) into the target data distribution $p_1$. Specifically, if we start with a sample $x_0 \sim p_0$ at time $t=0$, solving the ODE $\frac{dx}{dt} = v_\theta(x, t)$ moves the sample along a trajectory such that at $t=1$, the resulting $x_1$ follows the data distribution. The vector field essentially learns "which direction to push" the noise to turn it into data.
+
+    \textbf{B) Comparison with Diffusion Models:}
+    \begin{itemize}
+        \item \textbf{Difference:} The most important difference is that standard Diffusion Models (DDPM) are inherently \textbf{stochastic} (based on SDEs or Markov Chains) and rely on an iterative denoising process that is discrete or requires many steps to approximate the reverse SDE. Flow Matching is fundamentally based on learning a continuous, deterministic \textbf{ODE} vector field directly. While Diffusion focuses on removing noise, Flow Matching focuses on regressing the velocity of a path between distributions.
+        \item \textbf{Similarity:} They act similarly when comparing Flow Matching to \textbf{Probability Flow ODEs} in diffusion. The Probability Flow ODE is a specific deterministic formulation of a diffusion model (like DDIM) where the marginal distributions match the diffusion process. In this case, a Diffusion model can be seen as a specific instance of Flow Matching where the vector field is defined by the score function $\nabla \log p_t(x)$.
+    \end{itemize}
+\end{solutionbox}
+
+\subsubsection*{Question 2: Linear Paths}
+\textit{(A) Why linear paths? Optimal? (B) Effect on stability/cost?}
+
+\begin{solutionbox}
+    \textbf{A) Suitability and Optimality of Linear Paths:}
+    Using linear paths (Conditional Flow Matching with optimal transport paths) is a suitable choice because it provides the simplest and straightest trajectory between a noise sample $x_0$ and a data sample $x_1$.
+    \begin{itemize}
+        \item \textbf{Why suitable?} A linear path $x_t = (1-t)x_0 + t x_1$ has a constant velocity vector $v_t = x_1 - x_0$. This makes the regression target for the neural network extremely simple (a constant value for a given pair), making the learning task easier compared to curved or complex diffusion paths.
+        \item \textbf{Is it always optimal?} No, strictly speaking, a linear path between \textit{arbitrary} pairs (e.g., random noise to random image) is not globally optimal in terms of transport cost. However, if we couple the noise and data optimally (using Optimal Transport), the linear path becomes the \textbf{geodesic} (shortest path) in Euclidean space, which minimizes the transport cost. So, linear paths are optimal \textit{if} the coupling is optimal; otherwise, they are just "straight" but potentially crossing other paths.
+    \end{itemize}
+
+    \textbf{B) Effect on Stability and Cost Function:}
+    \begin{itemize}
+        \item \textbf{Training Stability:} Linear paths significantly improve training stability. Since the target velocity $u_t(x|x_1) = x_1 - x_0$ is constant and bounded (assuming normalized data), the variance of the gradients during backpropagation is lower compared to diffusion objectives where the score function can explode as noise variance $\sigma_t \to 0$.
+        \item \textbf{Simplicity of Cost Function:} It simplifies the cost function to a standard Least Squares Regression problem. We essentially minimize $\mathbb{E}[\|v_\theta(x_t, t) - (x_1 - x_0)\|^2]$. This behaves much better numerically than maximizing the Evidence Lower Bound (ELBO) with complex weighting schemes often found in diffusion models.
+    \end{itemize}
+\end{solutionbox}
+
+\subsubsection*{Question 3: Loss Function Proof}
+\textit{Show the loss function rewrite.}
+
+\begin{solutionbox}
+    The goal of Denoising Score Matching is to train a model $s_\theta(x_t, t)$ to approximate the score of the data distribution $\nabla_{x_t} \log q_t(x_t)$. Vincent et al. (2011) proved that minimizing the Fisher divergence with respect to the marginal distribution is equivalent to minimizing the expected squared error with respect to the conditional distribution $q(x_t|x_0)$.
+    
+    The loss function is defined as:
+    \[ \mathcal{L} = \mathbb{E}_{x_0, x_t} \left[ \frac{1}{2} \left\| s_\theta(x_t, t) - \nabla_{x_t} \log q(x_t | x_0) \right\|^2_2 \right] \]
+    
+    Given the perturbation kernel:
+    \[ q(x_t | x_0) = \mathcal{N}(x_t; x_0, \sigma_t^2 I) \]
+    The probability density function (PDF) is:
+    \[ q(x_t | x_0) = \frac{1}{(2\pi\sigma_t^2)^{D/2}} \exp \left( - \frac{\|x_t - x_0\|^2}{2\sigma_t^2} \right) \]
+    
+    Now, we compute the score (the gradient of the log-likelihood) with respect to $x_t$:
+    \[ \log q(x_t | x_0) = \underbrace{-\frac{D}{2} \log(2\pi\sigma_t^2)}_{\text{const w.r.t } x_t} - \frac{\|x_t - x_0\|^2}{2\sigma_t^2} \]
+    
+    Taking the gradient $\nabla_{x_t}$:
+    \begin{align*}
+        \nabla_{x_t} \log q(x_t | x_0) &= \nabla_{x_t} \left( - \frac{(x_t - x_0)^T (x_t - x_0)}{2\sigma_t^2} \right) \\
+        &= - \frac{1}{2\sigma_t^2} \cdot 2(x_t - x_0) \\
+        &= - \frac{x_t - x_0}{\sigma_t^2} \\
+        &= \frac{x_0 - x_t}{\sigma_t^2}
+    \end{align*}
+    
+    Substituting this result back into the loss function, we obtain the final form:
+    \[ \mathcal{L} = \mathbb{E}_{t, x_0 \sim p_{\text{data}}, \epsilon \sim \mathcal{N}(0, I)} \left[ \left\| s_\theta(x_t, t) - \frac{x_0 - x_t}{\sigma_t^2} \right\|^2_2 \right] \]
+\end{solutionbox}
+\newpage
+
+\subsection{Part Two: Practical Report & Evaluation}
+
+\textbf{Step 1: Cost Function Analysis}
+\begin{solutionbox}
+    % Did you record the loss? Mention details here.
+    \vspace{2cm}
+\end{solutionbox}
+
+\textbf{Step 2: Training and Test Loss Charts}
+\begin{solutionbox}
+    \begin{figure}[H]
+        \centering
+        % \includegraphics[width=0.7\textwidth]{loss_curve.png}
+        \fbox{\parbox{0.7\textwidth}{\centering \vspace{4cm} Insert Loss Curve Here \vspace{4cm}}}
+        \caption{Training vs Test Loss}
+    \end{figure}
+    
+    \textbf{Analysis (Overfitting/Underfitting):}
+    % Type your analysis here
+\end{solutionbox}
+
+\textbf{Step 3: Synthetic Data Generation (Solver Analysis)}
+\begin{solutionbox}
+    \textbf{Effect of Solver Steps on Quality/Cost:}
+    % Type your answer here
+    \vspace{3cm}
+\end{solutionbox}
+
+\textbf{Step 4: Generated Time Series Samples}
+\begin{solutionbox}
+    \begin{figure}[H]
+        \centering
+        % \includegraphics[width=0.8\textwidth]{generated_samples.png}
+        \fbox{\parbox{0.8\textwidth}{\centering \vspace{4cm} Insert Generated Samples Plot \vspace{4cm}}}
+        \caption{Generated Time Series Samples}
+    \end{figure}
+    
+    \textbf{Observations (Amplitude/Shape):}
+    % Type your analysis here
+\end{solutionbox}
+
+\textbf{Step 5: Qualitative Comparison (Real vs Generated)}
+\begin{solutionbox}
+    \begin{figure}[H]
+        \centering
+        % \includegraphics[width=0.8\textwidth]{comparison.png}
+        \fbox{\parbox{0.8\textwidth}{\centering \vspace{4cm} Insert Real vs Gen Comparison Plot \vspace{4cm}}}
+        \caption{Real (Test Set) vs Generated Data}
+    \end{figure}
+    
+    \textbf{Analysis:}
+    % Type your analysis here
+\end{solutionbox}
+
+\textbf{Step 6: Distribution Comparison (Histogram/KDE)}
+\begin{solutionbox}
+    \begin{figure}[H]
+        \centering
+        % \includegraphics[width=0.7\textwidth]{dist_comparison.png}
+        \fbox{\parbox{0.7\textwidth}{\centering \vspace{4cm} Insert Histogram/KDE Plot \vspace{4cm}}}
+        \caption{Log-Returns Distribution Comparison}
+    \end{figure}
+    
+    \textbf{Analysis:}
+    % Type your analysis here
+\end{solutionbox}
+
+\textbf{Step 7: Basic Statistical Evaluation}
+\begin{solutionbox}
+    \begin{table}[H]
+        \centering
+        \begin{tabular}{lcc}
+            \toprule
+            \textbf{Metric} & \textbf{Real Data} & \textbf{Generated Data} \\
+            \midrule
+            Mean & ... & ... \\
+            Variance & ... & ... \\
+            Volatility & ... & ... \\
+            \bottomrule
+        \end{tabular}
+        \caption{Statistical Metrics Comparison}
+    \end{table}
+
+    \textbf{Discussion on Volatility:}
+    % Type your answer here
+\end{solutionbox}
+
+\textbf{Step 8: Advanced Evaluation (SWD & Autocorrelation)}
+\begin{solutionbox}
+    \textbf{Sliced Wasserstein Distance (SWD):} ... \\
+    
+    \textbf{Autocorrelation Analysis:}
+    \begin{figure}[H]
+        \centering
+        % \includegraphics[width=0.7\textwidth]{autocorr.png}
+        \fbox{\parbox{0.7\textwidth}{\centering \vspace{3cm} Optional: Insert Autocorrelation Plot \vspace{3cm}}}
+        \caption{Autocorrelation}
+    \end{figure}
+    
+    \textbf{Conclusion on Temporal Dependencies:}
+    % Type your analysis here
+\end{solutionbox}
+
+\end{document}
