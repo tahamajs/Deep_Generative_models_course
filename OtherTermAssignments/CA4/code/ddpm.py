@@ -48,17 +48,17 @@ class ResidualBlock(nn.Module):
     """
     Residual block with time embedding injection.
     """
-    def __init__(self, in_channels, out_channels, time_emb_dim, up=False):
+    def __init__(self, in_channels, out_channels, time_emb_dim, up=False, kernel_size=4):
         super().__init__()
 
         self.time_mlp = nn.Linear(time_emb_dim, out_channels)
 
         if up:
             self.conv1 = nn.Conv2d(2 * in_channels, out_channels, 3, padding=1)
-            self.transform = nn.ConvTranspose2d(out_channels, out_channels, 4, 2, 1)
+            self.transform = nn.ConvTranspose2d(out_channels, out_channels, kernel_size, 2, 1)
         else:
             self.conv1 = nn.Conv2d(in_channels, out_channels, 3, padding=1)
-            self.transform = nn.Conv2d(out_channels, out_channels, 4, 2, 1)
+            self.transform = nn.Conv2d(out_channels, out_channels, kernel_size, 2, 1)
 
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
@@ -148,7 +148,7 @@ class UNet(nn.Module):
         self.sa4 = SelfAttention(base_channels * 2)
         self.up2 = ResidualBlock(base_channels * 2, base_channels, time_dim, up=True)
         self.sa5 = SelfAttention(base_channels)
-        self.up3 = ResidualBlock(base_channels, base_channels, time_dim, up=True)
+        self.up3 = ResidualBlock(base_channels, base_channels, time_dim, up=True, kernel_size=8)
         self.sa6 = SelfAttention(base_channels)
 
         # Output
