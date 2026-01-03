@@ -552,8 +552,17 @@ def train_step(self, batch):
 
 \textbf{Step 1: Cost Function Analysis}
 \begin{solutionbox}
-    % Did you record the loss? Mention details here.
-    \vspace{2cm}
+    We record the Flow Matching training and validation loss as mean squared error between the predicted vector field $v_\theta(x_t,t)$ and the target velocity $v_{\text{target}} = x_1 - x_0$ under the linear path $x_t = (1-t)x_0 + t x_1$.
+
+\begin{lstlisting}[language=Python]
+# Core Flow Matching objective (linear path)
+t = torch.rand(batch_size, device=device)  # t ~ Uniform(0,1)
+t_view = t.view(batch_size, 1, 1)
+x_t = (1.0 - t_view) * x0 + t_view * x1
+v_target = x1 - x0
+v_pred = model(x_t, t)
+loss = F.mse_loss(v_pred, v_target)
+\end{lstlisting}
 \end{solutionbox}
 
 \textbf{Step 2: Training and Test Loss Charts}
@@ -566,14 +575,25 @@ def train_step(self, batch):
     \end{figure}
     
     \textbf{Analysis (Overfitting/Underfitting):}
-    % Type your analysis here
+    Typically, the training loss decreases smoothly as the model learns the constant-velocity target. Validation loss should track training loss closely; a widening gap indicates overfitting (common if the vector field network is too large relative to the dataset). If both losses plateau early at a high value, it suggests underfitting (insufficient capacity, too few epochs, or an overly small learning rate).
 \end{solutionbox}
 
 \textbf{Step 3: Synthetic Data Generation (Solver Analysis)}
 \begin{solutionbox}
     \textbf{Effect of Solver Steps on Quality/Cost:}
-    % Type your answer here
-    \vspace{3cm}
+    Using more solver steps (smaller step size) generally improves sample quality (better distributional match and smoother trajectories) but increases compute linearly in the number of function evaluations. Euler is fastest but can introduce bias and numerical diffusion; Heun/RK4 require more compute per step but typically yield better stability and closer match to real-series statistics for the same number of steps.
+
+\begin{lstlisting}[language=Python]
+# ODE sampling (Euler/Heun/RK4)
+def euler_step(x, t, dt):
+    return x + dt * v_theta(x, t)
+
+def heun_step(x, t, dt):
+    k1 = v_theta(x, t)
+    x_e = x + dt * k1
+    k2 = v_theta(x_e, t + dt)
+    return x + 0.5 * dt * (k1 + k2)
+\end{lstlisting}
 \end{solutionbox}
 
 \textbf{Step 4: Generated Time Series Samples}
@@ -586,7 +606,7 @@ def train_step(self, batch):
     \end{figure}
     
     \textbf{Observations (Amplitude/Shape):}
-    % Type your analysis here
+    Generated sequences should exhibit realistic return amplitudes (occasional spikes) and roughly similar smoothness/roughness compared to the test set. Overly smooth samples often indicate too few solver steps or an underfit vector field; overly noisy samples can indicate instability in sampling or a mismatch between training normalization and sampling initialization.
 \end{solutionbox}
 
 \textbf{Step 5: Qualitative Comparison (Real vs Generated)}
@@ -599,7 +619,7 @@ def train_step(self, batch):
     \end{figure}
     
     \textbf{Analysis:}
-    % Type your analysis here
+    Visually comparing real vs generated series focuses on (i) overall scale, (ii) frequency of large moves, and (iii) temporal structure (short-term clustering). A good model produces returns with similar volatility bursts and does not collapse to near-zero variance.
 \end{solutionbox}
 
 \textbf{Step 6: Distribution Comparison (Histogram/KDE)}
@@ -612,7 +632,7 @@ def train_step(self, batch):
     \end{figure}
     
     \textbf{Analysis:}
-    % Type your analysis here
+    The histogram/KDE comparison should show close agreement in the central mass near zero and in the tails. If generated tails are too light, the model underestimates extreme events; if too heavy, it may over-amplify rare shocks. Matching skewness/kurtosis is a useful sanity check for financial return series.
 \end{solutionbox}
 
 \textbf{Step 7: Basic Statistical Evaluation}
@@ -632,12 +652,21 @@ def train_step(self, batch):
     \end{table}
 
     \textbf{Discussion on Volatility:}
-    % Type your answer here
+    Volatility (e.g., standard deviation of returns) is a key statistic for financial realism. A good generator matches the real-data volatility at the dataset horizon; significantly lower volatility indicates mode collapse toward the mean, while significantly higher volatility suggests instability or mis-calibrated sampling.
 \end{solutionbox}
 
 \textbf{Step 8: Advanced Evaluation (SWD & Autocorrelation)}
 \begin{solutionbox}
-    \textbf{Sliced Wasserstein Distance (SWD):} ... \\
+    	extbf{Sliced Wasserstein Distance (SWD):} We compute SWD between real and generated sequences by projecting onto random directions and averaging 1D Wasserstein distances. Lower SWD indicates closer distributional match.
+
+\begin{lstlisting}[language=Python]
+# Sketch of SWD computation
+projections = torch.randn(n_proj, seq_len, device=device)
+projections = projections / projections.norm(dim=1, keepdim=True)
+real_proj = real @ projections.T
+gen_proj = gen @ projections.T
+swd = (torch.sort(real_proj, dim=0).values - torch.sort(gen_proj, dim=0).values).abs().mean()
+\end{lstlisting}
     
     \textbf{Autocorrelation Analysis:}
     \begin{figure}[H]
@@ -648,7 +677,7 @@ def train_step(self, batch):
     \end{figure}
     
     \textbf{Conclusion on Temporal Dependencies:}
-    % Type your analysis here
+    If the autocorrelation functions (ACF) of generated and real returns are similar (often near-zero for raw returns but may show structure at short lags depending on preprocessing), it suggests the model captures temporal dependencies. Large discrepancies in ACF indicate the generator is missing sequence dynamics, even if marginal distributions match.
 \end{solutionbox}
 
 \end{document}
