@@ -28,6 +28,16 @@
     filecolor=magenta,      
     urlcolor=blue,
 }
+
+% Robust figure inclusion (compiles even if an image is missing)
+\newcommand{\maybeincludegraphics}[2]{%
+    \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
+        \fbox{\parbox{0.85\textwidth}{\centering \vspace{1.5cm}
+        فایل شکل پیدا نشد: \lr{\texttt{#2}}\\
+        لطفاً شکل را از نوت‌بوک خروجی بگیرید و در مسیر مناسب قرار دهید.
+        \vspace{1.5cm}}}%
+    }%
+}
 \setlist[enumerate]{itemsep=-3mm}
 \setlist[itemize]{itemsep=-3mm}
 

@@ -4,26 +4,107 @@
 \renewcommand{\chaptername}{سوال}
 \chapter{\Subject}
 
+در این فصل به بررسی مبانی نظری و عملی مدل‌های انتشار احتمالی (DDPM)، روش نمونه‌برداری سریع (DDIM) و تکنیک تنظیم دقیق DreamBooth می‌پردازیم.
+
+% ==========================
+% بخش ۱: مبانی نظری (Theory)
+% ==========================
+\section{مبانی نظری مدل‌های انتشار}
+
+\subsection{فرآیند پیش‌رونده (Forward Process)}
+در مدل‌های انتشار، فرآیند پیش‌رونده یک زنجیره مارکوف است که به تدریج به داده نویز اضافه می‌کند. طبق فرمول‌بندی \lr{Ho et al.}، توزیع شرطی در هر گام به صورت زیر است:
+\begin{equation}
+q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{1-\beta_t}x_{t-1}, \beta_t I)
+\end{equation}
+با استفاده از خاصیت گاوسی، می‌توانیم $x_t$ را مستقیماً از $x_0$ نمونه‌برداری کنیم:
+\begin{equation}
+q(x_t | x_0) = \mathcal{N}(x_t; \sqrt{\bar{\alpha}_t}x_0, (1-\bar{\alpha}_t)I)
+\end{equation}
+که در آن $\alpha_t = 1 - \beta_t$ و $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$ است.
+
+\subsection{فرآیند معکوس (Reverse Process)}
+هدف مدل یادگیری فرآیند معکوس $p_\theta(x_{t-1}|x_t)$ است تا بتواند از نویز خالص $x_T \sim \mathcal{N}(0, I)$ به داده‌ی واقعی $x_0$ برسد. این توزیع نیز گاوسی در نظر گرفته می‌شود:
+\begin{equation}
+p_\theta(x_{t-1}|x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t))
+\end{equation}
+در عمل، شبکه عصبی معمولاً نویز $\epsilon_\theta(x_t, t)$ را پیش‌بینی می‌کند و میانگین $\mu_\theta$ از روی آن محاسبه می‌شود.
+
+\subsection{تابع هدف (Objective Function)}
+تابع هزینه ساده‌شده‌ای که برای آموزش استفاده می‌شود، میانگین مربعات خطا بین نویز واقعی $\epsilon$ و نویز پیش‌بینی‌شده توسط مدل است:
+\begin{equation}
+L_{\text{simple}}(\theta) = \mathbb{E}_{x_0, \epsilon, t} \left[ \| \epsilon - \epsilon_\theta(\sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\epsilon, t) \|^2 \right]
+\end{equation}
+
+\subsection{پرسش‌های نظری تکمیلی}
+
+\subsubsection*{سوال ۱: اثبات فرم بسته‌ی $q(x_t|x_0)$}
+برای اثبات رابطه‌ی
+$q(x_t|x_0)=\mathcal{N}(\sqrt{\bar{\alpha}_t}x_0,(1-\bar{\alpha}_t)I)$
+از کرنل تک‌گام استفاده می‌کنیم:
+\begin{equation}
+q(x_t|x_{t-1})=\mathcal{N}(x_t;\sqrt{\alpha_t}x_{t-1},(1-\alpha_t)I)
+\end{equation}
+پس می‌توان نمونه‌گیری را به صورت بازپارامترده نوشت:
+\begin{equation}
+x_t=\sqrt{\alpha_t}x_{t-1}+\sqrt{1-\alpha_t}\,\epsilon_{t-1},\quad \epsilon_{t-1}\sim\mathcal{N}(0,I)
+\end{equation}
+با جایگذاری بازگشتی $x_{t-1},x_{t-2},\dots$ و استفاده از این حقیقت که جمع نویزهای گاوسی مستقل نیز گاوسی است (با واریانس جمع‌شونده)، در نهایت به شکل القایی می‌رسیم:
+\begin{equation}
+x_t=\sqrt{\bar{\alpha}_t}\,x_0+\sqrt{1-\bar{\alpha}_t}\,\epsilon,\quad \epsilon\sim\mathcal{N}(0,I)
+\end{equation}
+بنابراین توزیع شرطی $x_t$ به ازای $x_0$ یک گاوسی با میانگین $\sqrt{\bar{\alpha}_t}x_0$ و کوواریانس $(1-\bar{\alpha}_t)I$ است.
+
+\subsubsection*{سوال ۲: دو مزیت پیش‌بینی نویز $\epsilon$ به‌جای میانگین $\mu_\theta$}
+\begin{enumerate}
+    \item \textbf{پایداری عددی و مقیاس ثابتِ هدف:} نویز هدف همواره از \lr{$\mathcal{N}(0,I)$} می‌آید و مستقل از زمان $t$ مقیاس ثابتی دارد، در نتیجه یادگیری پایدارتر می‌شود.
+    \item \textbf{کیفیت بهتر نمونه‌ها و ساده شدن وزن‌دهی VLB:} در فرمول‌بندی \lr{DDPM} پیش‌بینی نویز به یک هزینه‌ی \lr{MSE} ساده منجر می‌شود که از نظر تجربی اغلب کیفیت نمونه‌های بهتری نسبت به یادگیری مستقیم $\mu_\theta$ یا $x_0$ می‌دهد.
+\end{enumerate}
+
+\subsubsection*{سوال ۳: نقش ترم‌های KL در VLB و علت نادیده‌گرفتن در عمل}
+    extbf{الف) تشویق به هم‌خوانی با پسین واقعی:}
+ترم‌های \lr{KL} مانند
+$D_{KL}(q(x_{t-1}|x_t,x_0)\,\|\,p_\theta(x_{t-1}|x_t))$
+باعث می‌شوند فرآیند معکوس یادگرفته‌شده به پسین واقعی فرآیند پیش‌رونده نزدیک شود.
+
+    extbf{ب) دلیل عملی:}
+در بسیاری از پیاده‌سازی‌ها، به‌جای وزن‌دهی دقیق \lr{VLB} از هزینه‌ی ساده‌شده‌ی \lr{MSE} استفاده می‌شود چون (۱) بهینه‌سازی پایدارتر است و (۲) برای تولید تصویر، کیفیت ادراکی نمونه‌ها اهمیت بیشتری از بهینه‌سازی دقیق لگاریتم درست‌نمایی دارد.
+
+\subsubsection*{سوال ۴: نمونه‌گیری DDIM}
+    extbf{الف) تعیین‌گر شدن:}
+در \lr{DDIM} با تنظیم پارامتر نویز تزریقی (معمولاً با نماد $\eta$ یا $\sigma_t$) روی صفر، جمله‌ی نویز حذف می‌شود و نگاشت $x_t\to x_{t-1}$ کاملاً تعیین‌گر می‌گردد.
+
+    extbf{ب) سرعت بیشتر:}
+چون مسیر تعیین‌گر است، می‌توان گام‌ها را با فواصل بزرگ‌تر برداشت (\lr{step skipping}) و به‌جای ۱۰۰۰ گام، با تعداد کمی گام (مثلاً ۵۰) نمونه‌های قابل قبول تولید کرد.
+
+\subsubsection*{سوال ۵: Classifier-Free Guidance (CFG)}
+    extbf{الف) ایده‌ی اصلی:}
+در \lr{CFG} مدل هم‌زمان برای حالت شرطی و بی‌شرط آموزش داده می‌شود (با حذف تصادفی شرط در بخشی از داده‌ها). سپس در نمونه‌گیری، نویز نهایی به‌صورت ترکیبی از پیش‌بینی شرطی و بی‌شرط ساخته می‌شود:
+\begin{equation}
+    ilde{\epsilon}_\theta(x_t,c)=\epsilon_\theta(x_t|\emptyset)+w\big(\epsilon_\theta(x_t|c)-\epsilon_\theta(x_t|\emptyset)\big)
+\end{equation}
+که $w$ مقیاس هدایت است.
+
+    extbf{ب) اثر $w$:}
+افزایش $w$ معمولاً \textbf{وفاداری به پرامپت و شارپنس} را بیشتر می‌کند اما \textbf{تنوع} را کاهش می‌دهد و اگر خیلی بزرگ شود می‌تواند مصنوعات و اغراق در رنگ/بافت ایجاد کند.
+
+% ==========================
+% بخش ۲: نتایج عملی DDPM / DDIM
+% ==========================
+\section{نتایج عملی پیاده‌سازی روی CIFAR-10}
+
 در این بخش نتایج تجربی پیاده‌سازی
 \grayBox{DDPM}
 و
 \grayBox{DDIM}
 روی داده‌ی
 \lr{CIFAR-10}
-و هم‌چنین بخش دوم سوال یعنی
-\grayBox{Stable Diffusion / DreamBooth}
 گزارش می‌شود.
-
-% ==========================
-% بخش ۱: نتایج DDPM / DDIM
-% ==========================
-\section{نتایج مدل‌های انتشار روی CIFAR-10}
 
 \subsection{نمونه‌های داده‌ی آموزشی و فرآیند افزودن نویز}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\linewidth]{../En_report/figures/cifar_train_samples.png}
+    \maybeincludegraphics{width=0.9\linewidth}{../En_report/figures/cifar_train_samples.png}
     \caption{نمونه‌ای از تصاویر آموزشی مجموعه‌داده \lr{CIFAR-10} که برای آموزش مدل انتشار استفاده شده‌اند.}
     \label{fig:cifar-train-samples}
 \end{figure}
@@ -35,7 +116,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\linewidth]{../En_report/figures/forward_diffusion_noise.png}
+    \maybeincludegraphics{width=0.9\linewidth}{../En_report/figures/forward_diffusion_noise.png}
     \caption{نمایش فرآیند پیش‌رونده‌ی افزودن نویز در مدل انتشار؛ با افزایش \lr{$t$}، تصویر به‌تدریج به نویز گاوسی خالص تبدیل می‌شود.}
     \label{fig:forward-diffusion}
 \end{figure}
@@ -47,7 +128,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\linewidth]{../En_report/figures/ddpm_training_loss.png}
+    \maybeincludegraphics{width=0.8\linewidth}{../En_report/figures/ddpm_training_loss.png}
     \caption{منحنی خطای آموزش \lr{DDPM} (خطای \lr{MSE} پیش‌بینی نویز بر حسب دوره‌ی آموزش).}
     \label{fig:ddpm-train-loss}
 \end{figure}
@@ -59,7 +140,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\linewidth]{../En_report/figures/ddpm_samples_grid.png}
+    \maybeincludegraphics{width=0.9\linewidth}{../En_report/figures/ddpm_samples_grid.png}
     \caption{نمونه‌های تولیدشده توسط \lr{DDPM} با استفاده از تمام \lr{1000} گام معکوس.}
     \label{fig:ddpm-samples}
 \end{figure}
@@ -69,7 +150,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\linewidth]{../En_report/figures/ddim_samples_grid.png}
+    \maybeincludegraphics{width=0.9\linewidth}{../En_report/figures/ddim_samples_grid.png}
     \caption{نمونه‌های تولیدشده توسط \lr{DDIM} با \lr{50} گام و \lr{$\eta=0$} (نمونه‌گیری تعیین‌گر).}
     \label{fig:ddim-samples}
 \end{figure}
@@ -89,7 +170,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.45\linewidth]{../En_report/figures/dreambooth_instance_sample.png}
+    \maybeincludegraphics{width=0.45\linewidth}{../En_report/figures/dreambooth_instance_sample.png}
     \caption{نمونه‌ای از تصویر آموزشی که برای یادگیری سوژه با شناسه‌ی \grayBox{sks} استفاده شده است.}
     \label{fig:dreambooth-train}
 \end{figure}
@@ -101,7 +182,7 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\linewidth]{../En_report/figures/dreambooth_generated_grid.png}
+    \maybeincludegraphics{width=0.9\linewidth}{../En_report/figures/dreambooth_generated_grid.png}
     \caption{شبکه‌ای از تصاویر تولیدی DreamBooth برای چند پرامپت شامل شناسه‌ی \grayBox{sks} (برای مثال «\lr{a photo of sks person in a fantasy landscape}»).}
     \label{fig:dreambooth-gen}
 \end{figure}
