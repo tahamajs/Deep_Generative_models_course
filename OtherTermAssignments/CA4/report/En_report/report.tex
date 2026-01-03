@@ -211,6 +211,191 @@
         \item \textbf{Diversity:} There is a trade-off. Increasing the guidance scale significantly \textit{reduces} the diversity of the generated samples. The model converges to the "modes" of the distribution that most strongly represent the prompt, ignoring less probable variations. Lower scales preserve more diversity but may result in images that are less coherent or less faithful to the prompt.
     \end{itemize}
 \end{solutionbox}
+
+\newpage
+
+\section{Implementation Details and Architectures}
+
+This section provides comprehensive details on the models, architectures, and parameters used in our implementation of DDPM, DDIM, Stable Diffusion with DreamBooth, and Flow Matching.
+
+\subsection{Denoising Diffusion Probabilistic Models (DDPM)}
+
+\subsubsection{Architecture: U-Net for Noise Prediction}
+The core denoising model is a U-Net architecture designed for image-to-image translation tasks, adapted for noise prediction in diffusion models.
+
+\textbf{U-Net Structure:}
+\begin{itemize}
+    \item \textbf{Encoder (Downsampling):} 4 levels with residual blocks
+        \begin{itemize}
+            \item Each level: 2 ResNet blocks with GroupNorm and SiLU activation
+            \item Downsampling: 2×2 convolutional stride-2 layers
+            \item Channels: [64, 128, 256, 512]
+        \end{itemize}
+    \item \textbf{Bottleneck:} 2 ResNet blocks at 512 channels
+    \item \textbf{Decoder (Upsampling):} 4 levels with residual blocks
+        \begin{itemize}
+            \item Each level: 2 ResNet blocks with skip connections
+            \item Upsampling: 2×2 transposed convolutional layers
+            \item Channels: [512, 256, 128, 64]
+        \end{itemize}
+    \item \textbf{Time Embedding:} Sinusoidal positional encoding injected via linear layers
+    \item \textbf{Output:} 3×3 convolution to predict noise (same channels as input)
+\end{itemize}
+
+\textbf{Parameters:}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{Parameter} & \textbf{Value} \\
+        \midrule
+        Image Size & 32×32 (CIFAR-10) \\
+        Channels & 3 \\
+        Timesteps (T) & 1000 \\
+        β_start & 0.0001 \\
+        β_end & 0.02 \\
+        Learning Rate & 1e-4 \\
+        Batch Size & 128 \\
+        Optimizer & AdamW \\
+        Training Epochs & 50 \\
+        \bottomrule
+    \end{tabular}
+    \caption{DDPM Training Parameters}
+\end{table}
+
+\subsubsection{DDIM Sampling}
+DDIM uses the same U-Net architecture but with modified sampling parameters.
+
+\textbf{Parameters:}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{Parameter} & \textbf{Value} \\
+        \midrule
+        Inference Steps & 50 \\
+        η (Noise Scale) & 0.0 (deterministic) \\
+        \bottomrule
+    \end{tabular}
+    \caption{DDIM Sampling Parameters}
+\end{table}
+
+\subsection{Stable Diffusion with DreamBooth}
+
+\subsubsection{Architecture Overview}
+Stable Diffusion consists of three main components working in latent space:
+1. \textbf{VAE Encoder/Decoder:} Compresses 512×512 images to 64×64×4 latents
+2. \textbf{CLIP Text Encoder:} Encodes text prompts to embeddings
+3. \textbf{U-Net Denoiser:} Conditions on text embeddings for guided generation
+
+\textbf{U-Net Architecture (Stable Diffusion):}
+\begin{itemize}
+    \item \textbf{Input:} 64×64×4 latent space
+    \item \textbf{Time Embedding:} 1280-dim sinusoidal + linear projection
+    \item \textbf{Text Conditioning:} Cross-attention with CLIP embeddings (768-dim)
+    \item \textbf{Architecture:} Similar to DDPM U-Net but with:
+        \begin{itemize}
+            \item Spatial Transformer blocks with self/cross-attention
+            \item 4 attention heads per block
+            \item Channels: [320, 640, 1280, 1280]
+        \end{itemize}
+\end{itemize}
+
+\subsubsection{DreamBooth Fine-tuning}
+\textbf{LoRA Configuration:}
+\begin{itemize}
+    \item \textbf{Rank (r):} 4
+    \item \textbf{Alpha:} 4
+    \item \textbf{Target Modules:} Query, Key, Value, Output projections
+    \item \textbf{Scale:} 1.0
+\end{itemize}
+
+\textbf{Training Parameters:}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{Parameter} & \textbf{Value} \\
+        \midrule
+        Model & Stable Diffusion v1-5 \\
+        Learning Rate & 1e-4 \\
+        Batch Size & 4 \\
+        Gradient Accumulation & 4 \\
+        Training Steps & 800 \\
+        Prior Preservation Weight & 1.0 \\
+        Instance Prompt & "a photo of sks person" \\
+        Class Prompt & "a photo of a person" \\
+        \bottomrule
+    \end{tabular}
+    \caption{DreamBooth Training Parameters}
+\end{table}
+
+\subsection{Flow Matching for Time Series}
+
+\subsubsection{Architecture: Vector Field Network}
+The vector field model predicts velocity for transforming noise to data distributions.
+
+\textbf{Network Architecture:}
+\begin{itemize}
+    \item \textbf{Input:} Time series sequence (length 100, features 1)
+    \item \textbf{Time Embedding:} Sinusoidal encoding + MLP projection
+    \item \textbf{Backbone:} Transformer Encoder
+        \begin{itemize}
+            \item Hidden Dimension: 256
+            \item Feed-forward Dimension: 1024
+            \item Number of Heads: 8
+            \item Number of Layers: 6
+            \item Dropout: 0.1
+        \end{itemize}
+    \item \textbf{Output:} Velocity field (same shape as input)
+\end{itemize}
+
+\textbf{Training Parameters:}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{Parameter} & \textbf{Value} \\
+        \midrule
+        Sequence Length & 100 \\
+        Features & 1 (log-returns) \\
+        Batch Size & 64 \\
+        Learning Rate & 1e-4 \\
+        Training Epochs & 100 \\
+        Optimizer & AdamW \\
+        ODE Solver & Euler/Heun \\
+        Solver Steps & 100 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Flow Matching Training Parameters}
+\end{table}
+
+\subsubsection{Data Preprocessing}
+\begin{itemize}
+    \item \textbf{Dataset:} SPY ETF log-returns (2010-2023)
+    \item \textbf{Normalization:} StandardScaler (mean=0, std=1)
+    \item \textbf{Sequence Window:} 100 consecutive days
+    \item \textbf{Overlap:} Sliding window with stride 1
+\end{itemize}
+
+\subsection{Common Implementation Details}
+
+\subsubsection{Training Infrastructure}
+\begin{itemize}
+    \item \textbf{Hardware:} NVIDIA GPU (CUDA) or CPU fallback
+    \item \textbf{Framework:} PyTorch 2.0+
+    \item \textbf{Mixed Precision:} Automatic mixed precision (AMP) where applicable
+    \item \textbf{Logging:} Weights \& Biases for experiment tracking
+    \item \textbf{Reproducibility:} Fixed random seeds (42)
+\end{itemize}
+
+\subsubsection{Evaluation Metrics}
+\begin{itemize}
+    \item \textbf{DDPM/DDIM:} FID, Inception Score, visual quality assessment
+    \item \textbf{DreamBooth:} Identity preservation, prompt adherence, style transfer
+    \item \textbf{Flow Matching:} SWD, autocorrelation, statistical moments, distribution matching
+\end{itemize}
+
 \newpage
 
 \subsection{Part Two: Practical Questions}
