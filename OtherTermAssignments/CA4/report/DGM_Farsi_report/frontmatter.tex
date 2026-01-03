@@ -1,0 +1,30 @@
+\usepackage[]{algorithm2e}
+\usepackage{cite}
+\usepackage{calc}
+\usepackage{fancyhdr}
+\usepackage{lipsum}
+\usepackage{color}
+\usepackage{ragged2e}
+\usepackage[inline]{enumitem}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{tabu}
+\usepackage{hyperref}
+\usepackage{xepersian}
+
+\settextfont[BoldFont={XB Yas Bd}, ItalicFont={XB Yas It}, BoldItalicFont={XB Yas BdIt}, Extension = .ttf]{XB Yas}
+
+\renewcommand{\chaptername}{جلسه}
+\newcommand{\grayBox}[1]{\colorbox{gray!10}{\lr{\texttt{#1}}}}
+\newcommand{\grayLBox}[1]{\fbox{\grayBox{\parbox{11.8 cm}{#1}}}}
+
+\makeatletter
+\newcommand{\chapterauthor}[1]{%
+    {\parindent0pt\vspace*{-25pt}%
+        \linespread{1.1}\large\scshape#1%
+        \par\nobreak\vspace*{35pt}}
+    \@afterheading%
+}
+\makeatother
