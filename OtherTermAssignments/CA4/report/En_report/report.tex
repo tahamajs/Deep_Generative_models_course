@@ -18,6 +18,13 @@
 \usepackage{xcolor}
 \usepackage{tcolorbox} % For the answer boxes
 
+% Robust figure inclusion (compiles even if an image is missing)
+\newcommand{\maybeincludegraphics}[2]{%
+    \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
+        \fbox{\parbox{0.85\textwidth}{\centering \vspace{2.5cm} Missing figure file: \texttt{#2}\\Export it from the notebook into \texttt{report/En\_report/figures/}.\vspace{2.5cm}}}%
+    }%
+}
+
 % =========================================
 % SETTINGS
 % =========================================
@@ -340,6 +347,32 @@ def sample(self, batch_size, img_size=(3, 32, 32)):
 \end{lstlisting}
 \end{solutionbox}
 
+	extbf{Step 5: Visual Results (DDPM vs DDIM)}
+\begin{solutionbox}
+    The following figures are exported directly from the notebook runs. DDPM uses many reverse steps (e.g., 1000) and is stochastic, while DDIM can use fewer steps (e.g., 50) and becomes deterministic for $\eta=0$. In practice, DDIM is much faster with only a small quality drop for moderate step counts.
+
+    \begin{figure}[H]
+        \centering
+        \maybeincludegraphics{width=0.9\textwidth}{figures/ddpm_samples_grid.png}
+        \caption{DDPM samples (e.g., 1000 reverse steps).}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \maybeincludegraphics{width=0.9\textwidth}{figures/ddim_samples_grid.png}
+        \caption{DDIM samples (e.g., 50 inference steps, $\eta=0$).}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \maybeincludegraphics{width=0.75\textwidth}{figures/ddpm_training_loss.png}
+        \caption{DDPM training loss curve (noise-prediction MSE).}
+    \end{figure}
+
+    	extbf{Explanation:}
+    The DDPM loss typically decreases smoothly as the model learns to predict $\epsilon$ across timesteps. DDIM’s strided updates reduce sampling time significantly, and $\eta$ controls stochasticity (larger $\eta$ increases diversity, $\eta=0$ is deterministic).
+\end{solutionbox}
+
 \newpage
 
 \subsubsection{Subsection 2: Stable Diffusion and DreamBooth}
@@ -352,10 +385,11 @@ def sample(self, batch_size, img_size=(3, 32, 32)):
     
     \begin{figure}[H]
         \centering
-        % \includegraphics[width=0.4\textwidth]{your_image.jpg}
-        \fbox{\parbox{0.4\textwidth}{\centering \vspace{3cm} Insert one training image here \vspace{3cm}}}
-        \caption{Sample Training Image}
+        \maybeincludegraphics{width=0.45\textwidth}{figures/dreambooth_instance_sample.png}
+        \caption{Example instance training image used for DreamBooth fine-tuning.}
     \end{figure}
+
+    	extbf{Explanation:} The instance set should contain multiple views/poses of the same subject. The special identifier token (e.g., \texttt{sks}) is paired with the instance prompt so the model can bind the subject identity to that token.
 \end{solutionbox}
 
 \textbf{Step 2: Dataset Class}
@@ -457,12 +491,10 @@ def train_step(self, batch):
 
 \textbf{Step 5: Test and Inference Results}
 \begin{solutionbox}
-    % Insert generated images here
     \begin{figure}[H]
         \centering
-        % \includegraphics[width=0.8\textwidth]{results.jpg}
-        \fbox{\parbox{0.8\textwidth}{\centering \vspace{4cm} Insert Generated Images (Grid) \vspace{4cm}}}
-        \caption{Generated Images with prompt "a photo of sks person in a fantasy landscape"}
+        \maybeincludegraphics{width=0.9\textwidth}{figures/dreambooth_generated_grid.png}
+        \caption{DreamBooth generations for prompts containing the identifier token (example prompt shown in caption).}
     \end{figure}
     
     \textbf{Analysis of Results:}
@@ -569,8 +601,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        % \includegraphics[width=0.7\textwidth]{loss_curve.png}
-        \fbox{\parbox{0.7\textwidth}{\centering \vspace{4cm} Insert Loss Curve Here \vspace{4cm}}}
+        \maybeincludegraphics{width=0.75\textwidth}{figures/fm_loss_curve.png}
         \caption{Training vs Test Loss}
     \end{figure}
     
@@ -600,8 +631,7 @@ def heun_step(x, t, dt):
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        % \includegraphics[width=0.8\textwidth]{generated_samples.png}
-        \fbox{\parbox{0.8\textwidth}{\centering \vspace{4cm} Insert Generated Samples Plot \vspace{4cm}}}
+        \maybeincludegraphics{width=0.9\textwidth}{figures/fm_generated_samples.png}
         \caption{Generated Time Series Samples}
     \end{figure}
     
@@ -613,8 +643,7 @@ def heun_step(x, t, dt):
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        % \includegraphics[width=0.8\textwidth]{comparison.png}
-        \fbox{\parbox{0.8\textwidth}{\centering \vspace{4cm} Insert Real vs Gen Comparison Plot \vspace{4cm}}}
+        \maybeincludegraphics{width=0.9\textwidth}{figures/fm_real_vs_gen.png}
         \caption{Real (Test Set) vs Generated Data}
     \end{figure}
     
@@ -626,8 +655,7 @@ def heun_step(x, t, dt):
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        % \includegraphics[width=0.7\textwidth]{dist_comparison.png}
-        \fbox{\parbox{0.7\textwidth}{\centering \vspace{4cm} Insert Histogram/KDE Plot \vspace{4cm}}}
+        \maybeincludegraphics{width=0.9\textwidth}{figures/fm_dist_comparison.png}
         \caption{Log-Returns Distribution Comparison}
     \end{figure}
     
@@ -671,8 +699,7 @@ swd = (torch.sort(real_proj, dim=0).values - torch.sort(gen_proj, dim=0).values)
     \textbf{Autocorrelation Analysis:}
     \begin{figure}[H]
         \centering
-        % \includegraphics[width=0.7\textwidth]{autocorr.png}
-        \fbox{\parbox{0.7\textwidth}{\centering \vspace{3cm} Optional: Insert Autocorrelation Plot \vspace{3cm}}}
+        \maybeincludegraphics{width=0.8\textwidth}{figures/fm_autocorr.png}
         \caption{Autocorrelation}
     \end{figure}
     
