@@ -58,7 +58,7 @@ x_t=\sqrt{\alpha_t}x_{t-1}+\sqrt{1-\alpha_t}\,\epsilon_{t-1},\quad \epsilon_{t-1
 
 \textbf{معماری کلی U-Net:}
 \begin{itemize}
-    \item \textbf{ورودی:} ۳۲×۳۲×۳ تصویر (CIFAR-10)
+    \item \textbf{ورودی:} ۲۸×۲۸×۱ تصویر (MNIST)
     \item \textbf{کانال‌ها:} [۶۴, ۱۲۸, ۲۵۶, ۵۱۲]
     \item \textbf{شرط‌گذاری زمانی:} embedding سینوسی → خطی → SiLU
     \item \textbf{توجه:} self-attention چندسر در bottleneck
@@ -447,14 +447,14 @@ $D_{KL}(q(x_{t-1}|x_t,x_0)\,\|\,p_\theta(x_{t-1}|x_t))$
 % ==========================
 % بخش ۲: نتایج عملی DDPM / DDIM
 % ==========================
-\section{نتایج عملی پیاده‌سازی روی CIFAR-10}
+\section{نتایج عملی پیاده‌سازی روی MNIST}
 
 در این بخش نتایج تجربی پیاده‌سازی
 \grayBox{DDPM}
 و
 \grayBox{DDIM}
 روی داده‌ی
-\lr{CIFAR-10}
+\lr{MNIST}
 گزارش می‌شود.
 
 \subsection{گزارش گام‌به‌گام پیاده‌سازی DDPM/DDIM (مطابق صورت سؤال)}
@@ -529,14 +529,14 @@ def sample_ddpm(self, batch_size, img_size=(3, 32, 32)):
 \begin{figure}[H]
     \centering
     \maybeincludegraphics{width=0.9\linewidth}{../En_report/figures/cifar_train_samples.png}
-    \caption{نمونه‌ای از تصاویر آموزشی مجموعه‌داده \lr{CIFAR-10} که برای آموزش مدل انتشار استفاده شده‌اند.}
+    \caption{نمونه‌ای از تصاویر آموزشی مجموعه‌داده \lr{MNIST} که برای آموزش مدل انتشار استفاده شده‌اند.}
     \label{fig:cifar-train-samples}
 \end{figure}
 
 \noindent\textbf{توضیح شکل~\ref{fig:cifar-train-samples}:}
-در این شکل چند نمونه تصادفی از تصاویر آموزش نشان داده شده است تا تنوع کلاس‌ها
-(حیوانات، وسایل نقلیه و غیره)
-و اندازه‌ی کوچک تصاویر \lr{(32×32)} مشخص شود.
+در این شکل چند نمونه تصادفی از تصاویر آموزش نشان داده شده است تا تنوع ارقام دست‌نویس
+(0-9)
+و اندازه‌ی کوچک تصاویر \lr{(28×28)} مشخص شود.
 
 \begin{figure}[H]
     \centering

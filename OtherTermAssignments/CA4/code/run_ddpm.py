@@ -46,8 +46,8 @@ if __name__ == "__main__":
         transforms.Normalize([0.5], [0.5])  # Normalize to [-1, 1]
     ])
 
-    # Load CIFAR-10 dataset
-    train_dataset = datasets.CIFAR10(
+    # Load MNIST dataset (simpler than CIFAR-10)
+    train_dataset = datasets.MNIST(
         root='./data',
         train=True,
         download=True,
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         img = (img + 1) / 2
         ax.imshow(img)
         ax.axis('off')
-    plt.suptitle('Sample Training Images (CIFAR-10)')
+    plt.suptitle('Sample Training Images (MNIST)')
     plt.tight_layout()
     plt.show()
 

@@ -15,8 +15,8 @@ from utils import device, save_fig, REPORT_FIG_DIR
 
 # Hyperparameters for DDPM training
 DDPM_CONFIG = {
-    'image_size': 32,
-    'channels': 3,
+    'image_size': 28,  # Changed from 32 for MNIST
+    'channels': 1,     # Changed from 3 for MNIST (grayscale)
     'batch_size': 128,
     'learning_rate': 1e-4,
     'num_epochs': 20,  # Increase for better results
@@ -177,9 +177,13 @@ class UNet(nn.Module):
         # Upsampling with skip connections
         x = self.up1(torch.cat([x4, x4], dim=1), t)
         x = self.sa4(x)
-        x = self.up2(torch.cat([x, x3[:, :x.shape[1]]], dim=1), t)
+        # Upsample x3 to match x's spatial dimensions
+        x3_upsampled = F.interpolate(x3, size=x.shape[2:], mode='bilinear', align_corners=False)
+        x = self.up2(torch.cat([x, x3_upsampled[:, :x.shape[1]]], dim=1), t)
         x = self.sa5(x)
-        x = self.up3(torch.cat([x, x2[:, :x.shape[1]]], dim=1), t)
+        # Upsample x2 to match x's spatial dimensions
+        x2_upsampled = F.interpolate(x2, size=x.shape[2:], mode='bilinear', align_corners=False)
+        x = self.up3(torch.cat([x, x2_upsampled[:, :x.shape[1]]], dim=1), t)
         x = self.sa6(x)
 
         # Output
