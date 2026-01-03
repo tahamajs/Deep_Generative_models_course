@@ -8,6 +8,38 @@
 گزارش و تحلیل می‌شود. تمامی شکل‌ها از نوت‌بوک کد استخراج شده‌اند.
 
 % ==========================
+% بخش ۰: پرسش‌های نظری (Theory)
+% ==========================
+\section{پرسش‌های نظری}
+
+\subsection*{سوال ۱: میدان برداری}
+	extbf{الف) نقش میدان برداری:}
+در Flow Matching، میدان برداری $v_\theta(x,t)$ «سرعت لحظه‌ای» حرکت جرم احتمال را تعیین می‌کند؛ یعنی اگر نمونه‌ی اولیه $x_0$ از توزیع ساده (مثلاً نویز گاوسی) در $t=0$ داشته باشیم، با حل معادله دیفرانسیل
+$\frac{dx}{dt}=v_\theta(x,t)$
+نمونه در طول زمان به سمت توزیع داده حرکت کرده و در $t=1$ به نمونه‌ای از توزیع هدف تبدیل می‌شود.
+
+	extbf{ب) تفاوت/شباهت با Diffusion:}
+Diffusion ذاتاً تصادفی است (زنجیره مارکوف یا SDE) اما Flow Matching یک مدل تعیین‌گر مبتنی بر ODE است. شباهت مهم این است که فرم‌های تعیین‌گر diffusion (مثل \lr{probability flow ODE} یا \lr{DDIM}) از نظر ایده به یادگیری یک مسیر ODE نزدیک می‌شوند.
+
+\subsection*{سوال ۲: مسیرهای خطی}
+	extbf{الف) چرا مسیر خطی؟ آیا همیشه بهینه است؟}
+مسیر خطی $x_t=(1-t)x_0+tx_1$ ساده‌ترین مسیر بین دو نقطه است و سرعت هدف در این مسیر ثابت می‌شود: $v_{\text{target}}=x_1-x_0$؛ این سادگی یادگیری را آسان می‌کند. بهینگی «کلی» نیازمند کوپلینگ بهینه (\lr{Optimal Transport}) بین $x_0$ و $x_1$ است؛ در غیر این صورت مسیر خطی صرفاً یک انتخاب ساده و پایدار است.
+
+	extbf{ب) اثر بر پایداری و هزینه:}
+هدف رگرسیون ثابت و کراندار معمولاً پایداری آموزش را بهتر می‌کند و تابع هزینه به یک \lr{Least Squares} ساده تبدیل می‌شود.
+
+\subsection*{سوال ۳: بازنویسی تابع هزینه (Score Matching)}
+برای کرنل اغتشاش گاوسی
+$q(x_t|x_0)=\mathcal{N}(x_t;x_0,\sigma_t^2 I)$
+داریم:
+\begin{equation}
+\nabla_{x_t}\log q(x_t|x_0)=\frac{x_0-x_t}{\sigma_t^2}.
+\end{equation}
+بنابراین آموزش مدل امتیاز $s_\theta(x_t,t)$ با کمینه‌سازی خطای مربعی نسبت به این گرادیان (طبق نتیجه‌ی \lr{Vincent et al.}) به فرم
+$\mathbb{E}[\|s_\theta(x_t,t)-(x_0-x_t)/\sigma_t^2\|_2^2]$
+قابل بازنویسی است.
+
+% ==========================
 % بخش ۱: تابع هزینه و منحنی‌های خطا
 % ==========================
 \section{تابع هزینه و رفتار خطا}
@@ -19,6 +51,16 @@
 \begin{equation}
 \mathcal{L} = \mathbb{E}_{x_0, x_1, t} \left[ \left\| v_\theta(x_t, t) - (x_1 - x_0) \right\|_2^2 \right].
 \end{equation}
+
+\noindent\textbf{کد اصلی تابع هزینه در پیاده‌سازی:}
+\begin{minted}[fontsize=\footnotesize]{python}
+t = torch.rand(batch_size, device=device)  # t ~ Uniform(0,1)
+t_view = t.view(batch_size, 1, 1)
+x_t = (1.0 - t_view) * x0 + t_view * x1
+v_target = x1 - x0
+v_pred = model(x_t, t)
+loss = F.mse_loss(v_pred, v_target)
+\end{minted}
 
 \subsection{منحنی خطای آموزش و آزمون}
 
@@ -36,6 +78,19 @@
 % بخش ۲: نمونه‌گیری و حل‌گرهای ODE
 % ==========================
 \section{نمونه‌های تولیدی و مقایسه‌ی حل‌گرها}
+
+\subsection{گام ۳: نمونه‌گیری با حل‌گرهای ODE (Euler/Heun)}
+در نمونه‌گیری، ODE به صورت عددی حل می‌شود. افزایش تعداد گام‌ها هزینه محاسبات را بالا می‌برد اما معمولاً کیفیت را بهتر می‌کند.
+\begin{minted}[fontsize=\footnotesize]{python}
+def euler_step(x, t, dt):
+	return x + dt * v_theta(x, t)
+
+def heun_step(x, t, dt):
+	k1 = v_theta(x, t)
+	x_e = x + dt * k1
+	k2 = v_theta(x_e, t + dt)
+	return x + 0.5 * dt * (k1 + k2)
+\end{minted}
 
 \subsection{نمونه‌های تولیدی (نرمال‌شده و بازنرمال‌شده)}
 
@@ -80,6 +135,16 @@
 % بخش ۴: ارزیابی پیشرفته (SWD و خودهمبستگی)
 % ==========================
 \section{ارزیابی پیشرفته: فاصله Wasserstein بُرش‌خورده و خودهمبستگی}
+
+\subsection{گام ۸: محاسبه SWD (طرح کلی)}
+برای \lr{SWD}، داده‌ها روی چند جهت تصادفی پروجکت شده و میانگین فاصله Wasserstein تک‌بعدی گرفته می‌شود.
+\begin{minted}[fontsize=\footnotesize]{python}
+projections = torch.randn(n_proj, seq_len, device=device)
+projections = projections / projections.norm(dim=1, keepdim=True)
+real_proj = real @ projections.T
+gen_proj = gen @ projections.T
+swd = (torch.sort(real_proj, dim=0).values - torch.sort(gen_proj, dim=0).values).abs().mean()
+\end{minted}
 
 \begin{figure}[H]
 	\centering

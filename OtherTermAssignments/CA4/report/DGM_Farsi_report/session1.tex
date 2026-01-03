@@ -61,30 +61,30 @@ x_t=\sqrt{\bar{\alpha}_t}\,x_0+\sqrt{1-\bar{\alpha}_t}\,\epsilon,\quad \epsilon\
 \end{enumerate}
 
 \subsubsection*{سوال ۳: نقش ترم‌های KL در VLB و علت نادیده‌گرفتن در عمل}
-    extbf{الف) تشویق به هم‌خوانی با پسین واقعی:}
+	extbf{الف) تشویق به هم‌خوانی با پسین واقعی:}
 ترم‌های \lr{KL} مانند
 $D_{KL}(q(x_{t-1}|x_t,x_0)\,\|\,p_\theta(x_{t-1}|x_t))$
 باعث می‌شوند فرآیند معکوس یادگرفته‌شده به پسین واقعی فرآیند پیش‌رونده نزدیک شود.
 
-    extbf{ب) دلیل عملی:}
+        extbf{ب) دلیل عملی:}
 در بسیاری از پیاده‌سازی‌ها، به‌جای وزن‌دهی دقیق \lr{VLB} از هزینه‌ی ساده‌شده‌ی \lr{MSE} استفاده می‌شود چون (۱) بهینه‌سازی پایدارتر است و (۲) برای تولید تصویر، کیفیت ادراکی نمونه‌ها اهمیت بیشتری از بهینه‌سازی دقیق لگاریتم درست‌نمایی دارد.
 
 \subsubsection*{سوال ۴: نمونه‌گیری DDIM}
-    extbf{الف) تعیین‌گر شدن:}
+	extbf{الف) تعیین‌گر شدن:}
 در \lr{DDIM} با تنظیم پارامتر نویز تزریقی (معمولاً با نماد $\eta$ یا $\sigma_t$) روی صفر، جمله‌ی نویز حذف می‌شود و نگاشت $x_t\to x_{t-1}$ کاملاً تعیین‌گر می‌گردد.
 
-    extbf{ب) سرعت بیشتر:}
+        extbf{ب) سرعت بیشتر:}
 چون مسیر تعیین‌گر است، می‌توان گام‌ها را با فواصل بزرگ‌تر برداشت (\lr{step skipping}) و به‌جای ۱۰۰۰ گام، با تعداد کمی گام (مثلاً ۵۰) نمونه‌های قابل قبول تولید کرد.
 
 \subsubsection*{سوال ۵: Classifier-Free Guidance (CFG)}
-    extbf{الف) ایده‌ی اصلی:}
+	extbf{الف) ایده‌ی اصلی:}
 در \lr{CFG} مدل هم‌زمان برای حالت شرطی و بی‌شرط آموزش داده می‌شود (با حذف تصادفی شرط در بخشی از داده‌ها). سپس در نمونه‌گیری، نویز نهایی به‌صورت ترکیبی از پیش‌بینی شرطی و بی‌شرط ساخته می‌شود:
 \begin{equation}
-    ilde{\epsilon}_\theta(x_t,c)=\epsilon_\theta(x_t|\emptyset)+w\big(\epsilon_\theta(x_t|c)-\epsilon_\theta(x_t|\emptyset)\big)
+        ilde{\epsilon}_\theta(x_t,c)=\epsilon_\theta(x_t|\emptyset)+w\big(\epsilon_\theta(x_t|c)-\epsilon_\theta(x_t|\emptyset)\big)
 \end{equation}
 که $w$ مقیاس هدایت است.
 
-    extbf{ب) اثر $w$:}
+        extbf{ب) اثر $w$:}
 افزایش $w$ معمولاً \textbf{وفاداری به پرامپت و شارپنس} را بیشتر می‌کند اما \textbf{تنوع} را کاهش می‌دهد و اگر خیلی بزرگ شود می‌تواند مصنوعات و اغراق در رنگ/بافت ایجاد کند.
 
 % ==========================
@@ -99,6 +99,73 @@ $D_{KL}(q(x_{t-1}|x_t,x_0)\,\|\,p_\theta(x_{t-1}|x_t))$
 روی داده‌ی
 \lr{CIFAR-10}
 گزارش می‌شود.
+
+\subsection{گزارش گام‌به‌گام پیاده‌سازی DDPM/DDIM (مطابق صورت سؤال)}
+در این قسمت، مراحل اصلی پیاده‌سازی مطابق صورت سؤال ارائه می‌شود. (کد کامل در نوت‌بوک تمرین موجود است.)
+
+\subsubsection*{گام ۱: پیاده‌سازی زمان‌بندی نویز (Noise Schedule)}
+برای زمان‌بندی خطی، $\beta_t$ بین دو مقدار شروع و پایان به صورت خطی تغییر می‌کند و سپس $\alpha_t=1-\beta_t$ و $\bar{\alpha}_t$ پیش‌محاسبه می‌شوند.
+\begin{minted}[fontsize=\footnotesize]{python}
+class DDPMScheduler:
+    def __init__(self, num_timesteps=1000, beta_start=1e-4, beta_end=2e-2, device="cuda"):
+        self.num_timesteps = num_timesteps
+        self.device = device
+
+        self.betas = torch.linspace(beta_start, beta_end, num_timesteps, device=device)
+        self.alphas = 1.0 - self.betas
+        self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
+
+        self.sqrt_alphas_cumprod = torch.sqrt(self.alphas_cumprod)
+        self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - self.alphas_cumprod)
+\end{minted}
+
+\subsubsection*{گام ۲: پیاده‌سازی \lr{perturb\_input} (فرآیند پیش‌رونده)}
+با ترفند بازپارامترده:
+$x_t=\sqrt{\bar{\alpha}_t}x_0+\sqrt{1-\bar{\alpha}_t}\epsilon$.
+\begin{minted}[fontsize=\footnotesize]{python}
+def perturb_input(self, x0, t, noise=None):
+    if noise is None:
+        noise = torch.randn_like(x0, device=self.device)
+    sqrt_ab = self._extract(self.sqrt_alphas_cumprod, t, x0.shape)
+    sqrt_1mab = self._extract(self.sqrt_one_minus_alphas_cumprod, t, x0.shape)
+    xt = sqrt_ab * x0 + sqrt_1mab * noise
+    return xt, noise
+\end{minted}
+
+\subsubsection*{گام ۳: حلقه آموزش (Training Loop)}
+در هر گام آموزش، $t$ به‌صورت تصادفی نمونه‌برداری می‌شود، نویز افزوده می‌شود، مدل نویز را پیش‌بینی می‌کند و هزینه \lr{MSE} کمینه می‌شود.
+\begin{minted}[fontsize=\footnotesize]{python}
+def train_step(self, x0):
+    self.model.train()
+    b = x0.shape[0]
+    t = torch.randint(0, self.scheduler.num_timesteps, (b,), device=self.device)
+    xt, noise = self.scheduler.perturb_input(x0, t)
+    noise_pred = self.model(xt, t)
+    loss = F.mse_loss(noise_pred, noise)
+    self.optimizer.zero_grad()
+    loss.backward()
+    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+    self.optimizer.step()
+    return loss.item()
+\end{minted}
+
+\subsubsection*{گام ۴: نمونه‌گیری (Sampling) برای DDPM و DDIM}
+نمونه‌گیری \lr{DDPM} از نویز گاوسی شروع می‌کند و با طی گام‌های معکوس، به تصویر می‌رسد. در \lr{DDIM} با $\eta=0$ فرآیند تعیین‌گر می‌شود و می‌توان تعداد گام‌ها را کم کرد.
+\begin{minted}[fontsize=\footnotesize]{python}
+@torch.no_grad()
+def sample_ddpm(self, batch_size, img_size=(3, 32, 32)):
+    self.model.eval()
+    x = torch.randn(batch_size, *img_size, device=self.device)
+    for t in reversed(range(self.scheduler.num_timesteps)):
+        t_tensor = torch.full((batch_size,), t, device=self.device)
+        eps = self.model(x, t_tensor)
+        alpha = self.scheduler.alphas[t]
+        alpha_bar = self.scheduler.alphas_cumprod[t]
+        beta = self.scheduler.betas[t]
+        z = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
+        x = (1.0 / torch.sqrt(alpha)) * (x - ((1 - alpha) / torch.sqrt(1 - alpha_bar)) * eps) + torch.sqrt(beta) * z
+    return x
+\end{minted}
 
 \subsection{نمونه‌های داده‌ی آموزشی و فرآیند افزودن نویز}
 
@@ -162,6 +229,62 @@ $D_{KL}(q(x_{t-1}|x_t,x_0)\,\|\,p_\theta(x_{t-1}|x_t))$
 % بخش ۲: نتایج DreamBooth
 % ==========================
 \section{نتایج Stable Diffusion و DreamBooth}
+
+\subsection{گزارش گام‌به‌گام DreamBooth (مطابق صورت سؤال)}
+در این آزمایش از \lr{Stable Diffusion v1-5} استفاده شده و برای شخصی‌سازی سوژه، یک شناسه‌ی متنی ویژه (مثل \grayBox{sks}) به سوژه اختصاص داده می‌شود.
+
+\subsubsection*{گام ۱: آماده‌سازی داده و پرامپت‌ها}
+\begin{itemize}
+    \item \textbf{Instance Prompt:} \lr{a photo of sks person}
+    \item \textbf{Class Prompt:} \lr{a photo of a person}
+\end{itemize}
+
+\subsubsection*{گام ۲: کلاس دیتاست}
+دیتاست باید هم تصاویر \lr{instance} و هم (در صورت استفاده) تصاویر \lr{class} برای \lr{prior preservation} را تولید کند.
+\begin{minted}[fontsize=\footnotesize]{python}
+def __getitem__(self, idx):
+    example = {}
+    instance_idx = idx % len(self.instance_images)
+    instance_image = Image.open(self.instance_images[instance_idx]).convert("RGB")
+    example["instance_images"] = self.transforms(instance_image)
+    example["instance_prompt_ids"] = self.tokenizer(
+        self.instance_prompt,
+        truncation=True,
+        padding="max_length",
+        max_length=self.tokenizer.model_max_length,
+        return_tensors="pt",
+    ).input_ids.squeeze(0)
+
+    if self.class_images is not None and len(self.class_images) > 0:
+        class_idx = idx % len(self.class_images)
+        class_image = Image.open(self.class_images[class_idx]).convert("RGB")
+        example["class_images"] = self.transforms(class_image)
+        example["class_prompt_ids"] = self.tokenizer(
+            self.class_prompt,
+            truncation=True,
+            padding="max_length",
+            max_length=self.tokenizer.model_max_length,
+            return_tensors="pt",
+        ).input_ids.squeeze(0)
+    return example
+\end{minted}
+
+\subsubsection*{گام ۴: حلقه آموزش (LoRA Fine-tuning)}
+برای سبک‌سازی آموزش، از \lr{LoRA} استفاده می‌شود تا تنها تعداد کمی پارامتر قابل آموزش باشد.
+\begin{minted}[fontsize=\footnotesize]{python}
+def train_step(self, batch):
+    latents = self.vae.encode(batch["instance_images"].to(self.device)).latent_dist.sample() * 0.18215
+    noise = torch.randn_like(latents)
+    timesteps = torch.randint(0, self.noise_scheduler.config.num_train_timesteps, (latents.shape[0],), device=self.device).long()
+    noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
+    encoder_hidden_states = self.text_encoder(batch["instance_prompt_ids"].to(self.device))[0]
+    noise_pred = self.unet(noisy_latents, timesteps, encoder_hidden_states).sample
+    loss = F.mse_loss(noise_pred, noise)
+    return loss
+\end{minted}
+
+\subsubsection*{گام ۵: آزمون و تولید تصویر}
+پس از چندصد گام آموزش، با پرامپت‌هایی که شامل شناسه‌ی \grayBox{sks} هستند، می‌توان تصاویر شخصی‌سازی‌شده تولید کرد.
 
 \subsection{تصاویر آموزشی و تعریف شناسه‌ی ویژه}
 
