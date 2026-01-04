@@ -41,11 +41,7 @@ models/
 saved_models/
 
 # Generated images and outputs
-*.png
-*.jpg
-*.jpeg
 !**/README*.png
-images/output_*.png
 samples/
 generated/
 
