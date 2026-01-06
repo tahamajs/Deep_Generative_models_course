@@ -8,7 +8,7 @@
 \usepackage[english]{babel}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{xcolor}
-\usepackage{tcolorbox}
+\usepackage{xcolor}
 \usepackage{listings}
 \usepackage{geometry}
 \usepackage{graphicx}
@@ -17,11 +17,8 @@
 \usepackage{multirow}
 \usepackage{enumitem}
 \usepackage{fancyhdr}
-\usepackage{lastpage}
 \usepackage{hyperref}
 \usepackage{tikz}
-\usepackage{algorithm}
-\usepackage{algorithmic}
 \usepackage{etoolbox}
 
 % =========================================
@@ -83,40 +80,24 @@
 % =========================================
 % CUSTOM BOXES
 % =========================================
-\tcbset{
-    solutionbox/.style={
-        enhanced,
-        colback=primary!5,
-        colframe=primary!70,
-        boxrule=1pt,
-        arc=3mm,
-        fonttitle=\bfseries\color{primary},
-        title=Solution,
-        sharp corners=north,
-        rounded corners=south
-    },
-    infobox/.style={
-        enhanced,
-        colback=success!5,
-        colframe=success!70,
-        boxrule=1pt,
-        arc=2mm,
-        fonttitle=\bfseries\color{success},
-        title=Information,
-        sharp corners=north,
-        rounded corners=south
-    },
-    warningbox/.style={
-        enhanced,
-        colback=warning!5,
-        colframe=warning!70,
-        boxrule=1pt,
-        arc=2mm,
-        fonttitle=\bfseries\color{warning},
-        title=Warning,
-        sharp corners=north,
-        rounded corners=south
+\newenvironment{solutionbox}{
+    \par
+    \vspace{0.5em}
+    \noindent
+    \colorbox{primary!10}{
+        \parbox{\dimexpr\textwidth-2\fboxsep\relax}{
+            \vspace{0.5em}
+            \textbf{\color{primary}Solution:}
+            \vspace{0.3em}
+            \par
+            \small
+        }
     }
+    \vspace{0.5em}
+    \par
+}{
+    \endcolorbox
+    \vspace{0.5em}
 }
 
 % =========================================
@@ -239,7 +220,7 @@ Our framework utilizes a 64-length overlapping window of SPY log-returns standar
 \subsubsection{Question 1: Closed Form Proof}
 \textit{Show that $q(x_t | x_0) = \mathcal{N}(\sqrt{\bar{\alpha}_t} x_0, (1 - \bar{\alpha}_t) I)$.}
 
-\begin{tcolorbox}[solutionbox]
+\begin{solutionbox}
     To prove the closed form, we start with the single-step transition kernel defined in the DDPM paper:
     \begin{equation}
         q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{\alpha_t} x_{t-1}, (1 - \alpha_t) I)
@@ -1365,7 +1346,7 @@ def sample_from_flow(model, x0, num_steps=100):
 \subsubsection{Subsection 1: DDPM and DDIM Implementation}
 
 \textbf{Step 1: Noise Schedule Implementation}
-\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 1: Noise Schedule Implementation]
+\begin{solutionbox}
     The linear variance schedule is implemented by linearly interpolating $\beta_t$ from $\beta_{start}$ to $\beta_{end}$. We also precompute all necessary coefficients for the forward and reverse processes.
     
 \begin{lstlisting}[language=Python]
@@ -3903,5 +3884,47 @@ Notes:
 - Figures used in this report are saved to the folder referenced by `REPORT_FIG_DIR` (see `code/utils.py`).
 
 \vspace{6pt}
-If you want, I can now embed the notebook's generated images into the report appendix and finish polishing references and compilation errors. 
+\vspace{6pt}
+If you want, I can now embed the notebook's generated images into the report appendix and finish polishing references and compilation errors.
+
+\subsection{Assignment Requirements Mapping}
+This appendix maps the report contents to the assignment specification (see the assignment description). Ensure the following items are present in the final PDF:
+\begin{itemize}
+    \item For Question One (Diffusion Models): include full derivations (closed-form marginal), explanation of noise prediction advantages, VLB discussion, and DDIM/CFG notes. Corresponding implementation and runnable examples are included in the appendix code listings and runnable scripts (see `code/ddpm.py` and `code/run_ddpm.py`).
+    \item For Question One (Practical): provide the implemented noise schedule, the `perturb_input` implementation, training loop, and sampling routine. Include training curves, sample grids, and captions for each figure.
+    \item For Question Two (Flow Matching): include the theoretical vector-field derivation, reasons for linear paths, and practical implementation details. Reference `code/flow_matching.py` and `code/run_flow_matching.py` for the dataset preprocessing and training code.
+    \item Evaluation: include histograms/KDE comparisons, Sliced Wasserstein Distance (SWD) values, autocorrelation plots and MSE values, and the tabulated mean/variance/volatility comparison between real and generated data.
+    \item Stable Diffusion / DreamBooth (if used): include dataset description, `DreamBoothDataset` details, LoRA settings (if applied) and example prompts. Refer to `code/stable_diffusion.py` and `code/run_stable_diffusion.py`.
+\end{itemize}
+
+\subsection{Submission Checklist}
+Before zipping and submitting, confirm the following items are present and correct in the report and repository:
+\begin{itemize}
+    \item All figures have captions and numbers and are referenced in the text.
+    \item Code used to produce results is included in the appendix (full files) and runnable scripts are present in `code/`.
+    \item A short ``How to run'' section with exact commands is present (see the last part of this appendix).
+    \item Training and test loss curves are included and described.
+    \item Evaluation metrics (SWD, ACF MSE, histogram/KDE comparisons, summaries of moments) are reported with short interpretation.
+    \item The ZIP file is named exactly: `HW4_[Lastname]_[StudentNumber].zip` and contains the report PDF, all code, and necessary small assets (figures). Large model weights may be excluded but include instructions to download if necessary.
+    \item Submission contact emails are included in the report: `mollahoseini@ut.ac.ir`, `fatemehnadir@gmail.com`.
+    \item A short originality statement is added to the report (student declaration that the work is original and sources are cited).
+\end{itemize}
+
+\subsection{Quick Reproducibility Commands}
+Run these from the `code/` folder (suggested virtualenv/conda with required packages installed):
+\begin{verbatim}
+python3 run_ddpm.py
+python3 run_flow_matching.py
+python3 run_stable_diffusion.py  # optional, needs diffusers & peft
+pdflatex report.tex  # compile final PDF in the report folder
+\end{verbatim}
+
+\subsection{Final Notes}
+If you want, I will now:
+\begin{enumerate}
+    \item Embed the notebook-exported images into the appendix figures directory and add captions.
+    \item Finish inserting remaining full-source `lstlisting` blocks into the appendix (complete code listings).
+    \item Run a local LaTeX compile and fix any errors that appear.
+\end{enumerate}
+
 \end{document}
