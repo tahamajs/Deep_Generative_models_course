@@ -40,37 +40,274 @@ Generative modeling seeks to learn the data distribution $p_{\text{data}}(x)$ su
 This report implements both approaches on MNIST digits. We provide exhaustive mathematical exposition, detailed design choices, and comprehensive experimental narratives, as required by the assignment brief in \texttt{next\_year/CA3/description/DGM\_HW3.pdf}.
 
 \section{Answering Assignment Questions}
-This section addresses key questions from the HW3 specification, ensuring correct and detailed responses.
+This section provides complete and detailed answers to all questions from the HW3 specification.
 
-\subsection{What is an Energy-Based Model and how does it differ from other generative models?}
-An Energy-Based Model (EBM) defines a probability distribution $p_\theta(x) \propto \exp(-f_\theta(x))$, where $f_\theta(x)$ is an energy function learned to assign low energy to data and high energy to non-data. Unlike VAEs (which use latent variables) or GANs (which use adversarial training), EBMs directly model the density without latent spaces or discriminators. Training uses contrastive divergence to approximate intractable expectations.
+\subsection{Question 1: Energy-Based Models (EBM)}
 
-\subsection{Explain Contrastive Divergence and its role in EBM training.}
-Contrastive Divergence approximates the MLE gradient by replacing the model expectation with samples from a short MCMC chain. It computes $\nabla_\theta \mathcal{L} \approx \mathbb{E}_{\text{data}}[\nabla f] - \mathbb{E}_{\text{MCMC}}[\nabla f]$, enabling tractable training despite the partition function.
+\subsubsection{Part 1: Theory Questions}
 
-\subsection{What is Langevin Dynamics and why is it used for sampling in EBMs?}
-Langevin Dynamics is an MCMC method that simulates $dx = -\frac{1}{2} \nabla E(x) dt + dW_t$ with discrete updates $x_{k+1} = x_k - \eta \nabla E(x_k) + \sqrt{2\eta} \xi_k$. It samples from $p_\theta$ by following the energy gradient with noise, used because direct sampling is impossible.
+\textbf{Subsection 1 (4 Points):} If we want to generate a face of a young man using an Energy-Based Model trained on faces, what method can we use? (Easier model).
 
-\subsection{Why is rejection sampling inefficient for high-dimensional distributions like MNIST?}
-Rejection sampling requires a proposal $q$ and constant $M$ such that $p(x) \leq M q(x)$. For Gaussians with slight variance difference, $M = (\sigma_q / \sigma_p)^d$ grows exponentially with dimension $d=784$, making acceptance rate tiny ($10^{-4}$), rendering it impractical.
+To generate a face of a young man using an EBM trained on faces, we can use Langevin Dynamics sampling. Start from a random noise image (e.g., uniform [0,1]) and run Langevin steps to sample from the model's distribution. Since the model is trained on faces, the samples will resemble faces, but to bias towards "young man," we might need conditional EBMs or post-processing. For unconditional, it's the standard sampling method.
 
-\subsection{What is a Score-Based Model and Denoising Score Matching?}
-A Score-Based Model learns $s_\theta(x) = \nabla \log p_\theta(x)$. Denoising Score Matching trains on noisy data $\tilde{x} = x + \sigma \epsilon$, matching $s_\theta(\tilde{x}, \sigma)$ to the known score of the noisy distribution, avoiding the need for the true data score.
+\textbf{Subsection 2 (5 Points):} First, explain the Rejection Sampling method. If we want to sample from a distribution corresponding to an Energy-Based Model trained on the MNIST dataset using Rejection Sampling, let the optimal proposal distribution be $q$ and the target unnormalized distribution be $\tilde{p}$. If $\sigma_q = 1.01 \sigma_p$, what will be the acceptance rate?
 
-\subsection{Explain Annealed Langevin Dynamics for sampling.}
-Annealed Langevin Dynamics samples by starting from high noise and annealing to low noise, using score estimates at each level. It reverses the diffusion process, allowing generation from pure noise via progressive denoising.
+Rejection Sampling is a method to sample from a target distribution $p(x)$ using a proposal distribution $q(x)$ that we can sample from easily. We find a constant $M$ such that $p(x) \leq M q(x)$ for all $x$. Then, sample $x \sim q$, sample $u \sim \text{Uniform}(0, M q(x))$, accept if $u \leq p(x)$.
 
-\subsection{How does conditional generation work in NCSNs?}
-Conditional NCSNs learn $s_\theta(x, \sigma, y)$ by injecting class embeddings via FiLM modulation. During sampling, labels guide the score, producing class-specific images.
+For an EBM, the unnormalized $\tilde{p}(x) = \exp(-E(x))$, so $p(x) = \tilde{p}(x)/Z$. To use rejection sampling, we need $M$ such that $\tilde{p}(x) \leq M q(x)$.
 
-\subsection{Compare EBM and NCSN performance on MNIST.}
-EBMs generate diverse samples but may blur due to MCMC; NCSNs produce sharper images with better denoising, but require more compute. Both achieve qualitative success on MNIST.
+For MNIST (d=784), if $q = \mathcal{N}(0, \sigma_q^2 I)$, $\tilde{p} = \mathcal{N}(0, \sigma_p^2 I)$, then $M = (\sigma_q / \sigma_p)^d$. With $\sigma_q = 1.01 \sigma_p$, $M = (1.01)^{784} \approx e^{7.8} \approx 2440$. Acceptance rate $\alpha = 1/M \approx 4 \times 10^{-4}$.
 
-\subsection{What are the hyperparameters and their effects?}
-See Table \ref{tab:hyperparams}. Key: Langevin steps affect mixing; noise levels affect scale learning; regularization prevents energy explosion.
+\textbf{Subsection 3 (6 Points):} Generative models from the EBM family define a flexible function $E$ as the energy function: $p(x) = \exp(-E(x))/Z$. To train these models using the Maximum Likelihood method, we calculate the gradient of the log-likelihood. It can be proven that this gradient equals: $\nabla_\theta \log p_\theta(x) = -\nabla_\theta E_\theta(x) + \mathbb{E}_{x' \sim p_\theta} [\nabla_\theta E_\theta(x')]$
 
-\subsection{How to ensure reproducibility?}
-Use fixed seeds, log configs and commits, save checkpoints. Our code includes \texttt{run\_info.json} with metadata.
+\textbf{a)} Based on the relation above, what change does the training process try to make to the value of $E$ for the training data ($x_{\text{real}}$) and the generated samples ($x_{\text{fake}}$)?
+
+The gradient is $\nabla_\theta \mathcal{L} = \mathbb{E}_{x \sim p_{\text{data}}} [-\nabla_\theta E_\theta(x)] + \mathbb{E}_{x' \sim p_\theta} [\nabla_\theta E_\theta(x')]$. To maximize $\mathcal{L}$, we want to decrease $E$ on data (first term negative) and increase $E$ on model samples (second term positive). So, training lowers energy on real data and raises energy on fake samples.
+
+\textbf{b)} What is the computational challenge of the second term (Expectation over the model) in practice? How does the Contrastive Divergence (CD) method attempt to resolve this challenge?
+
+The second term requires sampling from $p_\theta$, which is intractable due to unknown $Z_\theta$. CD approximates it with short MCMC chains starting from data, using Langevin dynamics to get "negative" samples, replacing the model expectation with MCMC expectation.
+
+\subsubsection{Part 2: Implementation Questions}
+
+\textbf{Subsection 1: Data Preparation (5 Points)}
+
+We load the MNIST dataset using `torchvision.datasets.MNIST` for both training and test sets. Apply transformations to convert images to tensors and normalize pixel values to the range [0, 1]. Create DataLoader objects with a batch size of 64 for efficient batch processing. Implement a visualization function using `matplotlib` to display a grid of images (e.g., 8x2 grid) from a batch. Generate two separate visualizations: one for random training images and one for random test images, ensuring the images are properly scaled and labeled.
+
+\textbf{Subsection 2: Architecture and Training (15 Points)}
+
+The EBM architecture is implemented as a convolutional neural network following Table 1 exactly. It consists of convolutional layers with 3x3 kernels, stride 1, padding 1, followed by LeakyReLU(0.2), downsampling with 4x4 kernels stride 2 padding 1, and finally AdaptiveAvgPool2d to reduce to 1x1, flattened and passed through a linear layer to output a scalar energy value.
+
+The Langevin Sampling function initializes from a given starting point (e.g., uniform noise [0,1] for generation, or data for denoising), and iteratively updates: $x_{k+1} = x_k - \eta \nabla_x E_\theta(x_k) + \sqrt{2\eta} \xi_k$, where $\xi_k \sim \mathcal{N}(0,I)$, clamped to [0,1].
+
+Training follows Algorithm 1: For each batch, compute energies of real data $E_{\text{real}} = E_\theta(x_{\text{real}})$, generate fake samples $x_{\text{fake}}$ using Langevin sampling starting from noise, compute $E_{\text{fake}} = E_\theta(x_{\text{fake}})$, then loss = mean($E_{\text{real}}$) - mean($E_{\text{fake}}$) + $\lambda$ * (mean($E_{\text{real}}^2$) + mean($E_{\text{fake}}^2$)). Use Adam optimizer with learning rate 1e-3, epochs=10, $\lambda=1e-3$.
+
+Logging: Every 100 steps, print loss, mean $E_{\text{real}}$, mean $E_{\text{fake}}$. Visualization: At epochs 1, 5, 10, generate and display 16 images from noise.
+
+Post-training sampling: Select 16 images from train set, use as starting points for Langevin (e.g., 100 steps), display original vs generated.
+
+\textbf{Subsection 3: Image Generation (10 Points)}
+
+To generate new images, start from uniform noise $x_0 \sim \text{Uniform}([0,1]^{28\times28})$, run Langevin dynamics for 100-200 steps with step size 1e-2. Generate 16 such images and display in a 4x4 grid.
+
+Analysis: The generated images should resemble handwritten digits, but may be blurry due to the approximate nature of MCMC sampling. If quality is poor, it could be due to insufficient training epochs or Langevin steps; the denoising subsection helps improve this.
+
+\textbf{Subsection 4: Denoising Noisy Images (15 Points)}
+
+Select 16 images from the test set. For each noise level $\sigma \in \{0.2, 0.4, 0.6\}$, add Gaussian noise: $x_{\text{noisy}} = x + \sigma \epsilon$, $\epsilon \sim \mathcal{N}(0,I)$, clamp to [0,1]. Display grids showing original, noisy, and denoised (after Langevin starting from noisy, 100 steps).
+
+Report: For $\sigma=0.2$, denoising recovers most details; for $\sigma=0.4$, partial recovery; for $\sigma=0.6$, significant degradation. Success depends on noise level; model succeeds by following energy gradients to low-energy regions, but fails at high noise where structure is lost.
+
+Take 16 test images, add Gaussian noise with std 0.2, 0.4, 0.6, clamp to [0,1]. Display noisy vs original.
+
+Use noisy as start for Langevin, run steps, display denoised vs original vs noisy.
+
+Report: Denoising works well for low noise, degrades at high noise; model learns to remove noise by following energy gradients.
+
+\subsection{Question 2: Score-Based Models}
+
+\subsubsection{Part 1: Theory Questions}
+
+\textbf{Subsection 1 (5 Points):} Assume an Energy-Based Model is defined as $p(x) = \exp(-E(x))/Z$ for a probability distribution. Define the Score Function for this model. Show that the Score Function is independent of the Partition Function $Z$. What advantage does this feature create during model training?
+
+The score function is $s(x) = \nabla_x \log p(x) = \nabla_x ( -E(x) - \log Z ) = - \nabla_x E(x)$. It is independent of $Z$ since $\log Z$ is constant. Advantage: Training doesn't need to compute $Z$, making it tractable.
+
+\textbf{Subsection 2 (6 Points):} Explain why calculating the term $\nabla \cdot s(x)$ (divergence of the score) in the original Score Matching loss function is difficult and costly for high-dimensional data (like images). Prove that minimizing the Denoising Score Matching (DSM) objective function is equivalent to minimizing the original Score Matching objective on the noisy distribution (precise mathematical proof is not required; explaining the logic and relationship between the gradient of the optimal score matching and the score of the noisy distribution is sufficient).
+
+Computing $\nabla \cdot s(x)$ requires second derivatives, expensive for high-dim. DSM perturbs data $\tilde{x} = x + \sigma \epsilon$, score of noisy is $- \epsilon / \sigma$. Minimizing DSM matches scores to this, equivalent to score matching on noisy distribution, as the optimal score for noisy is known.
+
+\textbf{Subsection 3 (4 Points):} Consider a mixture of two Gaussian distributions with Disjoint Supports (Region A and Region B) with weights $w_a$ and $w_b$: $p(x) = w_a p_a(x) + w_b p_b(x)$.
+
+\textbf{a)} Show that the true score function $\nabla \log p(x)$ in any region depends only on the density of that region ($p_a$ or $p_b$) and effectively ignores the mixing weights ($w_a$ and $w_b$).
+
+In region A, $p(x) = w_a p_a(x)$, so $\log p(x) = \log w_a + \log p_a(x)$, score = $\nabla \log p_a(x)$. Similarly for B. Weights don't affect gradient.
+
+\textbf{b)} Explain why this property causes the Langevin Dynamics algorithm to fail to sample correctly from the mixture (unable to respect the weights $w_a$ and $w_b$) and why the samples cannot cross between the disjoint modes (mixing problem).
+
+Langevin follows score, which ignores weights, so samples proportion to local density, not global weights. Disjoint supports prevent crossing, as score is zero at boundaries.
+
+\textbf{Subsection 4 (5 Points):}
+
+\textbf{a)} Name the problems that arise when applying Score Matching directly to real data (without noise). Explain why these problems prevent correct learning.
+
+Problems: High variance due to score estimation, difficulty in computing divergence. Prevents learning because true score is unknown, and divergence is hard.
+
+\textbf{b)} Referring to the NCSN (Noise Conditional Score Networks) paper, explain how Multi-scale Noise Perturbation solves these problems. Explain the role of $\sigma_L$ (largest noise) and $\sigma_1$ (smallest noise) in Annealed Langevin Dynamics sampling.
+
+Multi-scale adds noise at different scales, allowing learning scores at various levels. $\sigma_L$ starts sampling from high noise, $\sigma_1$ refines to low noise, enabling progressive denoising.
+
+\subsubsection{Part 2: Implementation Questions}
+
+\textbf{Subsection 1: Base Model (20 Points)}
+
+Load MNIST dataset, apply normalization to [-1, 1] for better numerical stability in score estimation. Create a geometric sequence of noise levels: $\sigma_i = \sigma_{\max} \left( \frac{\sigma_{\min}}{\sigma_{\max}} \right)^{i/L}$ for $i=1$ to $L=10$, with $\sigma_{\max}=30$ and $\sigma_{\min}=0.01$.
+
+Implement the ScoreNet as a U-Net architecture per Table 2, using AdaptiveResBlocks that include convolutional layers, group normalization, and SiLU activations. For noise conditioning, use Gaussian Fourier Projection to embed $\sigma$ into a 256-dimensional vector, then apply FiLM modulation: compute scale and shift parameters from the embedding and apply element-wise to feature maps as $y = \gamma \odot x + \beta$.
+
+Training uses the weighted Denoising Score Matching loss: $\mathcal{L}_{\text{DSM}} = \mathbb{E}_{x,\epsilon,\sigma} \left[ \sigma^2 \left\| s_\theta(\tilde{x}, \sigma) + \frac{\epsilon}{\sigma} \right\|_2^2 \right]$, where $\tilde{x} = x + \sigma \epsilon$. Optimize with Adam, learning rate 2e-4, batch size 64, for 30 epochs. Plot the training loss versus epoch to monitor convergence.
+
+For sampling, implement Annealed Langevin Dynamics: Initialize $x$ from $\mathcal{N}(0, \sigma_L^2 I)$, then for each noise level $\ell = L$ down to 1, perform T=150 Langevin steps: $x \leftarrow x + \eta_\ell s_\theta(x, \sigma_\ell) + \sqrt{2\eta_\ell} \xi$, with $\eta_\ell = 2e-5 \times (\sigma_\ell / \sigma_1)^2$. Generate a 4x4 grid of 16 final samples. Additionally, for 3 different initial noises, visualize the evolution of the image at intermediate steps (e.g., after each noise level) to show the denoising process from pure noise to digit.
+
+\textbf{Subsection 2: Conditional Model (15 Points)}
+
+To make the model conditional, add an embedding layer `nn.Embedding(10, 256)` for the 10 digit classes. Combine the class embedding vector with the noise embedding vector (e.g., by summation or concatenation) before feeding into the FiLM projection in each AdaptiveResBlock.
+
+Retrain the entire network using the labeled MNIST training set, where the loss now conditions on the true class labels $y$: $\mathcal{L} = \mathbb{E} \left[ \sigma^2 \left\| s_\theta(\tilde{x}, \sigma, y) + \frac{\epsilon}{\sigma} \right\|_2^2 \right]$. Use the same hyperparameters as the base model.
+
+For generation, specify a class $y$ and perform ALD conditioning on that $y$. Create a 10x10 grid where each row corresponds to a fixed digit (0-9), and each column is a different random sample for that digit.
+
+Analysis: Compare with the unconditional model. Conditional generation should produce digits that more accurately match the specified class (e.g., all samples in row 5 look like '5'), but may have less diversity within the class. Unconditional generation is more varied but not class-specific. Evaluate quality based on fidelity to class and sharpness.
+
+\subsubsection{Hyperparameters and Their Effects}
+\begin{table}[H]
+\centering
+\caption{Hyperparameters for EBM and NCSN models.}
+\label{tab:hyperparams}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Parameter & Value & Description/Effect \\
+\midrule
+EBM Epochs & 10 & Number of training epochs; more epochs improve fit but risk overfitting. \\
+EBM Lambda & 1e-3 & Regularization strength; prevents energy explosion by penalizing large energies. \\
+EBM Langevin Steps & 60 & MCMC steps per batch; more steps better approximate model distribution but slower training. \\
+EBM Step Size & 1e-2 & Learning rate for Langevin; affects convergence speed and stability. \\
+NCSN Sigma Max ($\sigma_L$) & 30 & Largest noise level; starts learning from coarse scales. \\
+NCSN Sigma Min ($\sigma_1$) & 0.01 & Smallest noise level; refines to clean data. \\
+NCSN Num Levels (L) & 10 & Number of noise scales; balances training stability and quality. \\
+NCSN Batch Size & 64 & Training batch size; larger for stable gradients. \\
+NCSN Optimizer & Adam & Adaptive optimizer for stable convergence. \\
+NCSN Learning Rate & 2e-4 & Step size for Adam; tuned for DSM loss. \\
+NCSN Epochs & 30 & Training duration; sufficient for convergence. \\
+NCSN Langevin Steps (T) & 150 & Steps per noise level in ALD; more for better samples but slower. \\
+NCSN Step LR ($\eta$) & 2e-5 & Langevin step size; scales with noise level. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Experiments and Results}
+
+\subsection{Energy-Based Models}
+
+\subsubsection{Training Metrics}
+During EBM training, we logged the loss, mean energy of real data ($E_{\text{real}}$), and mean energy of fake data ($E_{\text{fake}}$) every 100 steps. The loss decreases over epochs, while $E_{\text{real}}$ decreases and $E_{\text{fake}}$ increases, indicating the model learns to distinguish real from fake samples.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/ebm_training_loss.png}
+\caption{EBM training loss, $E_{\text{real}}$, and $E_{\text{fake}}$ over epochs.}
+\label{fig:ebm_loss}
+\end{figure}
+
+\subsubsection{Langevin Sampling Visualization}
+Images generated at the start (epoch 1), middle (epoch 5), and end (epoch 10) of training show progressive improvement in digit-like structures.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/ebm_generation_progress.png}
+\caption{EBM generated images at epochs 1, 5, and 10.}
+\label{fig:ebm_progress}
+\end{figure}
+
+For post-training sampling, starting from real training images and running Langevin dynamics refines them slightly, demonstrating denoising capability.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/ebm_post_training.png}
+\caption{Original training images vs. Langevin-refined outputs.}
+\label{fig:ebm_post}
+\end{figure}
+
+\subsubsection{Unconditional Generation}
+The final grid of 16 images generated from uniform noise shows recognizable digits, though some are blurry due to MCMC limitations.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{images/ebm_unconditional.png}
+\caption{16 EBM-generated digits from noise.}
+\label{fig:ebm_uncond}
+\end{figure}
+
+Analysis: Quality is moderate; blurriness arises from short Langevin chains not fully mixing, leading to local minima.
+
+\subsubsection{Denoising}
+For noise levels 0.2, 0.4, 0.6, denoising recovers structure well at low noise but fails at high noise, hallucinating features.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{images/ebm_denoising_0.2.png}
+\caption{Denoising at noise level 0.2: Original | Noisy | Denoised.}
+\label{fig:ebm_denoise_0.2}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{images/ebm_denoising_0.4.png}
+\caption{Denoising at noise level 0.4: Original | Noisy | Denoised.}
+\label{fig:ebm_denoise_0.4}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{images/ebm_denoising_0.6.png}
+\caption{Denoising at noise level 0.6: Original | Noisy | Denoised.}
+\label{fig:ebm_denoise_0.6}
+\end{figure}
+
+Analysis: At 0.2, near-perfect recovery; at 0.4, partial; at 0.6, model over-smoothes or invents details.
+
+\subsection{Score-Based Models}
+
+\subsubsection{Training Metrics}
+The base NCSN loss decreases steadily over 30 epochs.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/ncsn_loss.png}
+\caption{NCSN training loss vs. epoch.}
+\label{fig:ncsn_loss}
+\end{figure}
+
+\subsubsection{Unconditional Generation}
+Grid of 16 generated digits shows sharp, diverse samples.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{images/ncsn_unconditional.png}
+\caption{16 NCSN-generated digits.}
+\label{fig:ncsn_uncond}
+\end{figure}
+
+Evolution for 3 samples shows structure emerging late in the process.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{images/ncsn_evolution.png}
+\caption{Evolution of 3 samples from noise to digit.}
+\label{fig:ncsn_evolution}
+\end{figure}
+
+Analysis: Digits form gradually, with coarse shapes first, details last.
+
+\subsubsection{Conditional Generation}
+Conditional loss plot similar to base.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/ncsn_conditional_loss.png}
+\caption{Conditional NCSN training loss vs. epoch.}
+\label{fig:ncsn_cond_loss}
+\end{figure}
+
+Grid with rows per digit (0-9).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{images/ncsn_conditional_grid.png}
+\caption{Conditional generation grid: rows 0-9.}
+\label{fig:ncsn_cond_grid}
+\end{figure}
+
+Analysis: High fidelity to classes; clearer than unconditional, but less intra-class variety.
 
 \section{Related Work}
 \subsection{Energy-Based Models}
@@ -475,6 +712,123 @@ The ScoreNet employs a U-Net style architecture with residual blocks and FiLM mo
     \item ALD in \texttt{ncsn\_sampling.py}: Annealed sampling with step size scaling.
     \item Denoising: For both models, applies the sampler to noisy inputs instead of pure noise.
 \end{itemize}
+
+\subsection{Code Snippets}
+\subsubsection{EBM Model Definition}
+\begin{verbatim}
+class ConvEnergyModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(32, 32, kernel_size=4, stride=2, padding=1),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(64, 64, kernel_size=4, stride=2, padding=1),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.AdaptiveAvgPool2d(output_size=1),
+        )
+        self.fc = nn.Linear(128, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = self.net(x)
+        h = h.view(h.size(0), -1)
+        energy = self.fc(h)
+        return energy.squeeze(-1)
+\end{verbatim}
+
+\subsubsection{Langevin Sampler}
+\begin{verbatim}
+class LangevinSampler:
+    def __init__(self, model: nn.Module, cfg: EBMConfig):
+        self.model = model
+        self.cfg = cfg
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        step_size = self.cfg.langevin_step_size
+        noise_scale = self.cfg.langevin_noise_scale * (2 * step_size) ** 0.5
+        xk = x
+        for _ in range(self.cfg.langevin_steps):
+            xk = xk.detach().requires_grad_(True)
+            energy = self.model(xk).sum()
+            grad = torch.autograd.grad(energy, xk)[0]
+            xk = xk - step_size * grad + noise_scale * torch.randn_like(xk)
+            xk = xk.clamp(self.cfg.clamp_min, self.cfg.clamp_max)
+        return xk.detach()
+\end{verbatim}
+
+\subsubsection{NCSN ScoreNet Forward}
+\begin{verbatim}
+def forward(
+    self, x: torch.Tensor, sigma: torch.Tensor, y: Optional[torch.Tensor] = None
+) -> torch.Tensor:
+    emb = self.sigma_embed(sigma)
+    if self.conditional:
+        if y is None:
+            raise ValueError("Class labels required for conditional ScoreNet.")
+        emb = emb + self.label_emb(y)
+    emb = self.emb_mlp(emb)
+
+    h0 = self.input_conv(x)
+    h1 = self.enc1(h0, emb)
+    h2 = self.enc2(self.down1(h1), emb)
+    h3 = self.enc3(self.down2(h2), emb)
+
+    u1 = F.interpolate(h3, scale_factor=2, mode="nearest")
+    d1 = self.dec1(torch.cat([u1, h2], dim=1), emb)
+    u2 = F.interpolate(d1, scale_factor=2, mode="nearest")
+    d2 = self.dec2(torch.cat([u2, h1], dim=1), emb)
+    out = self.out_conv(F.silu(d2))
+    return out
+\end{verbatim}
+
+\subsubsection{DSM Loss}
+\begin{verbatim}
+def dsm_loss(
+    model: nn.Module,
+    x: torch.Tensor,
+    cfg: NCSNConfig,
+    sigmas: torch.Tensor,
+    y: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
+    batch_size = x.size(0)
+    # pick a noise level per-sample
+    idx = torch.randint(0, cfg.num_levels, (batch_size,), device=x.device)
+    sigma = sigmas[idx]
+    noise = torch.randn_like(x)
+    x_noisy = x + sigma.view(-1, 1, 1, 1) * noise
+
+    score = model(x_noisy, sigma, y)
+    target = -noise / sigma.view(-1, 1, 1, 1)
+    loss = (
+        0.5 * (score - target).pow(2).reshape(batch_size, -1).mean(dim=1) * (sigma**2)
+    )
+    return loss.mean()
+\end{verbatim}
+
+\subsubsection{Annealed Langevin Dynamics}
+\begin{verbatim}
+def annealed_langevin_dynamics(
+    model: nn.Module,
+    cfg: NCSNConfig,
+    sigmas: torch.Tensor,
+    x: torch.Tensor,
+    y: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
+    """Run annealed Langevin dynamics to sample/denoise (returns final tensor)."""
+    for sigma in sigmas:
+        step_size = cfg.step_lr * (sigma / sigmas[-1]) ** 2
+        for _ in range(cfg.langevin_steps):
+            noise = torch.randn_like(x)
+            score = model(x, sigma.expand(x.size(0)), y)
+            x = x + step_size * score + (2 * step_size) ** 0.5 * noise
+        x = x.clamp(-1.0, 1.0)
+    return x
+\end{verbatim}
 
 \section{Reproducibility and How to Run}
 \label{sec:repro}
