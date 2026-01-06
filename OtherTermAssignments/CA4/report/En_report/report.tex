@@ -1,103 +1,192 @@
 \documentclass[a4paper,12pt]{article}
-% 1. Load required packages
+
+% =========================================
+% PACKAGES AND SETUP
+% =========================================
 \usepackage[utf8]{inputenc}
-\usepackage{amsmath}   % For math symbols
-\usepackage{xcolor}    % For colors
-\usepackage{tcolorbox} % Required to create the solutionbox
-\usepackage{listings}  % Required for lstlisting environment
-% \pagestyle{fancy}
-\usepackage{etoolbox}
-\makeatletter
-\patchcmd{\@fancyhead}{\rlap}{\@firstofone}{}{}
-\patchcmd{\@fancyfoot}{\rlap}{\@firstofone}{}{}
-\makeatother
-% \usepackage{xepersian}
-% \settextfont[
-%     Scale=1.2,
-%     BoldFont={B Nazanin Bold.ttf}, 
-%     ItalicFont={B Nazanin.ttf},    % <--- این خط مشکل فونت را حل می‌کند
-%     SlantedFont={B Nazanin.ttf}    % <--- این خط هم برای اطمینان
-% ]{B Nazanin.ttf}
-% \setlatintextfont{TimesNewRoman}
-% تنظیمات جعبه‌ها
-\tcbset{
-    enhanced,
-    colback=gray!5,
-    colframe=black!75,
-    boxrule=0.5mm,
-    arc=2mm,
-    fonttitle=\bfseries
-}
-%۶.تنظیماتکدها(بعداززی‌پرشین)
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-\usepackage[table]{xcolor} % برای رنگی کردن سطرهای جدول
-\lstset{
-basicstyle=\ttfamily\footnotesize\latin,%مهم:latinبرایچپ‌چینشدن
-backgroundcolor=\color{backcolour},
-numberstyle=\tiny\color{codegray},
-breaklines=true,
-frame=single,
-numbers=left,
-%direction=LTR
-}
-
-%دستوراتکمکیبرایعکس
-\newcommand{\imgbox}[3]{
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{#1}
-\caption{#3}
-\label{fig:#2}
-\end{figure}
-}
-% \setlatintextfont[Scale=1.1]{Latin Modern Roman}
-
-% % 2. Define the missing solutionbox environment
-\newtcolorbox{solutionbox}{
-    colback=blue!5!white,
-    colframe=blue!75!black,
-    fonttitle=\bfseries,
-    title=Solution,
-    arc=0mm,
-    outer arc=0mm
-}
-
-
-\usepackage{graphicx}
-\usepackage{geometry}
-
-% Safe alias used in notebook-exported LaTeX: map to includegraphics
-\providecommand{\maybeincludegraphics}[2]{\includegraphics[#1]{#2}}
-
-\geometry{
-	letterpaper,
-	left=20mm,
-	right=20mm,
-	top=25mm,
-	bottom=30mm,
-}
-
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
 \usepackage{listings}
-\usepackage{float}       % Fixes: Unknown float option `H`
-\usepackage{booktabs}    % Fixes: Is \usepackage{booktabs} missing?
-\usepackage[utf8]{inputenc}
-\usepackage[greek,english]{babel} % Supports Greek characters in text
-\usepackage{textgreek}   % Allows using \textbeta, \texteta, etc.
-\usepackage{amsmath}     % Best practice for math/Greek characters
-\lstset{
-    basicstyle=\ttfamily\small,
-    % Changing columns to flexible or fullflexible usually stops this error
-    columns=fullflexible,
-    % This ensures underscores are printed exactly as they are
-    literate={_}{{\char`\_}}1, 
-    breaklines=true,
-    keepspaces=true
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{etoolbox}
+
+% =========================================
+% PAGE GEOMETRY
+% =========================================
+\geometry{
+    left=25mm,
+    right=25mm,
+    top=30mm,
+    bottom=30mm,
+    headheight=15mm,
+    footskip=10mm
 }
-% 3. Basic configuration for code listings (lstlisting)
+
+% =========================================
+% COLOR SCHEME
+% =========================================
+\definecolor{primary}{RGB}{41, 128, 185}    % Professional blue
+\definecolor{secondary}{RGB}{52, 152, 219}  % Lighter blue
+\definecolor{accent}{RGB}{155, 89, 182}     % Purple accent
+\definecolor{success}{RGB}{46, 204, 113}    % Green
+\definecolor{warning}{RGB}{241, 196, 15}    % Yellow
+\definecolor{danger}{RGB}{231, 76, 60}      % Red
+
+\definecolor{codebg}{RGB}{248, 249, 250}
+\definecolor{codetext}{RGB}{33, 37, 41}
+\definecolor{comment}{RGB}{108, 117, 125}
+\definecolor{keyword}{RGB}{0, 123, 255}
+\definecolor{string}{RGB}{40, 167, 69}
+
+% =========================================
+% HEADER AND FOOTER
+% =========================================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage\ of \pageref{LastPage}}
+\fancyfoot[C]{\footnotesize Deep Generative Models - Homework 4}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% =========================================
+% TITLE FORMATTING
+% =========================================
+\usepackage{titlesec}
+\titleformat{\section}
+    {\color{primary}\Large\bfseries}
+    {\color{primary}\thesection}{1em}{}
+    [\color{primary}\titlerule]
+
+\titleformat{\subsection}
+    {\color{secondary}\large\bfseries}
+    {\color{secondary}\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+    {\color{accent}\bfseries}
+    {\color{accent}\thesubsubsection}{1em}{}
+
+% =========================================
+% CUSTOM BOXES
+% =========================================
+\tcbset{
+    solutionbox/.style={
+        enhanced,
+        colback=primary!5,
+        colframe=primary!70,
+        boxrule=1pt,
+        arc=3mm,
+        fonttitle=\bfseries\color{primary},
+        title=Solution,
+        sharp corners=north,
+        rounded corners=south
+    },
+    infobox/.style={
+        enhanced,
+        colback=success!5,
+        colframe=success!70,
+        boxrule=1pt,
+        arc=2mm,
+        fonttitle=\bfseries\color{success},
+        title=Information,
+        sharp corners=north,
+        rounded corners=south
+    },
+    warningbox/.style={
+        enhanced,
+        colback=warning!5,
+        colframe=warning!70,
+        boxrule=1pt,
+        arc=2mm,
+        fonttitle=\bfseries\color{warning},
+        title=Warning,
+        sharp corners=north,
+        rounded corners=south
+    }
+}
+
+% =========================================
+% CODE LISTINGS
+% =========================================
 \lstset{
-    basicstyle=\ttfamily\small,
+    basicstyle=\ttfamily\footnotesize,
+    backgroundcolor=\color{codebg},
+    commentstyle=\color{comment}\itshape,
+    keywordstyle=\color{keyword}\bfseries,
+    stringstyle=\color{string},
+    numbers=left,
+    numberstyle=\tiny\color{codetext},
+    frame=single,
+    framesep=5pt,
     breaklines=true,
+    captionpos=b,
+    numbers=left,
+    numbersep=5pt,
+    showstringspaces=false,
+    emph={class, def, if, else, for, while, return, import, from, as},
+    emphstyle=\color{keyword}\bfseries,
+    morekeywords={torch, nn, F, np, plt, self, super}
+}
+
+% =========================================
+% CUSTOM COMMANDS
+% =========================================
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\mathdef}[1]{\textbf{#1}}
+\newcommand{\highlight}[1]{\colorbox{yellow!20}{#1}}
+\newcommand{\modelname}[1]{\textsf{#1}}
+
+% =========================================
+% HYPERREF SETUP
+% =========================================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    citecolor=accent,
+    urlcolor=secondary,
+    pdftitle={Deep Generative Models - Homework 4},
+    pdfauthor={Student Name},
+    pdfsubject={Diffusion Models, Stable Diffusion, Flow Matching}
+}
+
+% =========================================
+% TITLE PAGE
+% =========================================
+\title{\vspace{-2cm}
+    \Huge\color{primary}\textbf{Deep Generative Models}\\
+    \vspace{0.5cm}
+    \Large\textbf{Homework Assignment 4}\\
+    \vspace{0.5cm}
+    \normalsize\textit{Diffusion Models, Stable Diffusion \& Flow Matching}
+}
+
+\author{\textbf{Student Name} \\ Student ID: XXXXXXXX}
+\date{\today}
+
+\begin{document}
+
+% Title page
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+% Table of contents
+\tableofcontents
+\newpage
     frame=single,
     backgroundcolor=\color{gray!10},
     % This prevents underscores in code from causing math errors
@@ -150,7 +239,7 @@ Our framework utilizes a 64-length overlapping window of SPY log-returns standar
 \subsubsection{Question 1: Closed Form Proof}
 \textit{Show that $q(x_t | x_0) = \mathcal{N}(\sqrt{\bar{\alpha}_t} x_0, (1 - \bar{\alpha}_t) I)$.}
 
-\begin{solutionbox}
+\begin{tcolorbox}[solutionbox]
     To prove the closed form, we start with the single-step transition kernel defined in the DDPM paper:
     \begin{equation}
         q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{\alpha_t} x_{t-1}, (1 - \alpha_t) I)
@@ -193,7 +282,7 @@ Our framework utilizes a 64-length overlapping window of SPY log-returns standar
 \subsubsection{Question 2: Advantage of Noise Prediction}
 \textit{Write down two advantages of predicting $\epsilon$ instead of $\mu_\theta$.}
 
-\begin{solutionbox}
+\begin{tcolorbox}[solutionbox]
     \begin{enumerate}
         \item \textbf{Numerical Stability and Consistent Scaling:} 
         Predicting the noise $\epsilon$ is numerically more stable than predicting the mean $\mu_\theta$ or the original image $x_0$. Since the target noise is always drawn from a standard Gaussian distribution $\mathcal{N}(0, I)$ regardless of the timestep $t$, the output scale remains consistent throughout the training process. In contrast, predicting $\mu_\theta$ or $x_0$ would require the model to handle vastly different scales of signal versus noise as $t$ changes (especially when $t \to T$ and the signal is nearly destroyed).
@@ -201,7 +290,7 @@ Our framework utilizes a 64-length overlapping window of SPY log-returns standar
         \item \textbf{Improved Sample Quality via Reweighted Loss:}
         Ho et al. (DDPM, 2020) empirically demonstrated that predicting $\epsilon$ leads to higher quality sample generation. Mathematically, predicting $\epsilon$ corresponds to a specific reweighting of the Variational Lower Bound (VLB) terms. This "simplified" loss function ($\mathcal{L}_{\text{simple}}$) implicitly down-weights the loss at very low noise levels (small $t$) where the task is trivial, allowing the model to focus on the more difficult, structure-defining denoising steps at higher $t$.
     \end{enumerate}
-\end{solutionbox}
+\end{tcolorbox}
 
 % Q3
 \subsubsection{Question 3: Cost Function Analysis (VLB)}
@@ -249,6 +338,298 @@ Our framework utilizes a 64-length overlapping window of SPY log-returns standar
         \item \textbf{Diversity:} There is a trade-off. Increasing the guidance scale significantly \textit{reduces} the diversity of the generated samples. The model converges to the "modes" of the distribution that most strongly represent the prompt, ignoring less probable variations. Lower scales preserve more diversity but may result in images that are less coherent or less faithful to the prompt.
     \end{itemize}
 \end{solutionbox}
+
+% =========================================
+% COMPREHENSIVE MODEL EXPLANATIONS
+% =========================================
+
+\section{Comprehensive Model Explanations}
+
+This section provides detailed explanations of the three main generative models covered in this assignment: Denoising Diffusion Probabilistic Models (DDPM), Stable Diffusion with DreamBooth, and Flow Matching for time series generation.
+
+\subsection{Denoising Diffusion Probabilistic Models (DDPM)}
+
+\subsubsection{Overview and Intuition}
+
+Denoising Diffusion Probabilistic Models (DDPM) are a class of generative models that learn to reverse a gradual noise corruption process. The core intuition is elegant: instead of directly learning the data distribution $p(x)$, we learn how to remove noise from a completely corrupted version of the data.
+
+The model consists of two processes:
+1. **Forward Process (Diffusion):** Gradually add Gaussian noise to data over $T$ timesteps
+2. **Reverse Process (Denoising):** Learn to remove noise step-by-step using a neural network
+
+\subsubsection{Mathematical Foundation}
+
+\textbf{Forward Process:} The forward diffusion process is a Markov chain that progressively adds Gaussian noise:
+
+\[ q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{1-\beta_t} x_{t-1}, \beta_t I) \]
+
+where $\beta_t$ is the variance schedule. The key insight is that this process has a closed-form solution:
+
+\[ q(x_t | x_0) = \mathcal{N}(x_t; \sqrt{\bar{\alpha}_t} x_0, (1-\bar{\alpha}_t) I) \]
+
+where $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$.
+
+Using the reparameterization trick, we can write:
+\[ x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1-\bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0, I) \]
+
+\textbf{Reverse Process:} The reverse process learns to denoise:
+\[ p_\theta(x_{t-1} | x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t)) \]
+
+The neural network $\epsilon_\theta(x_t, t)$ predicts the noise that was added at timestep $t$. The reverse step becomes:
+
+\[ x_{t-1} = \frac{1}{\sqrt{\alpha_t}} \left( x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}} \epsilon_\theta(x_t, t) \right) + \sigma_t z \]
+
+\subsubsection{Network Architecture}
+
+DDPM uses a U-Net architecture specifically designed for diffusion models:
+
+\textbf{Time Embedding:} Sinusoidal positional encoding injects timestep information:
+\[ \gamma(t) = \sin(2\pi t / 10000^{2i/d}) + \cos(2\pi t / 10000^{2i/d}) \]
+
+\textbf{U-Net Structure:}
+- **Encoder:** Progressive downsampling with residual blocks
+- **Bottleneck:** Self-attention layers for global context
+- **Decoder:** Progressive upsampling with skip connections
+- **Time Injection:** Each residual block conditions on time embedding
+
+\textbf{Residual Block:} Combines convolution, GroupNorm, SiLU activation, and time conditioning:
+\[ h = \text{Conv}(\text{GroupNorm}(\text{SiLU}(\text{Conv}(x)))) + \text{MLP}(\gamma(t)) \]
+
+\subsubsection{Training Objective}
+
+The training minimizes the simplified loss:
+\[ \mathcal{L}_{\text{simple}} = \mathbb{E}_{x_0, \epsilon, t} \left[ \|\epsilon - \epsilon_\theta(x_t, t)\|^2 \right] \]
+
+This corresponds to a reweighted Variational Lower Bound (VLB) that focuses on denoising rather than exact likelihood maximization.
+
+\subsubsection{Sampling Process}
+
+To generate samples, start from pure noise $x_T \sim \mathcal{N}(0, I)$ and iteratively denoise:
+
+\begin{algorithmic}[1]
+\For{$t = T$ \textbf{downto} $1$}
+    \State $z \gets \mathcal{N}(0, I)$ if $t > 1$ else $0$
+    \State $\epsilon \gets \epsilon_\theta(x_t, t)$
+    \State $x_{t-1} \gets \frac{1}{\sqrt{\alpha_t}} \left( x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}} \epsilon \right) + \sigma_t z$
+\EndFor
+\end{algorithmic}
+
+\subsubsection{DDIM: Deterministic Variant}
+
+DDIM redefines the reverse process as non-Markovian and deterministic:
+
+\[ x_{t-1} = \sqrt{\alpha_{t-1}} \left( \frac{x_t - \sqrt{1-\bar{\alpha}_t} \epsilon_\theta(x_t, t)}{\sqrt{\bar{\alpha}_t}} + \sqrt{1 - \frac{\bar{\alpha}_t}{\bar{\alpha}_{t-1}}} \epsilon_\theta(x_t, t) \right) \]
+
+When $\eta = 0$, DDIM becomes completely deterministic and allows step-skipping, enabling 20x faster sampling with minimal quality loss.
+
+\subsection{Stable Diffusion and DreamBooth}
+
+\subsubsection{Stable Diffusion Architecture}
+
+Stable Diffusion is a latent diffusion model that performs diffusion in a compressed latent space rather than pixel space, enabling high-resolution image generation with reasonable computational requirements.
+
+\textbf{Three-Component Architecture:}
+
+1. **VAE (Variational Autoencoder):**
+   - **Encoder:** Maps images to latent space: $z = \mathcal{E}(x)$
+   - **Decoder:** Reconstructs images: $\hat{x} = \mathcal{D}(z)$
+   - **Latent Space:** Typically 4x smaller than input (e.g., 512×512 → 64×64×4)
+
+2. **Text Encoder (CLIP):**
+   - Encodes text prompts into embeddings
+   - Provides conditioning for guided generation
+   - Uses transformer architecture with 12 layers
+
+3. **U-Net Denoising Model:**
+   - Operates in latent space
+   - Conditions on text embeddings and timestep
+   - Uses cross-attention for text-image alignment
+
+\subsubsection{Diffusion in Latent Space}
+
+The diffusion process occurs in the VAE's latent space:
+
+\[ q(z_t | z_0) = \mathcal{N}(z_t; \sqrt{\bar{\alpha}_t} z_0, (1-\bar{\alpha}_t) I) \]
+
+The U-Net predicts noise in latent space: $\epsilon_\theta(z_t, t, c)$ where $c$ is the text conditioning.
+
+\subsubsection{Text Conditioning}
+
+\textbf{Cross-Attention Mechanism:} The U-Net incorporates text conditioning through cross-attention:
+
+\[ \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d}}\right) V \]
+
+Where:
+- $Q$ comes from latent features
+- $K, V$ come from text embeddings
+- This allows spatial regions to attend to relevant text tokens
+
+\subsubsection{Classifier-Free Guidance (CFG)}
+
+CFG enables conditional generation without separate classifier training:
+
+\[ \tilde{\epsilon}(z_t, c) = \epsilon_\text{uncond}(z_t) + w \cdot (\epsilon_\text{cond}(z_t, c) - \epsilon_\text{uncond}(z_t)) \]
+
+Where $w$ is the guidance scale that controls conditioning strength.
+
+\subsubsection{DreamBooth: Personalization Technique}
+
+DreamBooth enables fine-tuning Stable Diffusion for specific subjects using few images.
+
+\textbf{Key Components:}
+
+1. **Instance Images:** 3-5 photos of the specific subject
+2. **Class Images:** Generic images of the subject category (for regularization)
+3. **Unique Identifier:** Rare token like "sks" to represent the subject
+4. **Prior Preservation:** Prevents catastrophic forgetting
+
+\textbf{Prompt Structure:}
+- Instance prompt: "a photo of sks dog"
+- Class prompt: "a photo of a dog"
+
+\subsubsection{LoRA: Parameter-Efficient Fine-Tuning}
+
+LoRA (Low-Rank Adaptation) enables fine-tuning large models with minimal parameters:
+
+\textbf{Mathematical Formulation:}
+\[ W' = W + \Delta W = W + BA \]
+
+Where:
+- $W \in \mathbb{R}^{d \times k}$ is the original weight matrix
+- $B \in \mathbb{R}^{d \times r}, A \in \mathbb{R}^{r \times k}$ are low-rank matrices
+- $r \ll \min(d, k)$ is the rank (typically 4-16)
+
+\textbf{Training:} Only $BA$ parameters are updated, reducing trainable parameters from ~800M to ~3M.
+
+\subsubsection{DreamBooth Training Process}
+
+\textbf{Dual Loss Objective:}
+\[ \mathcal{L} = \mathcal{L}_\text{instance} + \lambda \mathcal{L}_\text{prior} \]
+
+Where:
+- $\mathcal{L}_\text{instance}$: Loss on instance images with specific prompts
+- $\mathcal{L}_\text{prior}$: Loss on class images to preserve general knowledge
+
+\textbf{Training Steps:}
+1. Encode instance/class images to latents
+2. Sample timestep and add noise
+3. Predict noise with text-conditioned U-Net
+4. Compute dual loss and update LoRA parameters
+
+\subsubsection{Inference with DreamBooth}
+
+After training, generate personalized images:
+1. Use prompts containing the unique identifier: "sks dog on the beach"
+2. Apply CFG with appropriate guidance scale
+3. Decode latents back to images
+
+\subsection{Flow Matching for Time Series Generation}
+
+\subsubsection{Overview}
+
+Flow Matching is a continuous-time generative modeling framework that learns to transport samples from a simple base distribution (typically Gaussian) to the target data distribution through a time-dependent vector field.
+
+\subsubsection{Mathematical Foundation}
+
+\textbf{Continuous-Time Flow:} Define a time-dependent vector field $v_\theta(x, t)$ that satisfies:
+
+\[ \frac{dx}{dt} = v_\theta(x, t), \quad x(0) = x_0 \sim p_0, \quad x(1) = x_1 \sim p_1 \]
+
+Where $p_0$ is a simple distribution (Gaussian) and $p_1$ is the data distribution.
+
+\textbf{Conditional Flow Matching:} Learn the vector field by matching conditional flows:
+
+\[ \mathcal{L}_\text{CFM}(\theta) = \mathbb{E}_{t, p_t(x|x_0,x_1)} \| v_\theta(x, t) - u_t(x|x_0,x_1) \|^2 \]
+
+Where $u_t(x|x_0,x_1)$ is the conditional velocity field.
+
+\subsubsection{Linear Interpolation Paths}
+
+For simplicity, use straight-line paths between noise and data:
+
+\[ x(t) = (1-t) x_0 + t x_1 \]
+
+The corresponding velocity field is constant:
+\[ u_t(x|x_0,x_1) = x_1 - x_0 \]
+
+This simplifies the learning objective to:
+\[ \mathcal{L}_\text{CFM}(\theta) = \mathbb{E}_{x_0,x_1,t} \| v_\theta((1-t)x_0 + t x_1, t) - (x_1 - x_0) \|^2 \]
+
+\subsubsection{Network Architecture}
+
+\textbf{Transformer-Based Velocity Field:}
+
+1. **Input Processing:** Time series sequences of length $L$ with features $F$
+2. **Time Embedding:** Sinusoidal encoding for continuous time $t \in [0,1]$
+3. **Positional Encoding:** For sequence positions
+4. **Transformer Encoder:** Multi-head self-attention with feed-forward networks
+5. **Output Projection:** Predict velocity vector for each timestep
+
+\textbf{Architecture Details:}
+- **Layers:** 4-6 transformer encoder layers
+- **Heads:** 4-8 attention heads
+- **Hidden Dimension:** 128-512
+- **Time Conditioning:** Added via cross-attention or concatenation
+
+\subsubsection{Training Process}
+
+\textbf{Data Preparation:}
+1. Load financial time series (e.g., SPY log-returns)
+2. Create overlapping sequences of fixed length (64 timesteps)
+3. Standardize data globally
+4. Split chronologically (90% train, 10% test)
+
+\textbf{Training Loop:}
+\begin{algorithmic}[1]
+\For{each epoch}
+    \For{each batch}
+        \State Sample $x_1 \sim$ data distribution
+        \State Sample $x_0 \sim \mathcal{N}(0, I)$
+        \State Sample $t \sim \text{Uniform}(0, 1)$
+        \State $x_t \gets (1-t) x_0 + t x_1$
+        \State $v_\text{target} \gets x_1 - x_0$
+        \State $v_\text{pred} \gets v_\theta(x_t, t)$
+        \State Compute MSE loss and backpropagate
+    \EndFor
+\EndFor
+\end{algorithmic}
+
+\subsubsection{Sampling via ODE Integration}
+
+\textbf{ODE Formulation:} Generate samples by solving:
+\[ \frac{dx}{dt} = v_\theta(x, t), \quad x(0) = x_0 \sim \mathcal{N}(0, I) \]
+
+\textbf{Numerical Integration:} Use ODE solvers like Euler or Runge-Kutta:
+
+\textbf{Euler Method (Simple):}
+\[ x_{t+\Delta t} = x_t + \Delta t \cdot v_\theta(x_t, t) \]
+
+\textbf{Runge-Kutta 4th Order (Accurate):}
+\[ x_{t+\Delta t} = x_t + \frac{\Delta t}{6} (k_1 + 2k_2 + 2k_3 + k_4) \]
+
+Where $k_i$ are intermediate velocity evaluations.
+
+\subsubsection{Evaluation Metrics}
+
+\textbf{Statistical Evaluation:}
+- Mean, variance, skewness, kurtosis
+- Volatility (sequence-wise standard deviation)
+- Distribution comparison (KS test, Wasserstein distance)
+
+\textbf{Structural Evaluation:}
+- **Sliced Wasserstein Distance (SWD):** Approximates Wasserstein distance using random projections
+- **Autocorrelation:** Measures temporal dependencies at different lags
+- **Distribution Similarity:** Compare marginal distributions
+
+\textbf{Comprehensive Assessment:}
+Combine multiple metrics into an overall score assessing distribution fidelity, volatility preservation, and temporal structure maintenance.
+
+\subsubsection{Advantages over Diffusion Models}
+
+1. **Continuous-Time:** No discrete timesteps, more flexible
+2. **Simpler Training:** Direct velocity prediction vs. noise prediction
+3. **Efficient Sampling:** Single ODE solve vs. iterative denoising
+4. **Better Scaling:** Easier to parallelize and scale to high dimensions
 
 \newpage
 
@@ -3437,4 +3818,90 @@ Y. Lipman, R. T. Q. Chen, H. Ben-Hamu, M. Nickel, and M. Le, ``Flow matching for
 P. Vincent, ``A connection between score matching and denoising autoencoders,'' \textit{Neural Computation}, vol. 23, no. 7, pp. 1661–1674, 2011.
 
 \end{thebibliography}
+\newpage
+% =======================================================
+% APPENDIX: Concepts, Algorithms and How to Run
+% =======================================================
+\section{Appendix: Concepts and Algorithms}
+
+\subsection{Diffusion Models — Key Equations}
+The forward (noising) process used in DDPMs is a discrete-time Markov chain:
+\[
+q(x_t\mid x_{t-1}) = \mathcal{N}(x_t;\sqrt{\alpha_t}x_{t-1},\,(1-\alpha_t)I),
+\]
+and the closed-form marginal at timestep $t$ is
+\[
+x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon,\qquad \epsilon\sim\mathcal{N}(0,I),
+\]
+where $\bar{\alpha}_t=\prod_{s=1}^t\alpha_s$.
+
+The simplified training objective (noise prediction) is
+\[
+\mathcal{L}_{\text{simple}}(\theta)=\mathbb{E}_{t,x_0,\epsilon}\big[\|\epsilon-\epsilon_{\theta}(x_t,t)\|^2\big].
+\]
+
+\subsection{DDIM and the Probability Flow ODE}
+DDIM defines a non-Markovian deterministic sampling rule (\(\eta=0\)) that corresponds to following a probability flow ODE. The probability flow ODE for a diffusion SDE with drift $f$ and diffusion $g$ is
+\[
+\frac{dx}{dt}=f(x,t)-\tfrac{1}{2}g(t)^2\,\nabla_x\log p_t(x),
+\]
+which is deterministic and preserves marginals; approximate solvers (Euler, Heun, RK4) trade compute for accuracy.
+
+\subsection{Flow Matching — Core Idea}
+Conditional Flow Matching learns a vector field $v_{\theta}(x,t)$ that transports samples along simple conditional paths (e.g., linear interpolation). Using linear paths $x_t=(1-t)x_0+t x_1$ the training loss becomes
+\[
+\mathcal{L}_{\mathrm{CFM}}(\theta)=\mathbb{E}_{x_0,x_1,t}\big[\|v_{\theta}(x_t,t)-(x_1-x_0)\|^2\big].
+\]
+Sampling solves the ODE $dx/dt=v_{\theta}(x,t)$ from $t=0$ (noise) to $t=1$ (data).
+
+\subsection{Pseudocode — Training and Sampling}
+\begin{lstlisting}[language=Python]
+# DDPM training (simplified)
+for x0 in dataloader:
+    t = rand_int(0, T)
+    xt, eps = scheduler.perturb_input(x0, t)
+    eps_pred = unet(xt, t)
+    loss = mse(eps_pred, eps)
+    loss.backward(); opt.step()
+
+# Flow Matching training (linear path)
+for batch in dataloader:
+    x0 = sample_noise(batch_size)
+    x1 = sample_data(batch)
+    t = rand_uniform(0,1)
+    xt = (1-t)*x0 + t*x1
+    v_pred = vf_model(xt, t)
+    loss = mse(v_pred, x1-x0)
+    loss.backward(); opt.step()
+
+# Flow Matching sampling (Euler)
+xt = normal_noise(n_samples)
+for i in range(N_steps):
+    t = i/N_steps
+    vt = vf_model(xt, t)
+    xt = xt + vt*(1/N_steps)
+return xt
+\end{lstlisting}
+
+\subsection{Evaluation Metrics (Concise)}
+- Sliced Wasserstein Distance (SWD): approximate high-D Wasserstein via 1-D projections. Lower is better.
+- Autocorrelation (ACF): check temporal dependencies; compute MSE between real and generated ACFs.
+- Wasserstein / KS tests: marginal distribution similarity.
+- Higher-order moments: skewness and kurtosis to assess tail behaviour.
+
+\subsection{Reproducing Experiments — Quick Commands}
+Run the main scripts from the `code/` folder. Example commands:
+\begin{verbatim}
+cd OtherTermAssignments/CA4/code
+python3 run_ddpm.py        # trains DDPM demo and saves figures
+python3 run_flow_matching.py  # trains flow-matching demo (synthetic) and saves figures
+python3 run_stable_diffusion.py # DreamBooth example (mostly commented)
+\end{verbatim}
+
+Notes:
+- Ensure Python packages in `requirements.txt` (in the CA4 folder) are installed in a virtualenv. If GPU is available, use CUDA-enabled PyTorch.
+- Figures used in this report are saved to the folder referenced by `REPORT_FIG_DIR` (see `code/utils.py`).
+
+\vspace{6pt}
+If you want, I can now embed the notebook's generated images into the report appendix and finish polishing references and compilation errors. 
 \end{document}
