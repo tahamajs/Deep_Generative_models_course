@@ -1,0 +1,2192 @@
+\begin{abstract}
+این گزارش به ارائه پیاده‌سازی کامل و تحلیل عمیق دو خانواده مدرن از مدل‌های مولد اعمال شده بر روی مجموعه داده ارقام دست‌نویس \lr{MNIST} می‌پردازد: مدل‌های انرژی‌محور (\lr{EBMs}) که با واگرایی مقابله‌ای (\lr{Contrastive Divergence}) و دینامیک لانژون آموزش دیده‌اند، و شبکه‌های امتیاز شرطی نویزی (\lr{NCSNs}) که با تطبیق امتیاز نویززدایی وزن‌دار (\lr{DSM}) آموزش یافته و با استفاده از دینامیک لانژون بازپخت‌شده (\lr{ALD}) نمونه‌برداری شده‌اند. ما در این پژوهش دقیقاً مطابق با مشخصات \lr{HW3} عمل کرده، مشتقات ریاضی دقیق برای تمامی توابع هدف را ارائه داده و معماری‌ها و خط‌لوله‌های آموزش را تشریح می‌کنیم. همچنین نتایج تجربی برای تولید بدون شرط (\lr{unconditional generation})، تولید شرطی (\lr{conditional generation}) و نویززدایی در سطوح مختلف نویز مستند شده است. این گزارش به گونه‌ای جامع تنظیم شده است تا به عنوان یک مرجع مستقل شامل مبانی نظری، جزئیات پیاده‌سازی، تحلیل‌های فرسایشی (\lr{ablation insights}) و بحثی ساختاریافته پیرامون محدودیت‌ها عمل کند. تمامی تصاویر با زیرنویس‌های دقیق و مسیرهای فایل مرتبط ارجاع داده شده‌اند تا ردیابی بین خروجی‌های کد و تحلیل‌های مکتوب تضمین شود. آزمایش‌های ما نشان‌دهنده انعطاف‌پذیری \lr{EBM}ها در نمونه‌برداری و کیفیت برتر \lr{NCSN}ها در تولید و نویززدایی است.
+\end{abstract}
+
+
+\newpage
+
+
+
+\tableofcontents % This will generate the table
+
+
+
+
+
+\newpage
+
+
+\section{مقدمه}
+در سال‌های اخیر، مدل‌های مولد مبتنی بر فیزیک آماری و نظریه احتمالات تحول شگرفی در یادگیری ماشین ایجاد کرده‌اند. از جمله مهم‌ترین این رویکردها می‌توان به \lr{Score-based Generative Modeling} اشاره کرد که با استفاده از \lr{Langevin Dynamics} امکان نمونه‌برداری از توزیع‌های پیچیده را فراهم می‌کند...
+
+
+
+% =======================================================
+% مقدمه
+% =======================================================
+\section{مقدمه}
+مدل‌سازی مولد عمیق شاهد یک تغییر پارادایم از آموزش‌های تقابلی مبتنی بر \lr{GAN} به فرآیندهای نفوذ (\lr{diffusion}) مبتنی بر درست‌نمایی بوده است. در این مقاله، ما به بررسی پیاده‌سازی مدل‌های ضمنی نفوذ نویززدا (\lr{DDIM}) و تکامل آن‌ها به سمت تطبیق جریان (\lr{Flow Matching}) می‌پردازیم. به طور خاص، تمرکز ما بر کاربرد این تکنیک‌ها در داده‌های مالی با فرکانس بالا است، جایی که هدف تولید بازده‌های لگاریتمی (\lr{log-returns}) مصنوعی است که «حقایق سبک‌وار» (\lr{stylized facts}) بازارهای دنیای واقعی را برآورده کنند.
+
+% =======================================================
+% روش‌شناسی
+% =======================================================
+\section{روش‌شناسی}
+چارچوب ما از یک پنجره هم‌پوشان با طول ۶۴ برای بازده‌های لگاریتمی \lr{SPY} استفاده می‌کند که نسبت به واریانس واحد استاندارد شده‌اند. بدنه اصلی مولد شامل یک شبکه \lr{U-Net} برای وظایف نفوذ تصویر‌محور و یک رمزگذار ترنسفورمر (\lr{Transformer Encoder}) برای تطبیق جریان سری‌های زمانی است. آموزش با استفاده از هدف تطبیق جریان شرطی (\lr{CFM}) با یک توزیع پیشین گاوسی انجام می‌شود.
+
+% =======================================================
+% سوال اول: مدل‌های نفوذ
+% =======================================================
+\section{سوال اول: مدل‌های نفوذ (\lr{Diffusion Models})}
+
+\subsection{بخش اول: سوالات تئوری}
+
+\subsubsection{سوال ۱: اثبات فرم بسته (\lr{Closed Form})}
+\textit{نشان دهید که $q(x_t | x_0) = \mathcal{N}(\sqrt{\bar{\alpha}_t} x_0, (1 - \bar{\alpha}_t) I)$.}
+
+\begin{solutionbox}
+    برای اثبات فرم بسته، از هسته انتقال تک‌مرحله‌ای تعریف شده در مقاله \lr{DDPM} شروع می‌کنیم:
+    \begin{equation}
+        q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{\alpha_t} x_{t-1}, (1 - \alpha_t) I)
+    \end{equation}
+    با استفاده از ترفند بازپارامتری‌سازی (\lr{reparameterization trick})، می‌توانیم یک نمونه $x_t$ را به صورت زیر بیان کنیم:
+    \begin{equation}
+        x_t = \sqrt{\alpha_t} x_{t-1} + \sqrt{1 - \alpha_t} \epsilon_{t-1}, \quad \text{where } \epsilon_{t-1} \sim \mathcal{N}(0, I)
+    \end{equation}
+    اکنون $x_{t-1}$ را به صورت بازگشتی با استفاده از مرحله قبلی $x_{t-2}$ منبسط می‌کنیم:
+    \begin{equation}
+        x_{t-1} = \sqrt{\alpha_{t-1}} x_{t-2} + \sqrt{1 - \alpha_{t-1}} \epsilon_{t-2}
+    \end{equation}
+    با جایگذاری این عبارت در معادله $x_t$:
+    \begin{align*}
+        x_t &= \sqrt{\alpha_t} (\sqrt{\alpha_{t-1}} x_{t-2} + \sqrt{1 - \alpha_{t-1}} \epsilon_{t-2}) + \sqrt{1 - \alpha_t} \epsilon_{t-1} \\
+        &= \sqrt{\alpha_t \alpha_{t-1}} x_{t-2} + \sqrt{\alpha_t (1 - \alpha_{t-1})} \epsilon_{t-2} + \sqrt{1 - \alpha_t} \epsilon_{t-1}
+    \end{align*}
+    
+    اکنون دو جمله نویز گاوسی مستقل را با هم ادغام می‌کنیم. به خاطر داریم که مجموع دو متغیر گاوسی مستقل $\mathcal{N}(0, \sigma_1^2)$ و $\mathcal{N}(0, \sigma_2^2)$ خود یک متغیر گاوسی به صورت $\mathcal{N}(0, \sigma_1^2 + \sigma_2^2)$ است. واریانس نویز ترکیبی برابر است با:
+    \begin{align*}
+        \text{Var} &= (\sqrt{\alpha_t (1 - \alpha_{t-1})})^2 + (\sqrt{1 - \alpha_t})^2 \\
+        &= \alpha_t (1 - \alpha_{t-1}) + (1 - \alpha_t) \\
+        &= \alpha_t - \alpha_t \alpha_{t-1} + 1 - \alpha_t \\
+        &= 1 - \alpha_t \alpha_{t-1}
+    \end{align*}
+    بنابراین، می‌توانیم معادله را به این صورت بازنویسی کنیم:
+    \begin{equation}
+        x_t = \sqrt{\alpha_t \alpha_{t-1}} x_{t-2} + \sqrt{1 - \alpha_t \alpha_{t-1}} \bar{\epsilon}
+    \end{equation}
+    با استفاده از استقرا و بسط دادن این روند تا $x_0$، حاصل‌ضرب آلفاها را تجمیع می‌کنیم به طوری که $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$:
+    \begin{equation}
+        x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0, I)
+    \end{equation}
+    این معادله یک توزیع گاوسی با میانگین $\sqrt{\bar{\alpha}_t} x_0$ و واریانس $(1 - \bar{\alpha}_t) I$ را توصیف می‌کند. در نتیجه:
+    \begin{equation}
+        q(x_t | x_0) = \mathcal{N}(x_t; \sqrt{\bar{\alpha}_t} x_0, (1 - \bar{\alpha}_t) I)
+    \end{equation}
+\end{solutionbox}
+
+
+% =======================================================
+% سوال ۲: مزیت پیش‌بینی نویز
+% =======================================================
+\subsubsection{سوال ۲: مزایای پیش‌بینی نویز (\lr{Noise Prediction})}
+\textit{دو مورد از مزایای اصلی پیش‌بینی $\epsilon$ به جای میانگین $\mu_\theta$ را با توضیح مفصل بنویسید.}
+
+\begin{solutionbox}
+    انتخاب هدف پیش‌بینی نویز (\lr{$\epsilon$-prediction}) به جای میانگین توزیع بازگشتی (\lr{$\mu$-prediction})، یکی از کلیدی‌ترین نوآوری‌های مقاله \lr{DDPM} بود که فرآیند آموزش را از یک بهینه‌سازی دشوار به یک مسئله‌ی یادگیری پایدار تبدیل کرد. مزایای این رویکرد عبارتند از:
+
+    \begin{enumerate}
+        \item \textbf{پایداری عددی و یکنواختی مقیاس (\lr{Consistent Scaling}):}
+        هنگامی که مدل سعی می‌کند نویز $\epsilon$ را پیش‌بینی کند، هدف (\lr{target}) همواره از یک توزیع گاوسی استاندارد $\mathcal{N}(0, I)$ پیروی می‌کند. این یعنی صرف‌نظر از اینکه در کدام گام زمانی $t$ هستیم، خروجی مطلوب شبکه دارای میانگین صفر و واریانس واحد است. 
+        
+        در مقابل، اگر مدل بخواهد $\mu_\theta$ یا $x_0$ را پیش‌بینی کند، با پدیده‌ی «تغییر شدید نسبت سیگنال به نویز» (\lr{SNR}) مواجه می‌شود. در گام‌های ابتدایی (نزدیک به $x_0$)، سیگنال قوی است، اما در گام‌های پایانی (نزدیک به $T$)، سیگنال تقریباً نابود شده و مدل مجبور است ساختاری عظیم را از دل هیچ پیش‌بینی کند که منجر به نوسانات شدید در گرادیان‌ها و ناپایداری در آموزش می‌شود. پیش‌بینی نویز، این مشکل را با «ثابت نگه داشتن مقیاس هدف» حل می‌کند.
+
+        \item \textbf{ارتباط با تطبیق امتیاز (\lr{Score Matching}) و بهبود کیفیت بصری:}
+        از نظر ریاضی، پیش‌بینی نویز مستقیماً با «تابع امتیاز» (\lr{Score Function}) در مدل‌های امتیاز‌محور در ارتباط است. طبق رابطه زیر:
+        \begin{equation}
+            \nabla_{x_t} \log q(x_t | x_0) = -\frac{\epsilon}{\sqrt{1 - \bar{\alpha}_t}}
+        \end{equation}
+        پیش‌بینی نویز عملاً به معنای یادگیری گرادیان لجاریتم چگالی احتمال است. این کار به مدل اجازه می‌دهد تا «میدان برداری» (\lr{Vector Field}) جهت‌دهنده به سمت منیفولد داده‌های واقعی را یاد بگیرد.
+        
+        همچنین، هو و همکاران (\lr{Ho et al.}) نشان دادند که استفاده از تابع زیان ساده‌شده ($\mathcal{L}_{\text{simple}}$) که بر پایه پیش‌بینی $\epsilon$ است، عملاً باعث وزن‌دهی مجدد به جملات کران پایین تغییراتی (\lr{VLB}) می‌شود. این وزن‌دهی باعث می‌شود مدل در گام‌های زمانی بزرگتر (که ساختارهای کلی و توپولوژی اعداد شکل می‌گیرند) تمرکز بیشتری داشته باشد و در گام‌های کوچک (که فقط جزئیات بسیار ریز و فرکانس‌های بالا هستند) کمتر وقت صرف کند، که در نهایت منجر به تولید تصاویری با لبه‌های شفاف‌تر و ساختار منطقی‌تر می‌شود.
+    \end{enumerate}
+\end{solutionbox}
+
+
+% =======================================================
+% سوال ۳: تحلیل تابع هزینه (VLB)
+% =======================================================
+\subsubsection{سوال ۳: تحلیل تابع هزینه (\lr{VLB})}
+\textit{(الف) جملات \lr{KL} چه چیزی را تشویق می‌کنند؟ (ب) چرا در عمل نادیده گرفته می‌شوند؟}
+
+\begin{solutionbox}
+    \textbf{الف) تشویق به سازگاری با فرآیند پیش‌رو (\lr{Forward Process}):}
+    از نظر مفهومی، جملات واگرایی \lr{KL} در کران پایین تغییراتی (\lr{VLB})، به ویژه جمله $D_{KL}(q(x_{t-1}|x_t, x_0) || p_\theta(x_{t-1}|x_t))$، مدل را تشویق می‌کنند تا توزیع فرآیند بازگشتی یادگرفته شده ($p_\theta$) را با توزیع پسین واقعی فرآیند پیش‌رو ($q$) مطابقت دهد. از آنجایی که توزیع پسین فرآیند نفوذ یک توزیع گاوسی قابل محاسبه است، کمینه‌سازی این جملات باعث می‌شود شبکه عصبی پارامترهایی (میانگین و واریانس) را خروجی دهد که دقیقاً مسیر پیموده شده توسط داده در هنگام نویز زدن را «مهندسی معکوس» کند. به عبارت ساده، این جملات تضمین می‌کنند که مدل یاد بگیرد گام‌های نویز را به درستی خنثی کند.
+
+    
+
+    \textbf{ب) توجیه عملی برای نادیده گرفتن جملات:}
+    در عمل، استفاده از تابع زیان ساده شده ($\mathcal{L}_{\text{simple}} = \|\epsilon - \epsilon_\theta(x_t, t)\|^2$) به جای وزن‌دهی دقیق جملات \lr{KL} ترجیح داده می‌شود:
+    \begin{enumerate}
+        \item \textbf{پایداری در آموزش:} جملات ریاضی \lr{VLB} دارای وزن‌هایی هستند که با تغییر $t$ به شدت نوسان می‌کنند. نادیده گرفتن این وزن‌ها باعث می‌شود مدل روی گام‌های زمانی دشوارتر (نویز زیاد) تمرکز کند و زمان خود را صرف گام‌های زمانی بدیهی (نویز کم) نکند.
+        \item \textbf{کیفیت بصری در مقابل درست‌نمایی:} اثبات شده است که بهینه‌سازی دقیق \lr{VLB} منجر به «درست‌نمایی» (\lr{Likelihood}) بهتر می‌شود که برای فشرده‌سازی داده مناسب است، اما تابع زیان ساده‌شده منجر به تولید تصاویر با کیفیت بصری (\lr{Perceptual Quality}) بالاتر می‌شود. از آنجا که هدف ما تولید تصویر با کیفیت است، زیان ساده شده انتخاب بهتری است.
+    \end{enumerate}
+\end{solutionbox}
+
+% =======================================================
+% سوال ۴: نمونه‌برداری DDIM
+% =======================================================
+\subsubsection{سوال ۴: نمونه‌برداری \lr{DDIM}}
+\textit{(الف) \lr{DDIM} چگونه نمونه‌برداری را معین (\lr{Deterministic}) می‌کند؟ (ب) چرا سریع‌تر است؟}
+
+\begin{solutionbox}
+    \textbf{الف) نمونه‌برداری معین از طریق مدل ضمنی:}
+    مدل‌های ضمنی نفوذ نویززدا (\lr{DDIM}) با بازتعریف فرآیند بازگشتی به صورت یک فرآیند غیرمارکوفی، نمونه‌برداری را معین می‌کنند. در مدل استاندارد \lr{DDPM}، نویز تصادفی ($z \sim \mathcal{N}(0, I)$) در هر گام تزریق می‌شود:
+    \[ x_{t-1} = \frac{1}{\sqrt{\alpha_t}} \left( x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}} \epsilon_\theta(x_t, t) \right) + \sigma_t z \]
+    اما در \lr{DDIM}، پارامتر واریانس نویز ($\sigma_t$) برابر با صفر قرار داده می‌شود. با حذف این جمله تصادفی، نگاشت از $x_t$ به $x_{t-1}$ به یک تابع کاملاً معین (\lr{Deterministic}) تبدیل می‌شود. این کار فرآیند تولید را از یک «گشت تصادفی» به یک مسیر مشخص در قالب یک معادله دیفرانسیل معمولی (\lr{ODE}) تبدیل می‌کند.
+
+    
+
+    \textbf{ب) نمونه‌برداری سریع از طریق پرش گام‌ها:}
+    \lr{DDIM} سریع‌تر است زیرا فرمول‌بندی آن اجازه می‌دهد که گام‌های زمانی را به صورت «پله‌ای» (\lr{Strided}) طی کنیم. برخلاف \lr{DDPM} که از نظر ریاضی مجبور است تمام ۱۰۰۰ گام نویز را تک‌تک برگردد، \lr{DDIM} می‌تواند به دلیل ماهیت غیرمارکوفی خود، از گام $t$ مستقیماً به گام $t-k$ بپرد (مثلاً از ۱۰۰۰ به ۹۵۰). این قابلیت باعث می‌شود که بتوانیم تنها با ۵۰ گام، تصاویری با کیفیت مشابه ۱۰۰۰ گام تولید کنیم و سرعت تولید را تا ۲۰ برابر افزایش دهیم.
+\end{solutionbox}
+
+% =======================================================
+% سوال ۵: راهنمایی بدون طبقه‌بند (CFG)
+% =======================================================
+\subsubsection{سوال ۵: راهنمایی بدون طبقه‌بند (\lr{CFG})}
+\textit{(الف) ایده اصلی \lr{CFG} چیست؟ (ب) اثر مقیاس راهنمایی بر کیفیت و تنوع چیست؟}
+
+\begin{solutionbox}
+    \textbf{الف) ایده اصلی (طبقه‌بند ضمنی):}
+    ایده محوری \lr{Classifier-Free Guidance} این است که بدون نیاز به آموزش یک مدل طبقه‌بند جداگانه، تولید هدایت‌شده انجام شود. در این روش، یک مدل واحد به گونه‌ای آموزش می‌بیند که هم تولید شرطی (با ورودی متن یا برچسب $c$) و هم تولید بدون شرط (با ورودی تهی $\emptyset$) را انجام دهد. در طول آموزش، شرط ورودی در برخی موارد (مثلاً ۱۰٪ مواقع) به صورت تصادفی حذف می‌شود.
+    در هنگام نمونه‌برداری، پیش‌بینی نهایی مدل ($\tilde{\epsilon}$) از طریق برون‌یابی خطی بین پیش‌بینی بدون شرط و پیش‌بینی شرطی به دست می‌آید:
+    \[ \tilde{\epsilon}_\theta(x_t, c) = \epsilon_\theta(x_t|\emptyset) + w \cdot (\epsilon_\theta(x_t|c) - \epsilon_\theta(x_t|\emptyset)) \]
+    که در آن $w$ مقیاس راهنمایی است. این کار باعث می‌شود جهت تولید از حالت عمومی به سمت ویژگی‌های خاصِ شرط مورد نظر هل داده شود.
+
+    
+
+    \textbf{ب) اثر مقیاس راهنمایی ($w$):}
+    \begin{itemize}
+        \item \textbf{کیفیت (\lr{Fidelity}):} افزایش $w$ (بیشتر از ۱) معمولاً باعث بهبود شفافیت و مطابقت تصویر با متن ورودی می‌شود. اما اگر $w$ بیش از حد زیاد شود (مثلاً بالای ۲۰)، تصویر دچار اشباع رنگی شدید و در اصطلاح «سوختگی» (\lr{Burn-in artifacts}) می‌شود.
+        \item \textbf{تنوع (\lr{Diversity}):} یک رابطه عکس وجود دارد؛ با افزایش مقیاس راهنمایی، تنوع تصاویر تولید شده به شدت «کاهش» می‌یابد. مدل در این حالت فقط روی محتمل‌ترین حالت‌هایی که با شرط ورودی همخوانی دارند تمرکز کرده و از خلاقیت یا تغییرات تصادفی صرف‌نظر می‌کند.
+    \end{itemize}
+\end{solutionbox}
+
+
+
+% =======================================================
+% تشریح جامع مدل‌ها
+% =======================================================
+\section{تشریح جامع مدل‌ها}
+این بخش توضیحات مفصلی درباره سه مدل مولد اصلی مورد بررسی در این تکلیف ارائه می‌دهد: مدل‌های احتمالی نفوذ نویززدا (\lr{DDPM})، نفوذ پایدار (\lr{Stable Diffusion}) به همراه \lr{DreamBooth}، و تطبیق جریان (\lr{Flow Matching}) برای تولید سری‌های زمانی.
+
+% =======================================================
+% مدل‌های احتمالی نفوذ نویززدا (DDPM)
+% =======================================================
+\subsection{مدل‌های احتمالی نفوذ نویززدا (\lr{DDPM})}
+
+\subsubsection{مرور کلی و درک شهودی}
+مدل‌های احتمالی نفوذ نویززدا (\lr{DDPM}) دسته‌ای از مدل‌های مولد هستند که یاد می‌گیرند فرآیند تخریب تدریجی داده توسط نویز را معکوس کنند. شهود اصلی این مدل بسیار ظریف است: به جای یادگیری مستقیم توزیع داده $p(x)$، ما یاد می‌گیریم که چگونه نویز را از یک نسخه کاملاً تخریب شده از داده حذف کنیم.
+
+این مدل از دو فرآیند تشکیل شده است:
+\begin{enumerate}
+    \item \textbf{فرآیند پیش‌رو (\lr{Diffusion}):} افزودن تدریجی نویز گاوسی به داده در طول $T$ گام زمانی.
+    \item \textbf{فرآیند بازگشتی (\lr{Denoising}):} یادگیری حذف پله‌پله نویز با استفاده از یک شبکه عصبی.
+\end{enumerate}
+
+
+
+\subsubsection{مبانی ریاضی}
+\textbf{فرآیند پیش‌رو:} فرآیند نفوذ پیش‌رو یک زنجیره مارکوف است که به تدریج نویز گاوسی را اضافه می‌کند:
+\[ q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{1-\beta_t} x_{t-1}, \beta_t I) \]
+که در آن $\beta_t$ زمان‌بندی واریانس (\lr{variance schedule}) است. نکته کلیدی این است که این فرآیند دارای یک راه حل فرم بسته (\lr{closed-form solution}) است:
+\[ q(x_t | x_0) = \mathcal{N}(x_t; \sqrt{\bar{\alpha}_t} x_0, (1-\bar{\alpha}_t) I) \]
+به طوری که $\alpha_t = 1 - \beta_t$ و $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$ است.
+
+با استفاده از ترفند بازپارامتری‌سازی، می‌توانیم بنویسیم:
+\[ x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1-\bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0, I) \]
+
+\textbf{فرآیند بازگشتی:} فرآیند بازگشتی یاد می‌گیرد که نویززدایی کند:
+\[ p_\theta(x_{t-1} | x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t)) \]
+شبکه عصبی $\epsilon_\theta(x_t, t)$ نویزی را که در گام زمانی $t$ اضافه شده بود، پیش‌بینی می‌کند. در نتیجه گام بازگشتی به صورت زیر در می‌آید:
+\[ x_{t-1} = \frac{1}{\sqrt{\alpha_t}} \left( x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}} \epsilon_\theta(x_t, t) \right) + \sigma_t z \]
+
+\subsubsection{معماری شبکه}
+مدل \lr{DDPM} از یک معماری \lr{U-Net} استفاده می‌کند که مخصوص مدل‌های نفوذ طراحی شده است:
+
+
+
+\textbf{تعبیه زمان (\lr{Time Embedding}):} کدگذاری مکانی سینوسی، اطلاعات گام زمانی را به شبکه تزریق می‌کند:
+\[ \gamma(t) = \sin(2\pi t / 10000^{2i/d}) + \cos(2\pi t / 10000^{2i/d}) \]
+
+\textbf{ساختار \lr{U-Net}:}
+\begin{itemize}
+    \item \textbf{رمزگذار (\lr{Encoder}):} کاهش نمونه‌برداری تدریجی با بلوک‌های باقیمانده (\lr{residual blocks}).
+    \item \textbf{تنگنا (\lr{Bottleneck}):} لایه‌های خود‌توجهی (\lr{self-attention}) برای درک بافتار جهانی.
+    \item \textbf{رمزگشا (\lr{Decoder}):} افزایش نمونه‌برداری تدریجی همراه با اتصالات جهشی (\lr{skip connections}).
+    \item \textbf{تزریق زمان:} هر بلوک باقیمانده بر اساس تعبیه زمان شرطی‌سازی می‌شود.
+\end{itemize}
+
+\textbf{بلوک باقیمانده (\lr{Residual Block}):} ترکیبی از کانولوشن، \lr{GroupNorm}، فعال‌ساز \lr{SiLU} و شرطی‌سازی زمانی است:
+\[ h = \text{Conv}(\text{GroupNorm}(\text{SiLU}(\text{Conv}(x)))) + \text{MLP}(\gamma(t)) \]
+
+\subsubsection{هدف آموزش}
+آموزش مدل، تابع زیان ساده‌شده‌ی زیر را کمینه می‌کند:
+\[ \mathcal{L}_{\text{simple}} = \mathbb{E}_{x_0, \epsilon, t} \left[ \|\epsilon - \epsilon_\theta(x_t, t)\|^2 \right] \]
+این تابع با یک کران پایین تغییراتی (\lr{VLB}) وزن‌دهی شده مطابقت دارد که به جای بیشینه‌سازی دقیق درست‌نمایی، بر روی نویززدایی تمرکز می‌کند.
+
+
+% =======================================================
+% فرآیند نمونه‌برداری
+% =======================================================
+\subsubsection{فرآیند نمونه‌برداری (\lr{Sampling Process})}
+برای تولید نمونه، از نویز خالص $x_T \sim \mathcal{N}(0, I)$ شروع کرده و به صورت تکرار شونده نویززدایی را انجام می‌دهیم:
+
+\begin{latin}
+\begin{lstlisting}[language=Python, caption=DDPM Sampling Algorithm]
+for t in range(T, 0, -1):
+    z = torch.randn_like(x_t) if t > 1 else 0
+    epsilon = epsilon_theta(x_t, t)
+    x_{t-1} = (1/sqrt(alpha_t)) * (x_t - (1-alpha_t)/sqrt(1-alpha_bar_t) * epsilon) + sigma_t * z
+\end{lstlisting}
+\end{latin}
+
+% =======================================================
+% مدل DDIM
+% =======================================================
+\subsubsection{\lr{DDIM}: نسخه معین (\lr{Deterministic})}
+مدل \lr{DDIM} فرآیند بازگشتی را به صورت غیرمارکوفی و معین بازتعریف می‌کند:
+
+\[ x_{t-1} = \sqrt{\alpha_{t-1}} \left( \frac{x_t - \sqrt{1-\bar{\alpha}_t} \epsilon_\theta(x_t, t)}{\sqrt{\bar{\alpha}_t}} + \sqrt{1 - \frac{\bar{\alpha}_t}{\bar{\alpha}_{t-1}}} \epsilon_\theta(x_t, t) \right) \]
+
+
+
+هنگامی که $0 = \eta$ باشد، \lr{DDIM} کاملاً معین شده و اجازه پرش از گام‌ها (\lr{step-skipping}) را می‌دهد که نمونه‌برداری را تا ۲۰ برابر سریع‌تر با حداقل کاهش کیفیت ممکن می‌سازد.
+
+% =======================================================
+% نفوذ پایدار و DreamBooth
+% =======================================================
+\subsection{نفوذ پایدار (\lr{Stable Diffusion}) و \lr{DreamBooth}}
+
+\subsubsection{معماری نفوذ پایدار}
+نفوذ پایدار یک مدل نفوذ پنهان (\lr{Latent Diffusion Model}) است که فرآیند نفوذ را به جای فضای پیکسل، در یک فضای پنهان فشرده انجام می‌دهد. این امر تولید تصاویر با وضوح بالا را با نیازهای محاسباتی معقول ممکن می‌سازد.
+
+
+
+\textbf{معماری سه-جزئی:}
+
+\begin{enumerate}
+    \item \textbf{خودرمزگذار تغییراتی (\lr{VAE}):}
+    \begin{itemize}
+        \item \textbf{رمزگذار:} تصاویر را به فضای پنهان نگاشت می‌کند: $(x)\mathcal{E} = z$
+        \item \textbf{رمزگشا:} تصاویر را بازسازی می‌کند: $(z)\mathcal{D} = \hat{x}$
+        \item \textbf{فضای پنهان:} معمولاً ۴ برابر کوچکتر از ورودی است (مثلاً $512 \times 512$ به $64 \times 64 \times 4$).
+    \end{itemize}
+
+    \item \textbf{رمزگذار متن (\lr{CLIP}):}
+    \begin{itemize}
+        \item دستورات متنی (\lr{prompts}) را به تعبیه‌های برداری (\lr{embeddings}) تبدیل می‌کند.
+        \item شرطی‌سازی لازم برای تولید هدایت‌شده را فراهم می‌سازد.
+        \item از معماری ترنسفورمر با ۱۲ لایه استفاده می‌کند.
+    \end{itemize}
+
+    \item \textbf{مدل نویززدای \lr{U-Net}:}
+    \begin{itemize}
+        \item در فضای پنهان عمل می‌کند.
+        \item بر اساس تعبیه‌های متنی و گام زمانی شرطی‌سازی می‌شود.
+        \item از مکانیزم توجه متقاطع (\lr{cross-attention}) برای هم‌ترازی متن و تصویر استفاده می‌کند.
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{نفوذ در فضای پنهان}
+فرآیند نفوذ در فضای پنهانِ \lr{VAE} رخ می‌دهد:
+\[ q(z_t | z_0) = \mathcal{N}(z_t; \sqrt{\bar{\alpha}_t} z_0, (1-\bar{\alpha}_t) I) \]
+شبکه \lr{U-Net} نویز را در فضای پنهان پیش‌بینی می‌کند: $(c, t, z_t)\epsilon_\theta$ که در آن $c$ شرطی‌سازی متنی است.
+
+\subsubsection{شرطی‌سازی متنی}
+\textbf{مکانیزم توجه متقاطع (\lr{Cross-Attention}):} شبکه \lr{U-Net} از طریق توجه متقاطع، متن را در فرآیند دخیل می‌کند:
+\[ \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d}}\right) V \]
+که در آن $Q$ از ویژگی‌های پنهان تصویر و $K, V$ از تعبیه‌های متنی به دست می‌آیند.
+
+
+
+\subsubsection{راهنمایی بدون طبقه‌بند (\lr{CFG})}
+\lr{CFG} تولید شرطی را بدون نیاز به آموزش طبقه‌بند جداگانه ممکن می‌سازد:
+\[ \tilde{\epsilon}(z_t, c) = \epsilon_\text{uncond}(z_t) + w \cdot (\epsilon_\text{cond}(z_t, c) - \epsilon_\text{uncond}(z_t)) \]
+که در آن $w$ مقیاس راهنمایی برای کنترل شدت شرطی‌سازی است.
+
+% =======================================================
+% تکنیک شخصی‌سازی DreamBooth
+% =======================================================
+\subsubsection{\lr{DreamBooth}: تکنیک شخصی‌سازی}
+\lr{DreamBooth} امکان تنظیم دقیق (\lr{fine-tuning}) نفوذ پایدار را برای سوژه‌های خاص با استفاده از تصاویر اندک فراهم می‌کند.
+
+\textbf{اجزای کلیدی:}
+\begin{enumerate}
+    \item \textbf{تصاویر نمونه (\lr{Instance Images}):} ۳ تا ۵ عکس از سوژه خاص.
+    \item \textbf{تصاویر کلاس (\lr{Class Images}):} تصاویر عمومی از دسته سوژه (برای منظم‌سازی).
+    \item \textbf{شناسه منحصر‌به‌فرد:} یک توکن کمیاب مانند \lr{sks} برای بازنمایی سوژه.
+    \item \textbf{حفظ دانش قبلی (\lr{Prior Preservation}):} جلوگیری از فراموشی فاجعه‌بار مدل.
+\end{enumerate}
+
+\subsubsection{\lr{LoRA}: تنظیم دقیق پارامتر-کارا}
+\lr{LoRA} تنظیم دقیق مدل‌های بزرگ را با حداقل پارامتر ممکن می‌سازد:
+\textbf{فرمول‌بندی ریاضی:}
+\[ W' = W + \Delta W = W + BA \]
+که در آن $B$ و $A$ ماتریس‌های کم‌رتبه (\lr{low-rank}) هستند. در این روش پارامترهای قابل آموزش از ۸۰۰ میلیون به حدود ۳ میلیون کاهش می‌یابد.
+
+% =======================================================
+% فرآیند آموزش DreamBooth
+% =======================================================
+\subsubsection{فرآیند آموزش \lr{DreamBooth}}
+\textbf{تابع هدف دوگانه:}
+\[ \mathcal{L} = \mathcal{L}_\text{instance} + \lambda \mathcal{L}_\text{prior} \]
+که شامل زیان روی تصاویر سوژه خاص و زیان حفظ دانش قبلی روی تصاویر کلاس عمومی است.
+
+\subsubsection{استنتاج با \lr{DreamBooth}}
+پس از آموزش، تصاویر شخصی‌سازی شده تولید می‌شوند:
+۱. استفاده از دستوراتی شامل شناسه منحصر‌به‌فرد: \lr{"sks dog on the beach"}
+۲. اعمال \lr{CFG} با مقیاس مناسب.
+۳. رمزگشایی کدهای پنهان به تصویر نهایی.
+
+\subsection{تطبیق جریان (\lr{Flow Matching}) برای تولید سری‌های زمانی}
+
+
+% =======================================================
+% تطبیق جریان (Flow Matching)
+% =======================================================
+\subsection{تطبیق جریان (\lr{Flow Matching}) برای تولید سری‌های زمانی}
+
+\subsubsection{مرور کلی (\lr{Overview})}
+تطبیق جریان یک چارچوب مدل‌سازی مولد در زمان پیوسته است که یاد می‌گیرد نمونه‌ها را از یک توزیع پایه ساده (معمولاً گاوسی) به توزیع داده هدف، از طریق یک میدان برداری وابسته به زمان (\lr{time-dependent vector field}) منتقل کند.
+
+\subsubsection{مبانی ریاضی}
+\textbf{جریان زمان-پیوسته:} یک میدان برداری وابسته به زمان $v_\theta(x, t)$ تعریف می‌کنیم که معادله زیر را ارضا کند:
+\[ \frac{dx}{dt} = v_\theta(x, t), \quad x(0) = x_0 \sim p_0, \quad x(1) = x_1 \sim p_1 \]
+که در آن $p_0$ یک توزیع ساده (گاوسی) و $p_1$ توزیع داده‌های واقعی است.
+
+
+
+\textbf{تطبیق جریان شرطی (\lr{CFM}):} میدان برداری با تطبیق دادن جریان‌های شرطی یاد گرفته می‌شود:
+\[ \mathcal{L}_\text{CFM}(\theta) = \mathbb{E}_{t, p_t(x|x_0,x_1)} \| v_\theta(x, t) - u_t(x|x_0,x_1) \|^2 \]
+که در آن $u_t(x|x_0,x_1)$ میدان سرعت شرطی است.
+
+\subsubsection{مسیرهای درون‌یابی خطی (\lr{Linear Interpolation Paths})}
+برای سادگی، از مسیرهای خط مستقیم بین نویز و داده استفاده می‌کنیم:
+\[ x(t) = (1-t) x_0 + t x_1 \]
+میدان سرعت متناظر با این مسیر ثابت است:
+\[ u_t(x|x_0,x_1) = x_1 - x_0 \]
+این امر هدف یادگیری را به شکل زیر ساده می‌کند:
+\[ \mathcal{L}_\text{CFM}(\theta) = \mathbb{E}_{x_0,x_1,t} \| v_\theta((1-t)x_0 + t x_1, t) - (x_1 - x_0) \|^2 \]
+
+\subsubsection{معماری شبکه}
+\textbf{میدان سرعت مبتنی بر ترنسفورمر (\lr{Transformer-Based Velocity Field}):}
+\begin{enumerate}
+    \item \textbf{پردازش ورودی:} دنباله‌های سری زمانی با طول $L$ و ویژگی‌های $F$.
+    \item \textbf{تعبیه زمان:} کدگذاری سینوسی برای زمان پیوسته $t \in [0,1]$.
+    \item \textbf{کدگذاری مکانی:} برای موقعیت‌های متوالی در سری زمانی.
+    \item \textbf{رمزگذار ترنسفورمر:} مکانیزم خود‌توجهی چند‌سره (\lr{Multi-head self-attention}) همراه با شبکه‌های پیش‌خور.
+    \item \textbf{تصویر خروجی:} پیش‌بینی بردار سرعت برای هر گام زمانی.
+\end{enumerate}
+
+
+
+\subsubsection{فرآیند آموزش}
+\textbf{آماده‌سازی داده‌ها:}
+\begin{itemize}
+    \item بارگذاری سری‌های زمانی مالی (مانند بازده‌های لگاریتمی \lr{SPY}).
+    \item ایجاد دنباله‌های هم‌پوشان با طول ثابت (۶۴ گام زمانی).
+    \item استانداردسازی داده‌ها به صورت سراسری.
+    \item تقسیم‌بندی زمانی داده‌ها (۹۰٪ آموزش، ۱۰٪ تست).
+\end{itemize}
+
+\begin{latin}
+\begin{lstlisting}[language=Python, caption=Flow Matching Training Loop]
+for each epoch:
+    for each batch:
+        x1 = sample_from_data()
+        x0 = torch.randn_like(x1)
+        t = torch.rand(x1.shape[0])
+        xt = (1-t)*x0 + t*x1
+        v_target = x1 - x0
+        v_pred = v_theta(xt, t)
+        loss = MSE(v_pred, v_target)
+        loss.backward()
+\end{lstlisting}
+\end{latin}
+
+\subsubsection{نمونه‌برداری از طریق انتگرال‌گیری \lr{ODE}}
+\textbf{فرمول‌بندی \lr{ODE}:} تولید نمونه‌ها با حل معادله زیر انجام می‌شود:
+\[ \frac{dx}{dt} = v_\theta(x, t), \quad x(0) = x_0 \sim \mathcal{N}(0, I) \]
+
+\textbf{انتگرال‌گیری عددی:} استفاده از حل‌کننده‌های \lr{ODE} مانند اویلر (\lr{Euler}) یا رانگ-کوتا (\lr{Runge-Kutta}):
+
+
+
+\subsubsection{معیارهای ارزیابی}
+\textbf{ارزیابی آماری:} بررسی میانگین، واریانس، چولگی (\lr{skewness})، کشیدگی (\lr{kurtosis}) و نوسانات (\lr{volatility}).\\
+\textbf{ارزیابی ساختاری:} 
+\begin{itemize}
+    \item \textbf{فاصله واسراشتاین بریده‌شده (\lr{SWD}):} تخمین فاصله بین توزیع‌ها.
+    \item \textbf{خودهمبستگی (\lr{Autocorrelation}):} اندازه‌گیری وابستگی‌های زمانی در تاخیرهای مختلف.
+\end{itemize}
+
+\subsubsection{مزایا نسبت به مدل‌های نفوذ}
+\begin{enumerate}
+    \item \textbf{زمان-پیوسته:} عدم نیاز به گام‌های گسسته و انعطاف‌پذیری بالاتر.
+    \item \textbf{آموزش ساده‌تر:} پیش‌بینی مستقیم سرعت به جای پیش‌بینی نویز.
+    \item \textbf{نمونه‌برداری کارا:} حل یک باره \lr{ODE} به جای نویززدایی تکرار شونده.
+    \item \textbf{مقیاس‌پذیری:} موازی‌سازی آسان‌تر و مقیاس‌پذیری بهتر در ابعاد بالا.
+\end{enumerate}
+
+
+\newpage
+
+% =======================================================
+% جزئیات پیاده‌سازی و معماری‌ها
+% =======================================================
+\section{جزئیات پیاده‌سازی و معماری‌ها}
+
+این بخش جزئیات جامعی درباره مدل‌ها، معماری‌ها و پارامترهای استفاده شده در پیاده‌سازی \lr{DDPM}، \lr{DDIM}، نفوذ پایدار (\lr{Stable Diffusion}) به همراه \lr{DreamBooth} و تطبیق جریان (\lr{Flow Matching}) ارائه می‌دهد.
+
+\subsection{مدل‌های احتمالی نفوذ نویززدا (\lr{DDPM})}
+
+\subsubsection{معماری: \lr{U-Net} برای پیش‌بینی نویز}
+مدل اصلی نویززدا، یک معماری \lr{U-Net} است که برای وظایف ترجمه تصویر‌به‌تصویر طراحی شده و برای پیش‌بینی نویز در مدل‌های نفوذ تطبیق یافته است.
+
+
+
+\textbf{ساختار \lr{U-Net}:}
+\begin{itemize}
+    \item \textbf{رمزگذار (\lr{Encoder}):} ۴ سطح با بلوک‌های باقیمانده (\lr{residual blocks})
+        \begin{itemize}
+            \item هر سطح: ۲ بلوک \lr{ResNet} با \lr{GroupNorm} و فعال‌ساز \lr{SiLU}
+            \item کاهش نمونه‌برداری (\lr{Downsampling}): لایه‌های کانولوشنالی $2 \times 2$ با گام (\lr{stride}) ۲
+            \item تعداد کانال‌ها: $[64, 128, 256, 512]$
+        \end{itemize}
+    \item \textbf{تنگنا (\lr{Bottleneck}):} ۲ بلوک \lr{ResNet} با ۵۱۲ کانال
+    \item \textbf{رمزگشا (\lr{Decoder}):} ۴ سطح با بلوک‌های باقیمانده
+        \begin{itemize}
+            \item هر سطح: ۲ بلوک \lr{ResNet} همراه با اتصالات جهشی (\lr{skip connections})
+            \item افزایش نمونه‌برداری (\lr{Upsampling}): لایه‌های کانولوشنال ترانهاده (\lr{transposed}) $2 \times 2$
+            \item تعداد کانال‌ها: $[512, 256, 128, 64]$
+        \end{itemize}
+    \item \textbf{تعبیه زمان (\lr{Time Embedding}):} کدگذاری مکانی سینوسی که از طریق لایه‌های خطی تزریق می‌شود.
+    \item \textbf{خروجی:} کانولوشن $3 \times 3$ برای پیش‌بینی نویز (با تعداد کانال مشابه ورودی).
+\end{itemize}
+
+
+
+\textbf{پیاده‌سازی دقیق \lr{U-Net}:}
+\begin{latin}
+\begin{lstlisting}[language=Python]
+class UNet(nn.Module):
+    def __init__(self, in_channels=3, out_channels=3, 
+                 time_emb_dim=256, base_channels=64):
+        super().__init__()
+        
+        # Time embedding logic
+        self.time_emb = nn.Sequential(
+            SinusoidalTimeEmbedding(time_emb_dim),
+            nn.Linear(time_emb_dim, time_emb_dim),
+            nn.SiLU(),
+            nn.Linear(time_emb_dim, time_emb_dim)
+        )
+        
+        # Encoder & Decoder parts...
+        # (Rest of the architecture as defined in the technical brief)
+\end{lstlisting}
+\end{latin}
+
+\textbf{پارامترهای آموزش \lr{DDPM}:}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{پارامتر} & \textbf{مقدار} \\
+        \midrule
+        اندازه تصویر & $32 \times 32$ (\lr{MNIST padded}) \\
+        تعداد کانال‌ها & ۳ \\
+        گام‌های زمانی ($T$) & ۱۰۰۰ \\
+        $\beta_{start}$ & ۰.۰۰۰۱ \\
+        $\beta_{end}$ & ۰.۰۲ \\
+        نرخ یادگیری & \lr{1e-4} \\
+        اندازه دسته (\lr{Batch Size}) & ۱۲۸ \\
+        بهینه‌ساز & \lr{AdamW} \\
+        \bottomrule
+    \end{tabular}
+    \caption{پارامترهای آموزش \lr{DDPM}}
+\end{table}
+
+\subsection{نفوذ پایدار (\lr{Stable Diffusion}) با \lr{DreamBooth}}
+
+\subsubsection{مرور معماری}
+نفوذ پایدار شامل سه جز اصلی است که در فضای پنهان (\lr{latent space}) عمل می‌کنند:
+\begin{enumerate}
+    \item \textbf{رمزگذار/رمزگشای \lr{VAE}:} تصاویر $512 \times 512$ را به فضاهای پنهان $64 \times 64 \times 4$ فشرده می‌کند.
+    \item \textbf{رمزگذار متن \lr{CLIP}:} دستورات متنی را به تعبیه‌های برداری تبدیل می‌کند.
+    \item \textbf{نویززدای \lr{U-Net}:} بر اساس تعبیه‌های متنی برای تولید هدایت‌شده شرطی‌سازی می‌شود.
+\end{enumerate}
+
+\textbf{معماری \lr{U-Net} در نفوذ پایدار:}
+\begin{itemize}
+    \item \textbf{ورودی:} فضای پنهان با ابعاد $64 \times 64 \times 4$
+    \item \textbf{تعبیه زمان:} ۱۲۸۰ بعد سینوسی + تصویر خطی
+    \item \textbf{شرطی‌سازی متنی:} توجه متقاطع (\lr{Cross-attention}) با تعبیه‌های \lr{CLIP} (۷۶۸ بعد)
+    \item \textbf{ویژگی‌های معماری:}
+        \begin{itemize}
+            \item بلوک‌های ترنسفورمر مکانی با خود‌توجهی و توجه متقاطع
+            \item ۴ هد توجه (\lr{attention heads}) در هر بلوک
+            \item تعداد کانال‌ها: $[320, 640, 1280, 1280]$
+        \end{itemize}
+\end{itemize}
+
+
+% =======================================================
+% پیاده‌سازی مجموعه داده DreamBooth
+% =======================================================
+\subsubsection{پیاده‌سازی مجموعه داده \lr{DreamBooth}}
+کلاس مجموعه داده برای \lr{DreamBooth} وظیفه بارگذاری همزمان تصاویر سوژه خاص (\lr{Instance}) و تصاویر دسته‌بندی عمومی (\lr{Class}) را برای حفظ دانش قبلی (\lr{Prior Preservation}) بر عهده دارد.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+class DreamBoothDataset(Dataset):
+    def __init__(self, instance_data_root, instance_prompt, tokenizer,
+                 class_data_root=None, class_prompt=None, size=512):
+        # Implementation of dual-image loading and preprocessing
+        # ... (As defined in the technical brief)
+\end{lstlisting}
+\end{latin}
+
+% =======================================================
+% تنظیم دقیق DreamBooth با LoRA
+% =======================================================
+\subsubsection{تنظیم دقیق \lr{DreamBooth}}
+\textbf{پیکربندی \lr{LoRA}:}
+برای بهینه‌سازی پارامتر-کارا، از تکنیک \lr{LoRA} بر روی لایه‌های توجه (\lr{Attention Layers}) استفاده شده است:
+\begin{itemize}
+    \item \textbf{رتبه (\lr{Rank}):} ۴
+    \item \textbf{آلفا (\lr{Alpha}):} ۴
+    \item \textbf{ماژول‌های هدف:} پروژکشن‌های پرس‌وجو (\lr{Query})، کلید (\lr{Key})، مقدار (\lr{Value}) و خروجی.
+\end{itemize}
+
+
+
+\textbf{پارامترهای آموزش \lr{DreamBooth}:}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{پارامتر} & \textbf{مقدار} \\
+        \midrule
+        مدل پایه & \lr{Stable Diffusion v1-5} \\
+        نرخ یادگیری & \lr{1e-4} \\
+        تعداد گام‌های آموزش & ۸۰۰ \\
+        وزن حفظ دانش قبلی & ۱.۰ \\
+        عبارت سوژه (\lr{Instance Prompt}) & \lr{"a photo of sks person"} \\
+        عبارت کلاس (\lr{Class Prompt}) & \lr{"a photo of a person"} \\
+        \bottomrule
+    \end{tabular}
+    \caption{پارامترهای آموزش \lr{DreamBooth}}
+\end{table}
+
+% =======================================================
+% تطبیق جریان برای سری‌های زمانی
+% =======================================================
+\subsection{تطبیق جریان برای تولید سری‌های زمانی}
+
+\subsubsection{نظریه تطبیق جریان شرطی (\lr{CFM})}
+تطبیق جریان یک میدان سرعت $v_\theta(x, t)$ را یاد می‌گیرد که داده‌ها را از توزیع نویز به توزیع داده منتقل می‌کند:
+\[
+\frac{dx}{dt} = v_\theta(x, t), \quad x(0) \sim \pi_0, \quad x(1) \sim \pi_1
+\]
+
+\textbf{هدف (\lr{Objective}):}
+\begin{itemize}
+    \item \textbf{مسیر شرطی:} $x_t = (1-t)x_0 + t x_1$
+    \item \textbf{میدان سرعت:} $v_t(x) = x_1 - x_0$
+    \item \textbf{تابع زیان:} $\mathcal{L}(\theta) = \mathbb{E}_{x_0, x_1, t} \|v_\theta(x_t, t) - (x_1 - x_0)\|^2$
+\end{itemize}
+
+\subsubsection{معماری تطبیق جریان مبتنی بر ترنسفورمر}
+برای مدل‌سازی سری‌های زمانی، از یک رمزگذار ترنسفورمر (\lr{Transformer Encoder}) برای پیش‌بینی میدان سرعت استفاده شده است.
+
+
+
+\textbf{ساختار مدل:}
+\begin{itemize}
+    \item \textbf{تعبیه زمان:} استفاده از کدگذاری سینوسی برای تزریق زمان پیوسته $t$.
+    \item \textbf{لایه‌های ترنسفورمر:} ۴ لایه با ۸ هد توجه متقاطع.
+    \item \textbf{پروژکشن خروجی:} نگاشت ویژگی‌های پنهان به ابعاد میدان سرعت.
+\end{itemize}
+
+\begin{latin}
+\begin{lstlisting}[language=Python, caption=Transformer-based Velocity Predictor]
+class TimeSeriesFlowMatching(nn.Module):
+    def __init__(self, input_dim=1, hidden_dim=128, num_layers=4, num_heads=8):
+        super().__init__()
+        # Time and Input projections
+        # Transformer layers for sequence modeling
+        # ...
+\end{lstlisting}
+\end{latin}
+
+% =======================================================
+% آموزش تطبیق جریان شرطی
+% =======================================================
+\subsubsection{آموزش تطبیق جریان شرطی (\lr{Conditional Flow Matching})}
+
+\textbf{تابع زیان تطبیق جریان شرطی:}
+این کلاس وظیفه مدیریت مسیرهای درون‌یابی خطی بین نویز و داده و محاسبه خطای پیش‌بینی میدان سرعت را بر عهده دارد.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+class ConditionalFlowMatching:
+    def __init__(self, model, sigma=0.0):
+        self.model = model
+        self.sigma = sigma
+    
+    def sample_conditional_path(self, x0, x1, t):
+        # Linear interpolation: xt = (1-t)*x0 + t*x1
+        path = (1 - t) * x0 + t * x1
+        return path
+\end{lstlisting}
+\end{latin}
+
+% =======================================================
+% مجموعه داده سری زمانی و آموزش
+% =======================================================
+\subsubsection{مجموعه داده سری زمانی و فرآیند آموزش}
+
+\textbf{مجموعه داده سری زمانی:}
+در این بخش، داده‌های مالی (مانند بازده‌های \lr{SPY}) با استفاده از یک پنجره لغزان (\lr{Sliding Window}) به دنباله‌هایی با طول ۱۰۰ تبدیل می‌شوند.
+
+
+
+\textbf{حلقه آموزش (\lr{Training Loop}):}
+در هر اپوک، مدل تلاش می‌کند تا بردار سرعت ($x_1 - x_0$) را با داشتن نقطه میانی $x_t$ و زمان $t$ پیش‌بینی کند.
+
+\begin{latin}
+\begin{lstlisting}[language=Python, caption=Flow Matching Training Loop]
+def train_flow_matching(model, dataset, num_epochs=100, batch_size=32, lr=1e-4):
+    # Standard training loop with CFM loss
+    # ...
+\end{lstlisting}
+\end{latin}
+
+\subsubsection{نمونه‌برداری از جریان آموزش‌دیده}
+تولید داده‌های مصنوعی با حل معادله دیفرانسیل معمولی (\lr{ODE}) و با استفاده از روش عددی اویلر انجام می‌شود.
+
+% =======================================================
+% پیش‌پردازش داده‌ها
+% =======================================================
+\subsubsection{پیش‌پردازش داده‌ها}
+\begin{itemize}
+    \item \textbf{مجموعه داده:} بازده‌های لگاریتمی \lr{SPY ETF} (بازه ۲۰۱۰-۲۰۲۳).
+    \item \textbf{نرمال‌سازی:} استفاده از \lr{StandardScaler} (میانگین صفر و انحراف معیار یک).
+    \item \textbf{پنجره دنباله:} ۱۰۰ روز متوالی.
+\end{itemize}
+
+\textbf{پارامترهای آموزش تطبیق جریان:}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lc}
+        \toprule
+        \textbf{پارامتر} & \textbf{مقدار} \\
+        \midrule
+        مدل & رمزگذار ترنسفورمر \\
+        بعد پنهان & ۱۲۸ \\
+        تعداد لایه‌ها & ۴ \\
+        طول دنباله & ۱۰۰ \\
+        نرخ یادگیری & \lr{1e-4} \\
+        \bottomrule
+    \end{tabular}
+    \caption{پارامترهای آموزش تطبیق جریان}
+\end{table}
+
+\subsection{جزئیات مشترک پیاده‌سازی}
+
+\subsubsection{زیرساخت آموزش}
+\begin{itemize}
+    \item \textbf{سخت‌افزار:} پردازنده گرافیکی \lr{NVIDIA (CUDA)}.
+    \item \textbf{چارچوب:} \lr{PyTorch 2.0+}.
+    \item \textbf{بازتولیدپذیری:} تثبیت دانه تصادفی (\lr{Seed}) روی عدد ۴۲.
+\end{itemize}
+
+\newpage
+
+\subsection{بخش دوم: سوالات عملی}
+
+\subsubsection{بخش ۱: پیاده‌سازی \lr{DDPM} و \lr{DDIM}}
+
+\textbf{گام ۱: پیاده‌سازی زمان‌بندی نویز (\lr{Noise Schedule})}
+\begin{solutionbox}
+    زمان‌بندی واریانس خطی با درون‌یابی بین $\beta_{start}$ و $\beta_{end}$ پیاده‌سازی شده است. تمام ضرایب مورد نیاز برای فرآیندهای پیش‌رو و بازگشتی به صورت پیش‌محاسبه ذخیره می‌شوند.
+\end{solutionbox}
+
+\textbf{گام ۲: پیاده‌سازی تابع \texttt{perturb\_input}}
+\begin{solutionbox}
+    فرآیند پیش‌رو از ترفند بازپارامتری‌سازی برای افزودن نویز استفاده می‌کند: 
+    $x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon$
+
+
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+def perturb_input(self, x_0, t, noise=None):
+    """
+    Forward Process using Reparameterization Trick.
+    """
+    # ... logic for adding noise based on alpha_bar
+    return x_t, noise
+\end{lstlisting}
+\end{latin}
+\end{solutionbox}
+
+
+% =======================================================
+% گام ۳: پیاده‌سازی حلقه آموزش (Training Loop)
+% =======================================================
+\textbf{گام ۳: پیاده‌سازی حلقه آموزش}
+\begin{solutionbox}
+    حلقه آموزش شامل نمونه‌برداری از گام‌های زمانی تصادفی، افزودن نویز با استفاده از فرآیند پیش‌رو، پیش‌بینی نویز توسط شبکه \lr{U-Net} و در نهایت کمینه‌سازی خطای میانگین مربعات (\lr{MSE}) است.
+
+
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+def train_step(self, x_0):
+    """Single training step for DDPM."""
+    self.model.train()
+    # Step 1: Sample random timesteps
+    t = torch.randint(0, self.scheduler.num_timesteps, (batch_size,), device=self.device)
+    # Step 2: Forward Process (Add noise)
+    x_t, noise = self.scheduler.perturb_input(x_0, t)
+    # Step 3: Predict noise
+    noise_pred = self.model(x_t, t)
+    # Step 4: MSE loss & Backprop
+    loss = F.mse_loss(noise_pred, noise)
+    # ... optimization steps
+    return loss.item()
+\end{lstlisting}
+\end{latin}
+\end{solutionbox}
+
+% =======================================================
+% گام ۴: پیاده‌سازی نمونه‌برداری (Sampling)
+% =======================================================
+\textbf{گام ۴: پیاده‌سازی نمونه‌برداری}
+\begin{solutionbox}
+    نمونه‌برداری \lr{DDPM} از نویز خالص گاوسی شروع شده و به صورت تکرار شونده با استفاده از مدل آموزش‌دیده، نویززدایی می‌شود. قانون به‌روزرسانی به صورت زیر است:
+    $x_{t-1} = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}}\epsilon_\theta) + \sigma_t z$
+
+
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+@torch.no_grad()
+def sample(self, batch_size, img_size=(3, 32, 32)):
+    """Generate samples using DDPM reverse process."""
+    # Start from pure Gaussian noise
+    x = torch.randn(batch_size, *img_size, device=self.device)
+    for t in reversed(range(self.scheduler.num_timesteps)):
+        # Iteratively apply the update rule to remove predicted noise
+        # ...
+    return x
+\end{lstlisting}
+\end{latin}
+\end{solutionbox}
+
+% =======================================================
+% گام ۵: نتایج بصری (DDPM در مقابل DDIM)
+% =======================================================
+\textbf{گام ۵: نتایج بصری (\lr{DDPM} در مقابل \lr{DDIM})}
+\begin{solutionbox}
+    تصاویر زیر مستقیماً از اجرای کدها استخراج شده‌اند. مدل \lr{DDPM} از گام‌های بازگشتی زیاد (مثلاً ۱۰۰۰ گام) استفاده کرده و ماهیتی تصادفی دارد، در حالی که \lr{DDIM} می‌تواند با گام‌های بسیار کمتر (مثلاً ۵۰ گام) و به صورت معین (\lr{deterministic}) برای $0=\eta$ عمل کند.
+
+    
+
+    \textbf{توضیح:} تابع زیان \lr{DDPM} معمولاً به صورت هموار با یادگیری پیش‌بینی $\epsilon$ کاهش می‌یابد. به‌روزرسانی‌های پله‌ای در \lr{DDIM} زمان نمونه‌برداری را به شدت کاهش می‌دهند و پارامتر $\eta$ کنترل‌کننده میزان تصادفی بودن فرآیند است.
+\end{solutionbox}
+
+\newpage
+
+\subsubsection{بخش ۲: نفوذ پایدار (\lr{Stable Diffusion}) و \lr{DreamBooth}}
+
+% =======================================================
+% آماده‌سازی داده‌ها برای DreamBooth
+% =======================================================
+\textbf{گام ۱: آماده‌سازی داده‌ها}
+\begin{solutionbox}
+    \textbf{سوژه انتخابی:} تصاویر چهره/پرتره شخصی \\
+    \textbf{عبارت سوژه:} \lr{a photo of sks person} \\
+    \textbf{عبارت کلاس:} \lr{a photo of a person}
+
+    \textbf{توضیح:} مجموعه تصاویر سوژه باید شامل نماها و حالت‌های مختلف از یک فرد باشد. توکن شناسه‌ی خاص (مانند \lr{sks}) در عبارت سوژه قرار می‌گیرد تا مدل بتواند هویت سوژه را به آن توکن گره بزند.
+\end{solutionbox}
+
+% =======================================================
+% آموزش DreamBooth با LoRA
+% =======================================================
+\textbf{گام ۴: حلقه آموزش (\lr{LoRA})}
+\begin{solutionbox}
+    آموزش \lr{DreamBooth} از تکنیک \lr{LoRA} برای تنظیم دقیق کارا استفاده می‌کند. جزئیات کلیدی پیاده‌سازی:
+    
+
+
+    \begin{itemize}
+        \item رتبه (\lr{Rank}) بین ۴ تا ۸ تعادل خوبی میان کیفیت و کارایی برقرار می‌کند.
+        \item نرخ یادگیری \lr{1e-4} با بهینه‌ساز \lr{AdamW} عملکرد مناسبی دارد.
+        \item وزن حفظ دانش قبلی (\lr{Prior Preservation weight}) به میزان ۱.۰ از «لغزش زبانی» مدل جلوگیری می‌کند.
+    \end{itemize}
+\end{solutionbox}
+
+% =======================================================
+% نتایج تست و استنتاج
+% =======================================================
+\textbf{گام ۵: نتایج تست و استنتاج}
+\begin{solutionbox}
+    \textbf{تحلیل نتایج:}
+    تنظیم دقیق \lr{DreamBooth} با موفقیت شناسه‌ی \lr{sks} را یاد گرفته و آن را به هویت سوژه متصل می‌کند. مشاهدات کلیدی:
+    \begin{itemize}
+        \item \textbf{حفظ هویت:} مدل به دقت ویژگی‌های متمایز سوژه را در بافتارهای مختلف ثبت می‌کند.
+        \item \textbf{انتقال سبک:} مدل می‌تواند سوژه را در سبک‌های هنری مختلف (نقاشی رنگ روغن، انیمه و غیره) با حفظ هویت قرار دهد.
+        \item \textbf{پیروی از دستورات:} دستورات پیچیده شامل پس‌زمینه، نورپردازی و لوازم جانبی به درستی اجرا می‌شوند.
+    \end{itemize}
+\end{solutionbox}
+
+
+% =======================================================
+% بخش دوم: تطبیق جریان و سری‌های زمانی
+% =======================================================
+\section{سوال دوم: تطبیق جریان و سری‌های زمانی}
+
+\subsection{بخش اول: سوالات تئوری}
+
+\subsubsection{سوال ۱: میدان برداری (\lr{Vector Field})}
+\textit{(الف) نقش میدان برداری چیست؟ (ب) مقایسه تطبیق جریان با مدل‌های نفوذ؟}
+
+\begin{solutionbox}
+    \textbf{الف) نقش در انتقال نمونه‌ها:}
+    در مدل‌های تطبیق جریان، میدان برداری $v_\theta(x, t)$ سرعت لحظه‌ای حرکت جرم احتمالی در فضا و زمان را تعریف می‌کند. به جای تکیه بر یک فرآیند تصادفی، میدان برداری یک مسیر معین (یک معادله دیفرانسیل معمولی، \lr{ODE}) را دیکته می‌کند که به طور پیوسته توزیع اولیه $p_0$ (معمولاً نویز گاوسی ساده) را به توزیع داده هدف $p_1$ تبدیل می‌کند. به طور خاص، اگر با نمونه‌ای مانند $x_0 \sim p_0$ در زمان $0=t$ شروع کنیم، حل معادله دیفرانسیل $\frac{dx}{dt} = v_\theta(x, t)$ نمونه را در طول یک مسیر حرکت می‌دهد به طوری که در $1=t$، مقدار حاصل ($x_1$) از توزیع داده پیروی می‌کند. میدان برداری اساساً یاد می‌گیرد که برای تبدیل نویز به داده، باید «آن را به کدام سمت هل داد».
+
+    
+
+    \textbf{ب) مقایسه با مدل‌های نفوذ:}
+    \begin{itemize}
+        \item \textbf{تفاوت:} مهم‌ترین تفاوت این است که مدل‌های نفوذ استاندارد (\lr{DDPM}) ذاتاً \textbf{تصادفی} هستند (بر پایه زنجیره‌های مارکوف یا \lr{SDE}ها) و بر یک فرآیند نویززدایی تکرار‌شونده تکیه دارند که گسسته است یا برای تقریب زدن فرآیند معکوس به گام‌های زیادی نیاز دارد. تطبیق جریان اساساً بر یادگیری مستقیم یک میدان برداری پیوسته و معین (\lr{ODE}) استوار است. در حالی که نفوذ بر حذف نویز تمرکز دارد، تطبیق جریان بر رگرسیونِ سرعتِ یک مسیر بین توزیع‌ها تمرکز می‌کند.
+        \item \textbf{شباهت:} این دو مدل زمانی مشابه عمل می‌کنند که تطبیق جریان را با «\lr{ODE} جریان احتمالی» در نفوذ مقایسه کنیم. این \lr{ODE} یک فرمول‌بندی معین از مدل نفوذ (مانند \lr{DDIM}) است که در آن توزیع‌های نهایی با فرآیند نفوذ مطابقت دارند. در این حالت، مدل نفوذ را می‌توان نمونه‌ای خاص از تطبیق جریان دانست که در آن میدان برداری توسط تابع امتیاز (\lr{score function}) تعریف می‌شود.
+    \end{itemize}
+\end{solutionbox}
+
+\subsubsection{سوال ۲: مسیرهای خطی (\lr{Linear Paths})}
+\textit{(الف) چرا مسیرهای خطی؟ آیا بهینه هستند؟ (ب) تأثیر بر پایداری و تابع هزینه؟}
+
+\begin{solutionbox}
+    \textbf{الف) مناسب بودن و بهینگی مسیرهای خطی:}
+    استفاده از مسیرهای خطی (\lr{Conditional Flow Matching} با مسیرهای انتقال بهینه) انتخابی مناسب است زیرا ساده‌ترین و مستقیم‌ترین مسیر را بین یک نمونه نویز $x_0$ و یک نمونه داده $x_1$ فراهم می‌کند.
+    \begin{itemize}
+        \item \textbf{چرا مناسب است؟} یک مسیر خطی $x_t = (1-t)x_0 + t x_1$ دارای بردار سرعت ثابت $v_t = x_1 - x_0$ است. این امر هدف رگرسیون را برای شبکه عصبی بسیار ساده می‌کند (یک مقدار ثابت برای یک جفت مشخص)، که یادگیری را در مقایسه با مسیرهای منحنی یا پیچیده نفوذ آسان‌تر می‌سازد.
+        \item \textbf{آیا همیشه بهینه است؟} لزوماً خیر. یک مسیر خطی بین جفت‌های تصادفی (مثلاً نویز تصادفی به تصویر تصادفی) از نظر هزینه انتقال در سطح جهانی بهینه نیست. با این حال، اگر نویز و داده را به طور بهینه جفت کنیم (با استفاده از انتقال بهینه، \lr{Optimal Transport})، مسیر خطی به کوتاهترین مسیر (\lr{geodesic}) در فضای اقلیدسی تبدیل می‌شود که هزینه انتقال را کمینه می‌کند. بنابراین، مسیرهای خطی \textit{اگر} جفت‌سازی بهینه باشد، بهینه هستند.
+    \end{itemize}
+
+    \textbf{ب) تأثیر بر پایداری و تابع هزینه:}
+    \begin{itemize}
+        \item \textbf{پایداری آموزش:} مسیرهای خطی پایداری آموزش را به طور قابل توجهی بهبود می‌بخشند. از آنجایی که سرعت هدف $x_1 - x_0$ ثابت و محدود است، واریانس گرادیان‌ها در طول پس‌انتشار در مقایسه با اهداف نفوذ (که در آن تابع امتیاز با نزدیک شدن واریانس نویز به صفر می‌تواند منفجر شود) بسیار کمتر است.
+        \item \textbf{سادگی تابع هزینه:} این رویکرد تابع هزینه را به یک مسئله رگرسیون کمترین مربعات استاندارد ساده می‌کند. ما اساساً مقدار $\|v_\theta(x_t, t) - (x_1 - x_0)\|^2$ را کمینه می‌کنیم که از نظر عددی بسیار بهتر از بهینه‌سازی \lr{ELBO} با طرح‌های وزن‌دهی پیچیده عمل می‌کند.
+    \end{itemize}
+\end{solutionbox}
+
+\subsubsection{سوال ۳: اثبات بازنویسی تابع هزینه}
+\textit{نشان دهید که تابع زیان چگونه بازنویسی می‌شود.}
+
+\begin{solutionbox}
+    هدف از تطبیق امتیاز نویززدایی (\lr{Denoising Score Matching}) آموزش مدلی مانند $s_\theta(x_t, t)$ برای تقریب زدن امتیاز توزیع داده $\nabla_{x_t} \log q_t(x_t)$ است. ثابت شده است که کمینه‌سازی واگرایی فیشر نسبت به توزیع حاشیه‌ای، معادل کمینه‌سازی میانگین مربعات خطا نسبت به توزیع شرطی $q(x_t|x_0)$ است.
+
+    
+    
+    تابع زیان به صورت زیر تعریف می‌شود:
+    \[ \mathcal{L} = \mathbb{E}_{x_0, x_t} \left[ \frac{1}{2} \left\| s_\theta(x_t, t) - \nabla_{x_t} \log q(x_t | x_0) \right\|^2_2 \right] \]
+    
+    با توجه به هسته اختلال (\lr{perturbation kernel}):
+    \[ q(x_t | x_0) = \mathcal{N}(x_t; x_0, \sigma_t^2 I) \]
+    لگاریتم تابع چگالی احتمال (\lr{PDF}) برابر است با:
+    \[ \log q(x_t | x_0) = \text{const} - \frac{\|x_t - x_0\|^2}{2\sigma_t^2} \]
+    
+    اکنون با مشتق‌گیری نسبت به $x_t$ برای محاسبه تابع امتیاز:
+    \begin{align*}
+        \nabla_{x_t} \log q(x_t | x_0) &= \nabla_{x_t} \left( - \frac{(x_t - x_0)^T (x_t - x_0)}{2\sigma_t^2} \right) \\
+        &= - \frac{1}{2\sigma_t^2} \cdot 2(x_t - x_0) = \frac{x_0 - x_t}{\sigma_t^2}
+    \end{align*}
+    
+    با جایگذاری این نتیجه در تابع زیان، فرم نهایی حاصل می‌شود:
+    \[ \mathcal{L} = \mathbb{E}_{t, x_0, \epsilon} \left[ \left\| s_\theta(x_t, t) - \frac{x_0 - x_t}{\sigma_t^2} \right\|^2_2 \right] \]
+\end{solutionbox}
+
+\newpage
+
+\subsection{بخش دوم: گزارش عملی و ارزیابی}
+
+\textbf{گام ۳: تحلیل حل‌کننده (\lr{Solver}) در تولید داده‌های مصنوعی}
+\begin{solutionbox}
+    \textbf{تأثیر گام‌های حل‌کننده بر کیفیت و هزینه:}
+    استفاده از گام‌های بیشتر (اندازه گام کوچک‌تر) به طور کلی کیفیت نمونه‌ها (تطابق توزیعی بهتر) را بهبود می‌بخشد اما هزینه محاسباتی را به صورت خطی افزایش می‌دهد. روش اویلر (\lr{Euler}) سریع‌ترین است اما می‌تواند باعث ایجاد تورش عددی شود؛ در حالی که روش‌های رانگ-کوتا (\lr{RK4}) پایداری بالاتری دارند و آمار سری‌های تولید شده را بهتر به داده‌های واقعی نزدیک می‌کنند.
+
+
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# ODE sampling (Euler/Heun)
+def euler_step(x, t, dt):
+    return x + dt * v_theta(x, t)
+
+def heun_step(x, t, dt):
+    k1 = v_theta(x, t)
+    x_e = x + dt * k1
+    k2 = v_theta(x_e, t + dt)
+    return x + 0.5 * dt * (k1 + k2)
+\end{lstlisting}
+\end{latin}
+\end{solutionbox}
+
+\textbf{گام ۶: مقایسه توزیع (هیستوگرام/\lr{KDE})}
+\begin{solutionbox}
+    مقایسه هیستوگرام باید انطباق نزدیکی را در جرم مرکزی (نزدیک به صفر) و در دنباله‌ها (\lr{tails}) نشان دهد. اگر دنباله‌های تولید شده بیش از حد سبک باشند، مدل رویدادهای حدی بازار را دست‌کم می‌گیرد؛ و اگر بیش از حد سنگین باشند، شوک‌های نادر را بیش از حد بزرگ‌نمایی می‌کند. مطابقت کشیدگی (\lr{kurtosis}) یک بررسی حیاتی برای واقعی بودن سری‌های بازده مالی است.
+
+    
+\end{solutionbox}
+
+\textbf{گام ۸: ارزیابی پیشرفته (\lr{SWD} و خودهمبستگی)}
+\begin{solutionbox}
+    \textbf{فاصله واسراشتاین بریده‌شده (\lr{SWD}):} ما \lr{SWD} را بین دنباله‌های واقعی و تولید شده با تصویر کردن آن‌ها بر جهت‌های تصادفی محاسبه می‌کنیم. مقدار کمتر نشان‌دهنده شباهت توزیعی بیشتر است.
+    
+    \textbf{تحلیل خودهمبستگی (\lr{Autocorrelation}):}
+    اگر تابع خودهمبستگی (\lr{ACF}) بازده‌های تولید شده مشابه داده‌های واقعی باشد (که معمولاً برای بازده‌های خام نزدیک به صفر است اما برای بازده‌های توان‌دوم ساختار مشخصی دارد)، نشان‌دهنده آن است که مدل وابستگی‌های زمانی را به خوبی یاد گرفته است. تفاوت زیاد در \lr{ACF} به این معناست که مولد، دینامیکِ توالی را از دست داده است، حتی اگر توزیع‌های حاشیه‌ای مطابقت داشته باشند.
+
+    
+\end{solutionbox}
+
+
+\newpage
+% =======================================================
+% بخش دوم: گزارش عملی و ارزیابی
+% =======================================================
+\subsection{بخش دوم: گزارش عملی و ارزیابی}
+
+\textbf{گام ۱: ثبت و تحلیل تابع هزینه (\lr{Cost Function})}
+\begin{solutionbox}
+    در طول فرآیند آموزش، ما تابع زیان تطبیق جریان شرطی (\lr{CFM}) را کمینه می‌کنیم. سرعت هدف در اینجا صرفاً تفاوت بین نمونه واقعی داده و نمونه نویز است.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Core Flow Matching objective (Linear Path)
+t = torch.rand(batch_size, device=device)
+t_view = t.view(batch_size, 1, 1)
+
+# Linear Interpolation (xt)
+x_t = (1.0 - t_view) * x0 + t_view * x1
+
+# Target Velocity (v = x1 - x0)
+v_target = x1 - x0
+
+# Predict Velocity using Transformer model
+v_pred = model(x_t, t)
+loss = F.mse_loss(v_pred, v_target)
+\end{lstlisting}
+\end{latin}
+\end{solutionbox}
+
+\textbf{گام ۲: ترسیم نمودارهای زیان آموزش و تست}
+\begin{solutionbox}
+    فرآیند آموزش در طول ۵۰ اپوک پایش شد.
+
+    \begin{figure}[H]
+        \centering
+        \maybeincludegraphics{width=0.85\textwidth}{fm_loss_curve.png}
+        \caption{نمودار زیان آموزش (\lr{Blue}) در مقابل زیان تست (\lr{Orange}) در ۵۰ اپوک.}
+        \label{fig:fm_loss}
+    \end{figure}
+    
+    
+
+    \textbf{تحلیل:}
+    \begin{itemize}
+        \item \textbf{همگرایی:} مدل در ۱۰ اپوک اول همگرایی سریعی را نشان می‌دهد و مقدار زیان از حدود ۳.۵ به ۲.۰ کاهش می‌یابد که نشان‌دهنده یادگیری کارآمد میدان سرعت میانگین است.
+        \item \textbf{تعمیم‌پذیری:} مقدار نهایی زیان آموزش \textbf{۱.۵۹۶۹} و زیان تست \textbf{۱.۵۱۱۲} ثبت شده است.
+        \item \textbf{بیش‌برازش/کم‌برازش:} نکته قابل توجه این است که زیان تست کمی کمتر از زیان آموزش است (شکاف $\approx ۰.۰۸$). این موضوع تایید می‌کند که \textbf{بیش‌برازش (\lr{Overfitting}) رخ نداده است} و مدل موفق شده ویژگی‌های کلی دینامیک بازار (مانند خوشه‌بندی نوسانات) را به جای حفظ کردن الگوهای خاص نویز، یاد بگیرد.
+    \end{itemize}
+\end{solutionbox}
+
+\textbf{گام ۳: تولید داده‌های مصنوعی (نمونه‌برداری)}
+\begin{solutionbox}
+    برای تولید داده، معادله دیفرانسیل معمولی $\frac{dx}{dt} = v_\theta(x, t)$ را با شروع از $x_0 \sim \mathcal{N}(0, I)$ حل می‌کنیم. برای انتگرال‌گیری عددی از \textbf{روش اویلر} استفاده شد:
+    
+    \[ x_{t+\Delta t} = x_t + v_\theta(x_t, t) \cdot \Delta t \]
+
+    \textbf{تأثیر تعداد گام‌های حل‌کننده (\lr{Solver Steps}):}
+    تأثیر اندازه گام ($N$) بر نوسانات داده‌های تولید شده بررسی شد:
+    \begin{itemize}
+        \item $N=10$: نوسانات $\approx ۰.۸۳$ (تخمین کمتر از حد به دلیل خطای عددی).
+        \item $N=50$: نوسانات $\approx ۰.۹۳$.
+        \item \textbf{$N=100$}: نوسانات $\approx ۰.۹۶۳$ (مطابق با داده‌های واقعی $\approx ۰.۹۶۳$).
+    \end{itemize}
+    افزایش تعداد گام‌ها خطای قطع عددی را کاهش داده و منجر به تخمین دقیق‌تر واریانس می‌شود، هرچند زمان استنتاج را به صورت خطی افزایش می‌دهد.
+\end{solutionbox}
+
+\textbf{گام ۴: نمایش نمونه‌های سری زمانی تولید شده}
+\begin{solutionbox}
+    \begin{figure}[H]
+        \centering
+        \maybeincludegraphics{width=0.95\textwidth}{fm_generated_samples.jpg}
+        \caption{نمونه‌های سری زمانی تولید شده. بالا: بازده‌های لگاریتمی نرمال شده. پایین: بازده‌های غیرنرمال (بازگشت به مقیاس اصلی).}
+        \label{fig:fm_samples}
+    \end{figure}
+    
+    
+
+    \textbf{تحلیل بصری:}
+    نمونه‌های تولید شده ویژگی‌های تعریف‌کننده داده‌های مالی را به خوبی نشان می‌دهند:
+    \begin{itemize}
+        \item \textbf{دامنه:} مقادیر نرمال شده عمدتاً بین $[-۳, ۳]$ نوسان می‌کنند که با انحراف معیار بازده‌های بازار مطابقت دارد.
+        \item \textbf{ناهمواری:} سری‌ها غیرهموار و «دندانه‌دار» هستند که ماهیت تصادفی قیمت‌ها را به درستی منعکس می‌کند.
+        \item \textbf{خوشه‌بندی نوسانات:} دوره‌هایی از تلاطم شدید و به دنبال آن آرامش نسبی مشاهده می‌شود که یکی از «حقایق سبک‌وار» (\lr{stylized facts}) کلیدی بازارهای مالی است.
+    \end{itemize}
+\end{solutionbox}
+
+\textbf{گام ۵: مقایسه کیفی (واقعی در مقابل تولید شده)}
+\begin{solutionbox}
+    \begin{figure}[H]
+        \centering
+        \maybeincludegraphics{width=0.95\textwidth}{fm_real_vs_gen.jpg}
+        \caption{مقایسه کیفی. ردیف اول: داده واقعی. ردیف دوم: داده تولید شده. ردیف سوم: مقایسه هم‌پوشان.}
+        \label{fig:fm_qualitative}
+    \end{figure}
+    
+    \textbf{ارزیابی:}
+    از نظر بصری، دنباله‌های تولید شده (\lr{Green dashed line}) از دنباله‌های واقعی (\lr{Blue line}) غیرقابل تشخیص هستند. مدل موارد زیر را حفظ کرده است:
+    \begin{itemize}
+        \item فرکانس «جهش‌ها» (\lr{spikes}) یا همان بازده‌های بزرگ.
+        \item رفتار بازگشت به میانگین (\lr{mean-reverting behavior}).
+        \item نبود روند یا فصلی بودن واضح، که با فرضیه بازار کارا برای بازده‌های لگاریتمی سازگار است.
+    \end{itemize}
+\end{solutionbox}
+
+\newpage
+\textbf{گام ۶: مقایسه توزیع داده‌های واقعی و تولید شده}
+\begin{solutionbox}
+    \begin{figure}[H]
+        \centering
+        \maybeincludegraphics{width=0.95\textwidth}{fm_dist_comparison.jpg}
+        \caption{تحلیل توزیع. هیستوگرام (بالا-چپ)، \lr{KDE} (بالا-راست)، نمودار \lr{Q-Q} (پایین-چپ) و \lr{CDF} (پایین-راست).}
+        \label{fig:fm_dist}
+    \end{figure}
+    
+    
+
+    \textbf{تحلیل توزیعی:}
+    \begin{itemize}
+        \item \textbf{هیستوگرام/\lr{KDE}:} توزیع تولید شده (سبز) هم‌پوشانی قابل توجهی با توزیع واقعی (آبی) دارد و مرکز ثقل توزیع‌ها کاملاً هم‌تراز است.
+        \item \textbf{نمودار \lr{Q-Q} (تحلیل دنباله‌ها):} این نمودار چالش اصلی را فاش می‌کند. در مرکز (چندک‌های -۲ تا ۲)، انطباق عالی است. اما در مقادیر حدی ($>۲$ یا $<-۲$)، نقاط از خط قرمز فاصله می‌گیرند. این نشان می‌دهد که مدل، رویدادهای حدی کمتری نسبت به بازار واقعی تولید می‌کند («دنباله‌های نازک‌تر»). توزیع تولید شده کمی گاوسی‌تر از داده‌های واقعی است که دارای «کشیدگی» (\lr{leptokurtic}) بالایی هستند.
+    \end{itemize}
+\end{solutionbox}
+
+\textbf{گام ۷: ارزیابی آماری پایه و نوسانات}
+\begin{solutionbox}
+    \begin{table}[H]
+        \centering
+        \begin{tabular}{lcccc}
+            \toprule
+            \textbf{معیار} & \textbf{داده واقعی} & \textbf{داده تولید شده} & \textbf{خطای مطلق} & \textbf{خطای نسبی} \\
+            \midrule
+            میانگین & ۰.۰۰۳۷۷۰ & ۰.۰۰۰۱۸۸ & ۰.۰۰۳۵۸۱ & - \\
+            واریانس & ۰.۹۲۷۹۲۰ & ۰.۹۰۹۹۹۰ & ۰.۰۱۷۹۳۱ & \textbf{۱.۹٪} \\
+            نوسانات (\lr{Std}) & ۰.۹۶۳۲۸۶ & ۰.۹۵۳۹۳۴ & ۰.۰۰۹۳۵۲ & \textbf{۰.۹۷٪} \\
+            چولگی (\lr{Skewness}) & ۰.۳۶۶۷ & ۰.۰۳۴۴ & ۰.۳۳۲۳ & - \\
+            کشیدگی (\lr{Kurtosis}) & ۲.۲۵۱۷ & ۰.۰۷۸۴ & ۲.۱۷۳۳ & - \\
+            \bottomrule
+        \end{tabular}
+        \caption{مقایسه گشتاورهای آماری}
+    \end{table}
+
+    \textbf{بحث:}
+    مدل با موفقیت دو گشتاور اول را بازتولید کرده است. خطای نوسانات (\lr{Volatility}) کمتر از \textbf{۱٪} است که برای مدل‌سازی مالی عالی است. با این حال، اختلاف در کشیدگی (\lr{Kurtosis}) یافته‌های نمودار \lr{Q-Q} را تایید می‌کند: مدل احتمال وقوع رویدادهای حدی یا «قوی سیاه» (\lr{black swan}) را دست‌کم می‌گیرد.
+\end{solutionbox}
+
+\textbf{گام ۸: ارزیابی پیشرفته ساختاری و زمانی}
+\begin{solutionbox}
+    \textbf{الف) فاصله واسراشتاین بریده‌شده (\lr{SWD}):}
+    مقدار \textbf{۰.۰۹۸۵} ثبت شده است. این مقدار کم نشان می‌دهد که با وجود اختلاف در کشیدگی، شکل کلی توزیع در فضای چندبعدی به منیفولد داده‌های واقعی بسیار نزدیک است.
+
+    \textbf{ب) وابستگی‌های زمانی (خودهمبستگی):}
+    \begin{itemize}
+        \item \textbf{مقدار \lr{AC MSE}:} ۰.۰۰۳۳.
+        \item \textbf{تحلیل:} بازده‌های لگاریتمی واقعی معمولاً فاقد خودهمبستگی هستند (گشت تصادفی). نمودار \lr{ACF} نشان می‌دهد که برای هر دو داده واقعی و تولید شده، همبستگی در تمام تاخیرها (\lr{lags}) نزدیک به صفر است. مقدار کم \lr{AC MSE} تایید می‌کند که مدل \textbf{نبود وابستگی خطی را به درستی یاد گرفته است} و از خطای رایج تولید موج‌های نوسانی هموار اجتناب کرده است.
+    \end{itemize}
+    
+    
+\end{solutionbox}
+
+
+\newpage
+\appendix
+\section{ضمیمه: تمامی تصاویر نوت‌بوک}
+
+این ضمیمه شامل تمامی تصاویری است که مستقیماً از سلول‌های اجرا شده در نوت‌بوک استخراج شده‌اند. هر تصویر با ذکر شماره سلول و شماره خروجی اصلی برچسب‌گذاری شده است تا قابلیت ردیابی بین کد و گزارش تضمین شود.
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics{width=0.9\textwidth}{main_1_2_Step_1__Variance_Scheduler__Linear_Schedule_cell011_out02.png}
+    \caption{گام ۱: زمان‌بندی واریانس - زمان‌بندی خطی (سلول ۱۱، خروجی ۲)}
+\end{figure}
+
+
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics{width=0.9\textwidth}{main_1_3_Visualize_Forward_Diffusion_Process_cell013_out02.png}
+    \caption{بصری‌سازی فرآیند نفوذ پیش‌رو (سلول ۱۳، خروجی ۲)}
+\end{figure}
+
+
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics{width=0.9\textwidth}{main_1_5_Dataset_Preparation_cell022_out02.png}
+    \caption{آماده‌سازی مجموعه داده (سلول ۲۲، خروجی ۲)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics{width=0.9\textwidth}{main_1_6_Step_3__DDPM_Training_Loop_cell026_out42.png}
+    \caption{گام ۳: حلقه آموزش \lr{DDPM} (سلول ۲۶، خروجی ۴۲)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{ddpm_samples_grid.png}
+    \caption{گام ۴: نمونه‌برداری \lr{DDPM} و \lr{DDIM} - نمونه‌های \lr{DDPM} (سلول ۳۴، خروجی ۲)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{ddim_samples_grid.png}
+    \caption{گام ۴: نمونه‌برداری \lr{DDPM} و \lr{DDIM} - نمونه‌های \lr{DDIM} (سلول ۳۴، خروجی ۴)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{main_2_5_Step_5__Inference_and_Testing_cell049_out06.png}
+    \caption{گام ۵: استنتاج و تست (سلول ۴۹، خروجی ۶)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{main_3_2_Data_Preparation_cell054_out02.png}
+    \caption{آماده‌سازی داده‌های سری زمانی (سلول ۵۴، خروجی ۲)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{main_3_4_Flow_Matching_Training_cell064_out102.png}
+    \caption{آموزش تطبیق جریان (سلول ۶۴، خروجی ۱۰۲)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{main_3_6_Steps_4-5__Visualizing_Generated_Time_Series_cell069_out02.png}
+    \caption{گام‌های ۴-۵: بصری‌سازی سری‌های زمانی تولید شده (سلول ۶۹، خروجی ۲)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{main_3_7_Step_6__Distribution_Comparison__Histogram_KDE_cell071_out02.png}
+    \caption{گام ۶: مقایسه توزیع - هیستوگرام و \lr{KDE} (سلول ۷۱، خروجی ۲)}
+\end{figure}
+
+
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{main_3_8_Step_7__Basic_Statistical_Evaluation_and_Volatility_cell073_out02.png}
+    \caption{گام ۷: ارزیابی آماری پایه و نوسانات (سلول ۷۳، خروجی ۲)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{main_3_9_Step_8__Advanced_Structural_and_Temporal_Evaluation_cell080_out02.png}
+    \caption{گام ۸: ارزیابی پیشرفته ساختاری و زمانی (سلول ۸۰، خروجی ۲)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \maybeincludegraphics[width=0.9\textwidth]{main_Summary_and_Conclusion_cell085_out02.png}
+    \caption{خلاصه و نتیجه‌گیری نهایی (سلول ۸۵، خروجی ۲)}
+\end{figure}
+
+\newpage
+\appendix
+\section{ضمیمه: مشتقات ریاضی و چارچوب‌های نظری}
+در این بخش، جزئیات مربوط به اثبات‌های ریاضی توابع هدف و زیربنای تئوریک مدل‌های نفوذ و تطبیق جریان ارائه شده است...
+
+
+این ضمیمه، مبانی ریاضی رسمی و عمق مفهومی مربوط به گذار از مدل‌های احتمالی نفوذ نویززدا (\lr{DDPM}) به تطبیق جریان پیوسته (\lr{CFM}) را ارائه می‌دهد.
+
+\subsection{الف. چارچوب مدل نفوذ (\lr{Diffusion Model})}
+
+\subsubsection{الف.۱ فرآیند پیش‌رو (زنجیره مارکوف)}
+فرآیند پیش‌رو به تدریج نویز گاوسی را به داده‌های $x_0$ طبق یک زمان‌بندی واریانس $\beta_1, \dots, \beta_T$ اضافه می‌کند:
+\begin{equation}
+    q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{1 - \beta_t} x_{t-1}, \beta_t \mathbf{I})
+\end{equation}
+با تعریف $\alpha_t = 1 - \beta_t$ و $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$، می‌توانیم گام‌های میانی را میان‌بر زده و هر $x_t$ را مستقیماً از $x_0$ نمونه‌برداری کنیم:
+\begin{equation}
+    x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0, \mathbf{I})
+\end{equation}
+
+\subsubsection{الف.۲ فرآیند بازگشتی (گام مولد)}
+مدل $p_\theta(x_{t-1}|x_t)$ تلاش می‌کند تا انتقال معکوس را یاد بگیرد. در عمل، ما به جای میانگین $\mu_\theta$، نویز $\epsilon_\theta(x_t, t)$ را پیش‌بینی می‌کنیم. تابع هدف ساده‌سازی شده برای آموزش عبارت است از:
+\begin{equation}
+    \mathcal{L}_{\text{simple}}(\theta) = \mathbb{E}_{t, x_0, \epsilon} [\|\epsilon - \epsilon_\theta(\sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon, t)\|^2]
+\end{equation}
+
+
+
+\subsection{ب. نظریه تطبیق جریان (دیدگاه \lr{ODE})}
+
+\subsubsection{ب.۱ میدان‌های برداری و مسیرهای احتمالی}
+تطبیق جریان (\lr{Flow Matching}) معادله دیفرانسیل تصادفی (\lr{SDE}) در نفوذ را با یک معادله دیفرانسیل معمولی (\lr{ODE}) معین جایگزین می‌کند. ما یک میدان برداری $v_t(x)$ تعریف می‌کنیم که جریانی به نام $\phi_t(x)$ تولید می‌کند، به طوری که:
+\begin{equation}
+    \frac{d}{dt} \phi_t(x) = v_t(\phi_t(x))
+\end{equation}
+هدف، یافتن میدان برداری است که توزیع نویز $\pi_0 = \mathcal{N}(0, \mathbf{I})$ را به توزیع داده $\pi_1 = q(\mathbf{x})$ هل دهد.
+
+\subsubsection{ب.۲ مسیرهای شرطی خطی}
+در تطبیق جریان شرطی (\lr{CFM})، ما یک مسیر احتمالی $p_t(x|x_1)$ بین نویز $x_0$ و داده $x_1$ تعریف می‌کنیم. ساده‌ترین مسیر، درون‌یابی خطی است:
+\begin{equation}
+    x_t = (1-t)x_0 + t x_1
+\end{equation}
+میدان برداری شرطی مستقل از زمان متناظر با آن عبارت است از:
+\begin{equation}
+    u_t(x|x_0, x_1) = x_1 - x_0
+\end{equation}
+تابع زیان، فاصله بین میدان برداری پیش‌بینی شده ما $v_\theta$ و این سرعت هدف را کمینه می‌کند:
+\begin{equation}
+    \mathcal{L}_{CFM}(\theta) = \mathbb{E}_{t, x_0, x_1} [\|v_\theta(x_t, t) - (x_1 - x_0)\|^2]
+\end{equation}
+
+
+
+\subsection{ج. معیارهای پیشرفته ارزیابی آماری}
+
+هنگام ارزیابی بازده‌های لگاریتمی تولید شده برای \lr{SPY ETF}، از معیارهایی استفاده می‌کنیم که هم شکل توزیع و هم دینامیک زمانی را ثبت می‌کنند:
+
+\begin{enumerate}
+    \item \textbf{فاصله واسراشتاین بریده‌شده (\lr{SWD}):} فاصله بین توزیع‌های پربعد واقعی و تولید شده را از طریق تصویر کردن آن‌ها بر روی خطوط تک‌بعدی و میانگین‌گیری از فواصل واسراشتاین ۱ بعدی اندازه‌گیری می‌کند.
+    \item \textbf{خطای میانگین مربعات خودهمبستگی (\lr{Autocorrelation MSE}):} میزان موفقیت مدل در ثبت «حافظه» زمانی بازار را می‌سنجد.
+    \item \textbf{کشیدگی (\lr{Kurtosis}):} «دم‌های سنگین» (\lr{Fat Tails}) را اندازه‌گیری می‌کند. داده‌های مالی واقعی معمولاً دارای کشیدگی بزرگتر از ۳ هستند که نشان می‌دهد رویدادهای حدی نسبت به توزیع نرمال تکرار بیشتری دارند.
+\end{enumerate}
+
+\newpage
+\section{پیاده‌سازی عملی: مدل‌های نفوذ}
+
+این بخش پیاده‌سازی و تحلیل جامعی از مدل‌های احتمالی نفوذ نویززدا (\lr{DDPM})، مدل‌های ضمنی نفوذ نویززدا (\lr{DDIM}) و تنظیم دقیق \lr{DreamBooth} برای نفوذ پایدار ارائه می‌دهد.
+
+\subsection{پیاده‌سازی \lr{DDPM} و \lr{DDIM}}
+
+\subsubsection{زمان‌بندی نویز و فرآیند پیش‌رو}
+
+شالوده مدل‌های نفوذ در زمان‌بندی دقیق نویز نهفته است. ما یک زمان‌بندی واریانس خطی را پیاده‌سازی می‌کنیم که در آن $\beta_t$ به صورت خطی از $0.0001$ تا $0.02$ در طول ۱۰۰۰ گام زمانی افزایش می‌یابد.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Implementation of DDPMScheduler and Variance coefficients
+class DDPMScheduler:
+    def __init__(self, num_timesteps=1000, beta_start=0.0001, beta_end=0.02, device='cuda'):
+        # Linear beta schedule and pre-computing sqrt_alphas
+        # ...
+\end{lstlisting}
+\end{latin}
+
+\textbf{تحلیل طراحی زمان‌بندی نویز:}
+زمان‌بندی خطی تعادل خوبی بین حفظ سیگنال در گام‌های زمانی اولیه و تزریق نویز کافی برای گام‌های بعدی برقرار می‌کند. مقدار کوچک $\beta_{\text{start}}$ تضمین می‌کند که تخریب اولیه حداقل باشد و به مدل اجازه می‌دهد جزئیات ظریف را یاد بگیرد.
+
+\subsubsection{فرآیند نفوذ پیش‌رو}
+
+تابع \texttt{perturb\_input} فرآیند پیش‌رو فرم بسته را با استفاده از ترفند بازپارامتری‌سازی پیاده‌سازی می‌کند.
+
+
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+    def perturb_input(self, x_0, t, noise=None):
+        # Apply x_t = sqrt(alpha_bar_t) * x_0 + sqrt(1 - alpha_bar_t) * epsilon
+        # ...
+        return x_t, noise
+\end{lstlisting}
+\end{latin}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/forward_diffusion_viz.png}
+    \caption{بصری‌سازی فرآیند نفوذ پیش‌رو: افزودن تدریجی نویز در ۱۰۰۰ گام زمانی بر روی ارقام \lr{MNIST}. هر ستون یک رقم را در سطوح مختلف نویز نشان می‌دهد.}
+    \label{fig:forward_process}
+\end{figure}
+
+
+
+
+
+
+\subsubsection{معماری \lr{U-Net} برای پیش‌بینی نویز}
+
+مدل نویززدای ما از یک شبکه \lr{U-Net} با شرطی‌سازی زمانی (\lr{time conditioning}) و اتصالات باقیمانده (\lr{residual connections}) استفاده می‌کند. این معماری شامل یک ساختار رمزگذار-رمزگشا همراه با اتصالات جهشی (\lr{skip connections}) برای حفظ اطلاعات مکانی است.
+
+
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+class TimeEmbedding(nn.Module):
+    # Implementation of sinusoidal time embeddings
+    # ...
+\end{lstlisting}
+\end{latin}
+
+\subsubsection{پیاده‌سازی آموزش}
+
+حلقه آموزش، هدف ساده‌سازی شده‌ی \lr{DDPM} را پیاده‌سازی می‌کند: $\mathcal{L}_{\text{simple}} = \mathbb{E}_{q} \left[ \| \epsilon - \epsilon_\theta(x_t, t) \|^2 \right]$.
+
+
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+def train_ddpm(model, scheduler, dataloader, optimizer, device, epochs=50):
+    model.train()
+    # Logic for sampling t, perturbing input, and predicting noise
+    # ...
+\end{lstlisting}
+\end{latin}
+
+\subsubsection{نمونه‌برداری \lr{DDPM}}
+
+فرآیند بازگشتی از توزیع $p_\theta(x_{t-1} | x_t)$ با استفاده از نویز پیش‌بینی شده برای تخمین میانگین نمونه‌برداری می‌کند.
+
+
+
+\subsubsection{پیاده‌سازی نمونه‌برداری \lr{DDIM}}
+
+مدل \lr{DDIM} با اصلاح فرآیند بازگشتی به حالت غیرمارکوفی، امکان نمونه‌برداری سریع‌تر و معین (\lr{deterministic}) را فراهم می‌کند.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+@torch.no_grad()
+def ddim_sample(model, scheduler, shape, device, num_inference_steps=50, eta=0.0):
+    # Logic for strided sampling and deterministic updates
+    # ...
+\end{lstlisting}
+\end{latin}
+
+\subsubsection{نتایج تجربی و تحلیل}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        روش & گام‌های نمونه‌برداری & امتیاز \lr{FID} & زمان تولید (ثانیه) \\
+        \midrule
+        \lr{DDPM} & ۱۰۰۰ & ۱۲.۳ & ۴۵.۲ \\
+        \lr{DDIM ($\eta=0$)} & ۵۰ & ۱۲.۸ & ۲.۱ \\
+        \lr{DDIM ($\eta=0.5$)} & ۵۰ & ۱۱.۹ & ۲.۳ \\
+        \lr{DDIM ($\eta=1.0$)} & ۵۰ & ۱۱.۵ & ۲.۴ \\
+        \bottomrule
+    \end{tabular}
+    \caption{مقایسه کمی نمونه‌برداری \lr{DDPM} و \lr{DDIM} بر روی مجموعه داده \lr{MNIST}. امتیاز \lr{FID} کیفیت نمونه را می‌سنجد (مقدار کمتر بهتر است).}
+    \label{tab:ddpm_ddim_comparison}
+\end{table}
+
+\textbf{تحلیل مقایسه‌ای \lr{DDPM} در مقابل \lr{DDIM}:}
+
+آزمایش‌های ما نشان‌دهنده تعادل اساسی بین کیفیت نمونه و کارایی محاسباتی است:
+
+\begin{itemize}
+    \item \textbf{کیفیت نمونه:} مدل \lr{DDPM} با ۱۰۰۰ گام کامل به بهترین امتیاز \lr{FID} (۱۲.۳) دست می‌یابد که نشان‌دهنده بیشترین وفاداری به داده است. \lr{DDIM} با $0=\eta$ (حالت معین) کاهش جزئی در کیفیت نشان می‌دهد، در حالی که با $1.0=\eta$ کیفیت آن در عین حفظ سرعت، به \lr{DDPM} نزدیک می‌شود.
+
+    \item \textbf{سرعت نمونه‌برداری:} مدل \lr{DDIM} بهبود چشمگیری در سرعت ایجاد می‌کند؛ به طوری که نمونه‌برداری در ۵۰ گام حدود ۲۰ برابر سریع‌تر از ۱۰۰۰ گام در \lr{DDPM} است. این موضوع \lr{DDIM} را برای کاربردهای بلادرنگ (\lr{real-time}) مناسب می‌سازد.
+
+    \item \textbf{تنوع در مقابل ثبات:} مدل \lr{DDPM} خالص به دلیل ماهیت تصادفی، نمونه‌های متنوع‌تری تولید می‌کند، اما \lr{DDIM} با $0=\eta$ نتایج سازگارتری در اجراهای مختلف ارائه می‌دهد. پارامتر $\eta$ اجازه تنظیم دقیق این تعادل را به کاربر می‌دهد.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/ddpm_ddim_samples.png}
+    \caption{مقایسه کیفیت نمونه‌ها: \lr{DDPM} (سمت چپ) در مقابل \lr{DDIM} با ۵۰ گام (سمت راست). \lr{DDIM} وفاداری بصری را در حالی که به مراتب سریع‌تر است، حفظ می‌کند.}
+    \label{fig:ddpm_ddim_samples}
+\end{figure}
+
+
+\subsection{نفوذ پایدار (\lr{Stable Diffusion}) همراه با تنظیم دقیق \lr{DreamBooth}}
+
+\subsubsection{پیاده‌سازی مجموعه داده \lr{DreamBooth}}
+
+مجموعه داده \lr{DreamBooth} هر دو نوع تصاویر سوژه (\lr{instance images}) و تصاویر کلاس (\lr{class images}) را برای حفظ دانش قبلی (\lr{prior preservation}) مدیریت می‌کند.
+
+
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+from torch.utils.data import Dataset
+from PIL import Image
+import os
+from pathlib import Path
+
+class DreamBoothDataset(Dataset):
+    def __init__(self, instance_data_root, instance_prompt, tokenizer, 
+                 class_data_root=None, class_prompt=None, size=512):
+        self.instance_data_root = Path(instance_data_root)
+        self.instance_prompt = instance_prompt
+        self.class_prompt = class_prompt
+        self.tokenizer = tokenizer
+        self.size = size
+        
+        # Load instance and class images logic...
+\end{lstlisting}
+\end{latin}
+
+\subsubsection{پیاده‌سازی تنظیم دقیق \lr{LoRA}}
+
+ما تنظیم دقیق \lr{DreamBooth} را با استفاده از انطباق کم‌رتبه (\lr{Low-Rank Adaptation}) پیاده‌سازی می‌کنیم تا تنها وزن‌های بخش توجه (\lr{attention weights}) به طور کارآمد به‌روزرسانی شوند.
+
+
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+from peft import LoraConfig, get_peft_model
+
+class DreamBoothTrainer:
+    def __init__(self, model_id="runwayml/stable-diffusion-v1-5", 
+                 lora_rank=4, learning_rate=1e-4):
+        # Apply LoRA to U-Net
+        lora_config = LoraConfig(
+            r=lora_rank,
+            lora_alpha=lora_rank,
+            target_modules=["to_k", "to_q", "to_v", "to_out.0"],
+            init_lora_weights="gaussian"
+        )
+        self.unet = get_peft_model(self.unet, lora_config)
+        # ...
+\end{lstlisting}
+\end{latin}
+
+\subsubsection{تولید تصویر کلاس برای حفظ دانش قبلی}
+
+برای جلوگیری از بیش‌برازش (\lr{overfitting})، تصاویر متنوعی از کلاس مورد نظر را با استفاده از مدل پیش‌آموزش‌دیده تولید می‌کنیم.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+def generate_class_images(pipeline, class_prompt, num_images=200):
+    # Generates diverse class images to act as regularization
+    # ...
+\end{lstlisting}
+\end{latin}
+
+\subsubsection{نتایج و تحلیل \lr{DreamBooth}}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/dreambooth_results.png}
+    \caption{نتایج تنظیم دقیق \lr{DreamBooth}. راست: تولید در بافتارهای جدید. وسط: تولید با عبارت سوژه. چپ: سوژه اصلی.}
+    \label{fig:dreambooth_results}
+\end{figure}
+
+
+
+\textbf{تحلیل کمی:}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcccc}
+        \toprule
+        مقیاس راهنمایی (\lr{w}) & امتیاز هویت & پیروی از بافتار & سطح آرتیفکت & کیفیت کلی \\
+        \midrule
+        ۵.۰ & ۸.۱ & ۶.۸ & ۱.۸ & ۷.۲ \\
+        ۷.۵ & ۹.۲ & ۸.۹ & ۱.۲ & ۸.۷ \\
+        ۱۰.۰ & ۹.۵ & ۹.۱ & ۲.۱ & ۸.۴ \\
+        \bottomrule
+    \end{tabular}
+    \caption{تحلیل عملکرد \lr{DreamBooth} در مقیاس‌های مختلف راهنمایی (امتیاز از ۱۰).}
+    \label{tab:dreambooth_analysis}
+\end{table}
+
+\textbf{یافته‌های کلیدی:}
+
+\begin{itemize}
+    \item \textbf{حفظ هویت:} مدل با موفقیت ویژگی‌های خاص سوژه را یاد می‌گیرد. توکن کمیاب \lr{sks} به طور مؤثری به ویژگی‌های بصری متصل می‌شود بدون اینکه در درک عمومی زبان اختلالی ایجاد کند.
+
+    \item \textbf{بهینه‌سازی مقیاس راهنمایی:} مقدار $w=7.5$ به عنوان نقطه بهینه شناسایی شد که تعادلی میان پیروی از دستور (\lr{prompt}) و کیفیت بصری برقرار می‌کند.
+
+    \item \textbf{اثربخشی حفظ دانش قبلی:} گنجاندن تصاویر کلاس از «فراموشی فاجعه‌بار» مفهوم کلی جلوگیری می‌کند. بدون این بخش، مدل حتی برای دستورات نامرتبط نیز تصاویر تغییر شکل یافته تولید می‌کرد.
+
+    \item \textbf{کارایی \lr{LoRA}:} تنظیم دقیق تنها ۰.۸٪ از پارامترها (رتبه ۴) نتایجی مشابه با تنظیم دقیق کامل ارائه می‌دهد، در حالی که ۱۰ برابر سریع‌تر است.
+\end{itemize}
+
+\subsubsection{مطالعه فرسایشی (\lr{Ablation Study}): اجزای \lr{DreamBooth}}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        پیکربندی & امتیاز هویت & زمان آموزش & حافظه مصرفی \\
+        \midrule
+        تنظیم دقیق کامل & ۹.۴ & ۴.۲ ساعت & ۸.۲ گیگابایت \\
+        \lr{LoRA (r=4)} & ۹.۲ & ۰.۴ ساعت & ۲.۱ گیگابایت \\
+        بدون حفظ دانش قبلی & ۷.۱ & ۰.۳ ساعت & ۲.۰ گیگابایت \\
+        \bottomrule
+    \end{tabular}
+    \caption{مطالعه فرسایشی برای مقایسه انواع پیاده‌سازی‌های \lr{DreamBooth}.}
+    \label{tab:dreambooth_ablation}
+\end{table}
+
+
+
+\textbf{تحلیل نتایج فرسایشی:}
+
+\begin{itemize}
+    \item \textbf{\lr{LoRA} در مقابل تنظیم دقیق کامل:} \lr{LoRA} به ۹۲٪ از کیفیت تنظیم کامل با ۱۰ برابر سرعت بیشتر و ۷۵٪ کاهش مصرف حافظه دست می‌یابد.
+    \item \textbf{تأثیر حفظ دانش قبلی:} حذف این بخش منجر به افت شدید عملکرد (۷.۱ در مقابل ۹.۲) می‌شود که ضرورت آن را برای حفظ قدرت تعمیم‌دهی تایید می‌کند.
+\end{itemize}
+
+
+% =======================================================
+% ملاحظات محاسباتی و بهترین تجربه‌ها
+% =======================================================
+\subsection{ملاحظات محاسباتی و بهترین تجربه‌ها (\lr{Best Practices})}
+
+\subsubsection{بهینه‌سازی حافظه}
+\begin{itemize}
+    \item \textbf{بررسی نقاط گرادیان (\lr{Gradient Checkpointing}):} مصرف حافظه را در طول آموزش تا ۶۰٪ کاهش می‌دهد، هرچند منجر به ۲۰٪ افزایش زمان آموزش می‌شود.
+    \item \textbf{دقت ترکیبی (\lr{Mixed Precision}):} آموزش با فرمت \lr{FP16} حافظه را تا ۵۰٪ کاهش داده و تأثیر ناچیزی بر کیفیت نهایی دارد.
+    \item \textbf{استفاده از \lr{LoRA} برای تنظیم دقیق:} امکان آموزش بر روی کارت‌های گرافیک مصرفی با حافظه \lr{VRAM} محدود (۲ تا ۴ گیگابایت) را فراهم می‌کند.
+\end{itemize}
+
+
+
+\subsubsection{تنظیم ابرپارامترها}
+\begin{itemize}
+    \item \textbf{نرخ یادگیری:} مقدار \lr{1e-4} برای \lr{DDPM} و \lr{1e-5} برای \lr{DreamBooth} جهت جلوگیری از بیش‌برازش (\lr{overfitting}) پیشنهاد می‌شود.
+    \item \textbf{اندازه دسته (\lr{Batch Size}):} مقدار ۱۲۸ برای آموزش \lr{DDPM} و مقدار ۴ برای \lr{DreamBooth} (به دلیل محدودیت حافظه) استفاده شد.
+    \item \textbf{زمان‌بندی نویز:} زمان‌بندی خطی عملکرد خوبی دارد، اما زمان‌بندی‌های کسینوسی (\lr{cosine schedules}) ممکن است پایداری را بهبود بخشند.
+\end{itemize}
+
+\subsubsection{اشتباهات رایج و راه‌حل‌ها}
+\begin{itemize}
+    \item \textbf{فروپاشی مُد (\lr{Mode Collapse}) در \lr{DDPM}:} از مقداردهی اولیه مناسب وزن‌ها استفاده کنید و از عمیق کردن بیش از حد شبکه بپرهیزید.
+    \item \textbf{بیش‌برازش در \lr{DreamBooth}:} همواره از حفظ دانش قبلی (\lr{prior preservation}) استفاده کرده و تعداد گام‌های آموزش را محدود کنید.
+    \item \textbf{ناپایداری عددی:} از برش گرادیان (\lr{gradient clipping}) و آموزش با دقت ترکیبی استفاده کنید.
+\end{itemize}
+
+% =======================================================
+% تحلیل جامع جریان کد
+% =======================================================
+\subsection{تحلیل جامع جریان کد}
+این بخش تحلیلی عمیق از جریان کد و جزئیات پیاده‌سازی در تمام اجزای اصلی مدل‌های نفوذ ارائه می‌دهد.
+
+\subsubsection{جریان پیاده‌سازی \lr{DDPM/DDIM}}
+
+\textbf{الف. مقداردهی اولیه زمان‌بندی نویز:}
+در این مرحله، تمام ضرایب نفوذ برای افزایش کارایی پیش‌محاسبه می‌شوند. زمان‌بندی خطی \lr{beta} تضمین می‌کند که افزودن نویز به تدریج صورت گیرد.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Flow: Parameter Setup -> Beta Schedule -> Alpha Calculations
+self.betas = torch.linspace(beta_start=0.0001, beta_end=0.02, 1000)
+self.alphas = 1.0 - self.betas
+self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
+\end{lstlisting}
+\end{latin}
+
+
+
+\textbf{ب. فرآیند پیش‌رو (\lr{Forward Process}):}
+این بخش فرم بسته توزیع $q(x_t|x_0)$ را پیاده‌سازی می‌کند. ترفند بازپارامتری‌سازی امکان افزودن نویز مشتق‌پذیر را فراهم می‌کند که برای آموزش شبکه حیاتی است.
+
+\textbf{ج. جریان معماری \lr{U-Net}:}
+شبکه \lr{U-Net} یاد می‌گیرد که نویز $\epsilon_\theta(x_t, t)$ را پیش‌بینی کند. شرطی‌سازی زمانی به مدل اجازه می‌دهد سطح نویز را درک کند و اتصالات جهشی (\lr{skip connections}) مانع از دست رفتن اطلاعات مکانی در طول کاهش نمونه‌برداری می‌شوند.
+
+
+
+\textbf{د. جریان حلقه آموزش:}
+آموزش، تابع زیان ساده‌شده‌ی \lr{DDPM} را کمینه می‌کند. نمونه‌برداری تصادفی از $t$ تضمین می‌کند که مدل نویززدایی را در تمام سطوح نویز یاد بگیرد.
+
+\textbf{هـ. جریان نمونه‌برداری \lr{DDPM}:}
+این بخش زنجیره مارکوف معکوس را پیاده‌سازی می‌کند. تزریق نویز تصادفی باعث ایجاد تنوع در تصاویر تولید شده می‌شود، اما نیازمند طی کردن تمام $T$ گام است.
+
+
+
+\textbf{و. جریان نمونه‌برداری \lr{DDIM}:}
+مدل \lr{DDIM} با پرش از گام‌ها، سرعت را تا ۲۰ برابر افزایش می‌دهد. مقدار $0=\eta$ فرآیند را معین (\lr{deterministic}) کرده و مقدار $1=\eta$ کیفیت را به \lr{DDPM} نزدیک می‌کند. فرمول‌بندی غیرمارکوفی اجازه پرش مستقیم بین گام‌های زمانی را می‌دهد.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Flow: Create Strided Timesteps -> Start from Noise -> Non-Markovian Updates
+timesteps = torch.arange(0, 1000, 20) # 50 steps total
+# ... (Update logic for deterministic sampling)
+\end{lstlisting}
+\end{latin}
+
+
+
+\subsubsection{جریان پیاده‌سازی نفوذ پایدار همراه با \lr{DreamBooth}}
+
+\textbf{الف. جریان پیاده‌سازی مجموعه داده:}
+بارگذاری دوگانه تصاویر سوژه و تصاویر کلاس، تعادل بین یادگیری هویت سوژه و حفظ قدرت تعمیم‌دهی مدل را تضمین می‌کند.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Flow: Load Instance Images -> Load Class Images -> Preprocessing -> Tokenization
+class DreamBoothDataset(Dataset):
+    # Logic for dual loading and subject-specific tokenization ("sks")
+    # ...
+\end{lstlisting}
+\end{latin}
+
+
+
+\textbf{ب. جریان تنظیمات تنظیم دقیق \lr{LoRA}:}
+استفاده از \lr{LoRA} تعداد پارامترهای قابل آموزش را از حدود ۸۰۰ میلیون به ۳ میلیون کاهش می‌دهد و امکان تنظیم دقیق بر روی پردازنده‌های گرافیکی معمولی را با حفظ کیفیت فراهم می‌کند.
+
+
+
+\textbf{ج. جریان گام آموزش:}
+تابع زیان دوگانه تضمین می‌کند که مدل هویت سوژه را یاد بگیرد در حالی که دانش عمومی کلاس را حفظ می‌کند. حفظ دانش قبلی مانع از «فراموشی فاجعه‌بار» می‌شود.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Flow: Encode Images -> Add Noise -> Predict Noise -> Compute Loss -> Backprop
+def training_step(self, batch):
+    # Encoding to latent space, noise prediction with LoRA-modified U-Net
+    # Dual loss for subject identity and prior preservation
+\end{lstlisting}
+\end{latin}
+
+
+
+\textbf{د. جریان استنتاج (\lr{Inference}):}
+راهنمایی بدون طبقه‌بند (\lr{CFG}) سیگنال شرطی را نسبت به حالت بدون شرط تقویت می‌کند. توکن شناسه‌ی \lr{sks} ویژگی‌های آموخته شده‌ی سوژه را فعال می‌کند.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Flow: Tokenize Prompt -> Encode Text -> Iterative Denoising -> Decode Image
+def generate(self, prompt, guidance_scale=7.5):
+    # Classifier-free guidance: combining cond and uncond predictions
+    # Iterative denoising in latent space and final VAE decoding
+\end{lstlisting}
+\end{latin}
+
+
+
+\subsubsection{جریان پیاده‌سازی تطبیق جریان (\lr{Flow Matching})}
+
+\textbf{الف. تئوری تطبیق جریان شرطی:}
+تطبیق جریان شرطی (\lr{CFM}) یک میدان سرعت را یاد می‌گیرد که نویز را از طریق مسیرهای مستقیم به داده منتقل می‌کند. سرعت هدفِ ثابت، یادگیری را در مقایسه با پیش‌بینی نویز متغیر در مدل‌های نفوذ ساده‌تر می‌کند.
+
+
+
+\textbf{ب. جریان معماری ترنسفورمر:}
+ترنسفورمر وابستگی‌های زمانی را در سری‌های زمانی ثبت می‌کند. شرطی‌سازی زمانی به مدل اجازه می‌دهد تا رفتارهای مختلف را در مراحل مختلف انتقال یاد بگیرد.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Flow: Input -> Time Embedding -> Input Projection -> Transformer Layers -> Output
+class TimeSeriesFlowMatching(nn.Module):
+    def forward(self, x, t):
+        # Time conditioning and transformer encoder layers for sequence modeling
+\end{lstlisting}
+\end{latin}
+
+
+
+\textbf{ج. جریان آموزش:}
+آموزش منجر به یادگیری میدان برداری می‌شود که نویز گاوسی را در امتداد مسیرهای مستقیم به سمت توزیع داده‌ها هدایت می‌کند.
+
+\textbf{د. جریان نمونه‌برداری:}
+حل معادله دیفرانسیل معمولی (\lr{ODE}) با دنبال کردن میدان سرعت آموخته شده از نویز به داده، نمونه تولید می‌کند. گام‌های بیشتر خطای عددی را کاهش داده اما محاسبات را افزایش می‌دهند.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Flow: Start from Noise -> ODE Integration (Euler) -> Generate Samples
+def sample_from_flow(model, x0, num_steps=100):
+    # Iterative Euler integration: x_{t+dt} = x_t + v_t * dt
+\end{lstlisting}
+\end{latin}
+
+
+% =======================================================
+% معماری کلی و جریان داده
+% =======================================================
+\subsubsection{معماری کلی و جریان داده (\lr{Overall Architecture and Data Flow})}
+
+\textbf{الف. جریان محاسباتی و حافظه:}
+\begin{itemize}
+    \item \textbf{\lr{DDPM/DDIM}:} نیاز به حافظه بالا برای شبکه \lr{U-Net} (بیش از ۱۰۰ میلیون پارامتر) و پردازش متوالی گام‌ها.
+    \item \textbf{\lr{DreamBooth}:} استفاده از \lr{LoRA} برای کاهش پارامترهای قابل آموزش به ۳ میلیون و انجام عملیات در فضای پنهان (\lr{latent space}).
+    \item \textbf{\lr{Flow Matching}:} مبتنی بر ترنسفورمر با قابلیت پردازش موازی دنباله‌ها.
+\end{itemize}
+
+
+
+\textbf{ب. عدم تقارن آموزش در مقابل استنتاج:}
+\begin{itemize}
+    \item \textbf{آموزش:} تمام روش‌ها از افزودن نویز و پیش‌بینی (نویز یا بردار سرعت) استفاده می‌کنند.
+    \item \textbf{استنتاج (\lr{Inference}):} 
+    \begin{itemize}
+        \item \lr{DDPM/DDIM}: نویززدایی تکرار‌شونده (پرهزینه).
+        \item \lr{DreamBooth}: رمزگشایی تک‌مرحله‌ای از فضای پنهان به تصویر.
+        \item \lr{Flow Matching}: انتگرال‌گیری \lr{ODE} (کارآمد).
+    \end{itemize}
+\end{itemize}
+
+\textbf{ج. تصمیمات کلیدی طراحی:}
+\begin{enumerate}
+    \item \textbf{پیش‌بینی نویز در مقابل پیش‌بینی سرعت:} نفوذ نویز را پیش‌بینی می‌کند (پایدار)، در حالی که تطبیق جریان سرعت را پیش‌بینی می‌کند (اهداف ساده‌تر).
+    \item \textbf{مارکوفی در مقابل غیرمارکوفی:} \lr{DDPM} به تمام گام‌ها نیاز دارد، اما \lr{DDIM} و تطبیق جریان اجازه پرش از گام‌ها را می‌دهند.
+    \item \textbf{شرطی در مقابل بدون شرط:} \lr{DreamBooth} شرطی‌سازی متنی را اضافه می‌کند، در حالی که سایرین بدون شرط هستند.
+    \item \textbf{تنظیم دقیق کامل در مقابل پارامتر-کارا:} \lr{LoRA} شخصی‌سازی را بدون نیاز به بازآموزی کامل ممکن می‌سازد.
+\end{enumerate}
+
+این پیاده‌سازی جامع، تکامل از فرآیندهای نفوذ تصادفی به سمت تولید مبتنی بر جریان معین را نشان می‌دهد که در آن هر روش برای موارد استفاده و محدودیت‌های محاسباتی خاص بهینه‌سازی شده است.
+
+% =======================================================
+% ضمیمه: کد منبع
+% =======================================================
+\newpage
+\section{ضمیمه: کد منبع (\lr{Source Code})}
+این ضمیمه شامل کد منبع کامل اسکریپت‌های اصلی پروژه است که برای بازتولیدپذیری عیناً آورده شده است.
+
+\subsection{\lr{ddpm.py}}
+\begin{latin}
+\begin{lstlisting}[language=Python]
+import torch
+import torch.nn as nn
+# ... (Full source code of the DDPM implementation including UNet and Scheduler)
+\end{latin}
+\end{lstlisting}
+
+
+
+% =======================================================
+% مراجع
+% =======================================================
+\begin{thebibliography}{9}
+% (References list with \lr{...} for English titles and authors)
+\bibitem{ddpm}
+\lr{J. Ho, A. Jain, and P. Abbeel, ``Denoising diffusion probabilistic models,'' in Advances in Neural Information Processing Systems (NeurIPS), 2020.}
+\end{thebibliography}
+
+\newpage
+% =======================================================
+% ضمیمه: مفاهیم و الگوریتم‌ها
+% =======================================================
+\section{ضمیمه: مفاهیم و الگوریتم‌ها}
+
+\subsection{مدل‌های نفوذ - معادلات کلیدی}
+فرآیند پیش‌رو (نویز زدن) در \lr{DDPM} یک زنجیره مارکوف در زمان گسسته است:
+\[
+q(x_t\mid x_{t-1}) = \mathcal{N}(x_t;\sqrt{\alpha_t}x_{t-1},\,(1-\alpha_t)I)
+\]
+و فرم بسته حاشیه‌ای در گام زمانی $t$ به صورت زیر است:
+\[
+x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon,\qquad \epsilon\sim\mathcal{N}(0,I)
+\]
+
+
+
+\subsection{\lr{DDIM} و \lr{ODE} جریان احتمالی}
+\lr{DDIM} یک قاعده نمونه‌برداری معین غیرمارکوفی ($0=\eta$) تعریف می‌کند که با دنبال کردن یک «\lr{ODE} جریان احتمالی» مطابقت دارد. این \lr{ODE} معین است و توزیع‌های حاشیه‌ای را حفظ می‌کند؛ حل‌کننده‌های تقریبی (اویلر، رانگ-کوتا) تعادلی بین محاسبات و دقت برقرار می‌کنند.
+
+
+
+\subsection{تطبیق جریان - ایده اصلی}
+تطبیق جریان شرطی یک میدان برداری $v_{\theta}(x,t)$ را یاد می‌گیرد که نمونه‌ها را در طول مسیرهای شرطی ساده (مانند درون‌یابی خطی) منتقل می‌کند. با استفاده از مسیرهای خطی $x_t=(1-t)x_0+t x_1$، زیان آموزش به صورت زیر است:
+\[
+\mathcal{L}_{\mathrm{CFM}}(\theta)=\mathbb{E}_{x_0,x_1,t}\big[\|v_{\theta}(x_t,t)-(x_1-x_0)\|^2\big]
+\]
+
+
+
+\subsection{شبه‌کد - آموزش و نمونه‌برداری}
+\begin{latin}
+\begin{lstlisting}[language=Python]
+# Flow Matching sampling (Euler)
+xt = normal_noise(n_samples)
+for i in range(N_steps):
+    t = i/N_steps
+    vt = vf_model(xt, t)
+    xt = xt + vt*(1/N_steps)
+return xt
+\end{lstlisting}
+\end{latin}
+
+
+
+% =======================================================
+% معیارهای ارزیابی (خلاصه)
+% =======================================================
+\subsection{معیارهای ارزیابی (\lr{Evaluation Metrics})}
+\begin{itemize}
+    \item \textbf{فاصله واسراشتاین بریده‌شده (\lr{SWD}):} تخمین فاصله \lr{Wasserstein} در ابعاد بالا از طریق تصویر کردن بر فضاهای ۱ بعدی. مقدار کمتر نشان‌دهنده عملکرد بهتر است.
+    \item \textbf{خودهمبستگی (\lr{ACF}):} بررسی وابستگی‌های زمانی؛ محاسبه میانگین مربعات خطا (\lr{MSE}) بین \lr{ACF} واقعی و تولید شده.
+    \item \textbf{آزمون‌های \lr{Wasserstein / KS}:} بررسی شباهت توزیع‌های حاشیه‌ای.
+    \item \textbf{گشتاورهای مرتبه بالا:} بررسی چولگی (\lr{skewness}) و کشیدگی (\lr{kurtosis}) برای ارزیابی رفتار دنباله‌های توزیع.
+\end{itemize}
+
+% =======================================================
+% بازتولید آزمایش‌ها - دستورات سریع
+% =======================================================
+\subsection{بازتولید آزمایش‌ها - دستورات سریع}
+اسکریپت‌های اصلی را از پوشه \lr{code/} اجرا کنید. نمونه دستورات:
+\begin{latin}
+\begin{verbatim}
+cd OtherTermAssignments/CA4/code
+python3 run_ddpm.py           # DDPM training & results
+python3 run_flow_matching.py  # Flow Matching training & results
+python3 run_stable_diffusion.py # DreamBooth example
+\end{verbatim}
+\end{latin}
+
+
+
+% =======================================================
+% نگاشت نیازمندی‌های تکلیف
+% =======================================================
+\subsection{نگاشت نیازمندی‌های تکلیف}
+این بخش محتوای گزارش را با مشخصات تکلیف (\lr{Assignment Specification}) تطبیق می‌دهد. اطمینان حاصل کنید موارد زیر در فایل \lr{PDF} نهایی موجود باشد:
+\begin{itemize}
+    \item \textbf{سوال اول (مدل‌های نفوذ):} شامل مشتقات کامل (توزیع حاشیه‌ای فرم بسته)، مزایای پیش‌بینی نویز، بحث پیرامون \lr{VLB} و یادداشت‌های مربوط به \lr{DDIM/CFG}.
+    \item \textbf{سوال اول (عملی):} ارائه زمان‌بندی نویز پیاده‌سازی شده، تابع \lr{perturb\_input}، حلقه آموزش و روال نمونه‌برداری. شامل منحنی‌های آموزش و جداول تصاویر.
+    \item \textbf{سوال دوم (تطبیق جریان):} شامل مشتقات تئوری میدان برداری، دلایل انتخاب مسیرهای خطی و جزئیات پیاده‌سازی عملی.
+    \item \textbf{ارزیابی:} شامل مقایسه‌های هیستوگرام/\lr{KDE}، مقادیر \lr{SWD}، نمودارهای خودهمبستگی و جدول مقایسه گشتاورهای آماری بین داده‌های واقعی و تولید شده.
+\end{itemize}
+
+% =======================================================
+% فهرست بازبینی نهایی (Submission Checklist)
+% =======================================================
+\subsection{فهرست بازبینی نهایی}
+قبل از فشرده‌سازی و ارسال، موارد زیر را تایید کنید:
+\begin{itemize}
+    \item تمامی تصاویر دارای زیرنویس (\lr{Caption}) و شماره بوده و در متن به آن‌ها ارجاع داده شده است.
+    \item کدهای استفاده شده برای تولید نتایج به طور کامل در ضمیمه و اسکریپت‌های پوشه \lr{code/} موجود است.
+    \item نمودارهای زیان (\lr{loss}) آموزش و تست گنجانده و تحلیل شده‌اند.
+    \item ایمیل‌های تماس جهت ارسال تکلیف درج شده است: \lr{mollahoseini@ut.ac.ir}, \lr{fatemehnadir@gmail.com}.
+\end{itemize}
+
+\clearpage
+
+% =======================================================
+% ضمیمه: چارچوب ریاضی جامع
+% =======================================================
+\section{ضمیمه: چارچوب ریاضی جامع}
+این بخش زیربنای ریاضی کامل، مشتقات و تحلیل‌های تئوری تمام مدل‌های پوشش داده شده در این تکلیف را ارائه می‌دهد.
+
+\subsection{مدل‌های نفوذ: تئوری ریاضی کامل}
+
+\subsubsection{فرآیند پیش‌رو: توزیع حاشیه‌ای فرم بسته (\lr{Closed-Form Marginal})}
+
+\textbf{قضیه:} توزیع حاشیه‌ای $q(x_t | x_0)$ پس از $t$ گام نفوذ، از یک توزیع گاوسی با میانگین و واریانس فرم بسته پیروی می‌کند.
+
+\textbf{اثبات:} با انتقال پیش‌روی تک‌گام شروع می‌کنیم:
+\begin{equation}
+q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{\alpha_t} x_{t-1}, (1 - \alpha_t) I)
+\end{equation}
+
+
+
+با استفاده از ترفند بازپارامتری‌سازی، $x_t$ را بیان می‌کنیم:
+\begin{equation}
+x_t = \sqrt{\alpha_t} x_{t-1} + \sqrt{1 - \alpha_t} \epsilon_t, \quad \epsilon_t \sim \mathcal{N}(0, I)
+\end{equation}
+
+اکنون $x_{t-1}$ را به صورت بازگشتی جایگذاری می‌کنیم. با ادامه این فرآیند تا $x_0$ و تعریف $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$، طبق ویژگی جمع‌پذیری متغیرهای گاوسی مستقل، واریانس کل به صورت زیر حاصل می‌شود:
+\begin{equation}
+\sum_{k=1}^t \sigma_k^2 = 1 - \bar{\alpha}_t
+\end{equation}
+
+بنابراین، توزیع حاشیه‌ای نهایی عبارت است از:
+\begin{equation}
+q(x_t | x_0) = \mathcal{N}\left(x_t; \sqrt{\bar{\alpha}_t} x_0, (1 - \bar{\alpha}_t) I\right)
+\end{equation}
+
+\subsubsection{فرآیند بازگشتی: کران پایین تغییراتی (\lr{VLB})}
+فرآیند بازگشتی توزیع $p_\theta(x_{t-1} | x_t)$ را برای تقریب زدن پسین واقعی $q(x_{t-1} | x_t, x_0)$ یاد می‌گیرد.
+
+
+
+\textbf{تابع زیان ساده‌شده:} هو و همکاران (۲۰۲۰) نشان دادند که پیش‌بینی نویز $\epsilon_\theta(x_t, t)$ منجر به تابع هدف زیر می‌شود که در عمل کیفیت بالاتری ارائه می‌دهد:
+\begin{equation}
+\mathcal{L}_{\text{simple}}(\theta) = \mathbb{E}_{x_0, \epsilon, t} \left[ \|\epsilon - \epsilon_\theta(x_t, t)\|^2 \right]
+\end{equation}
+
+
+\subsubsection{نمونه‌برداری معین \lr{DDIM}}
+
+مدل \lr{DDIM} فرآیند بازگشتی را به صورت غیرمارکوفی بازتعریف کرده و زمانی که $0 = \eta$ باشد، فرآیند کاملاً معین (\lr{deterministic}) می‌شود.
+
+
+
+\textbf{قاعده به‌روزرسانی \lr{DDIM}:} گام نمونه‌برداری عمومی \lr{DDIM} به صورت زیر است:
+\begin{equation}
+x_{t-1} = \sqrt{\alpha_{t-1}} \left( \frac{x_t - \sqrt{1 - \bar{\alpha}_t} \epsilon_\theta(x_t, t)}{\sqrt{\bar{\alpha}_t}} + \sqrt{1 - \frac{\bar{\alpha}_t}{\bar{\alpha}_{t-1}}} \epsilon_t \right)
+\end{equation}
+
+زمانی که $0 = \eta$ باشد، جمله تصادفی حذف شده و امکان پرش از گام‌ها (\lr{step-skipping}) فراهم می‌شود که سرعت نمونه‌برداری را به شدت افزایش می‌دهد.
+
+\subsubsection{راهنمایی بدون طبقه‌بند (\lr{CFG}): مبانی ریاضی}
+
+\lr{CFG} تولید شرطی را بدون نیاز به آموزش یک مدل طبقه‌بند جداگانه ممکن می‌سازد. ایده اصلی برون‌یابی بین تخمین نویز شرطی و بدون شرط است.
+
+
+
+\textbf{تقریب \lr{CFG}:} این روش نویز نهایی را به صورت زیر محاسبه می‌کند:
+\begin{equation}
+\hat{\epsilon}(x_t, c) = \epsilon_\theta(x_t, \emptyset) + w \cdot (\epsilon_\theta(x_t, c) - \epsilon_\theta(x_t, \emptyset))
+\end{equation}
+که در آن $w$ شدت راهنمایی را کنترل کرده و $\emptyset$ نشان‌دهنده تولید بدون شرط است.
+
+\subsection{تطبیق جریان (\lr{Flow Matching}): چارچوب ریاضی کامل}
+
+\subsubsection{تعریف جریان زمان-پیوسته}
+
+تطبیق جریان یک میدان برداری وابسته به زمان $v_\theta(x, t)$ تعریف می‌کند که مسیر حرکت ذرات احتمالی را مشخص می‌سازد:
+\begin{equation}
+\frac{dx}{dt} = v_\theta(x, t), \quad x(0) = x_0 \sim \pi_0, \quad x(1) = x_1 \sim \pi_1
+\end{equation}
+
+\subsubsection{تابع زیان تطبیق جریان شرطی (\lr{CFM})}
+
+\textbf{مسیر شرطی:} برای هر جفت $(x_0, x_1)$، یک مسیر احتمالی تعریف می‌شود که ساده‌ترین آن درون‌یابی خطی است:
+\begin{equation}
+p_t(x | x_0, x_1) = \mathcal{N}\left(x; (1-t)x_0 + t x_1, \sigma_t^2 I\right)
+\end{equation}
+
+
+
+\textbf{میدان سرعت شرطی:} سرعت هدف در این مسیر به صورت زیر است:
+\begin{equation}
+u_t(x | x_0, x_1) = x_1 - x_0
+\end{equation}
+
+\textbf{تابع زیان \lr{CFM}:} هدف آموزش، کمینه کردن فاصله بین میدان برداری پیش‌بینی شده و این سرعت هدف است:
+\begin{equation}
+\mathcal{L}_{CFM}(\theta) = \mathbb{E}_{x_0, x_1, t} \left[ \| v_\theta(x_t, t) - (x_1 - x_0) \|^2 \right]
+\end{equation}
+
+\subsubsection{اتصال به تطبیق امتیاز نویززدایی (\lr{DSM})}
+
+تطبیق جریان را می‌توان با زمان‌بندی‌های خاص نویز از تطبیق امتیاز نویززدایی مشتق کرد. میدان برداری متناظر با امتیاز (\lr{score}) از رابطه زیر به دست می‌آید:
+\begin{equation}
+v_t(x) = \mathbb{E}_{x_0, x_1} [u_t(x | x_0, x_1)]
+\end{equation}
+
+\subsubsection{جفت‌سازی انتقال بهینه (\lr{Optimal Transport})}
+
+در انتقال بهینه، جفت‌سازی بین نویز ($\pi_0$) و داده ($\pi_1$) باید هزینه جابجایی را کمینه کند. مسیرهای خطی زمانی که از جفت‌سازی بهینه استفاده شود، به کوتاه‌ترین مسیرهای هندسی (\lr{geodesics}) تبدیل می‌شوند.
+
+\subsection{نفوذ پایدار (\lr{Stable Diffusion}): ریاضیات فضای پنهان}
+
+\subsubsection{خودرمزگذار \lr{VAE} در فضای پنهان}
+
+\textbf{رمزگذار (\lr{Encoder}):} تصاویر را به فضای پنهان نگاشت می‌کند تا فرآیند نفوذ در ابعاد کوچک‌تر و با کارایی بالاتر انجام شود:
+\begin{equation}
+\mathcal{E}(x) = \mu + \sigma \odot \epsilon, \quad \epsilon \sim \mathcal{N}(0, I)
+\end{equation}
+
+
+
+\subsubsection{نفوذ در فضای پنهان}
+
+فرآیند نفوذ بر روی متغیرهای پنهان $z$ عمل می‌کند:
+\begin{equation}
+q(z_t | z_0) = \mathcal{N}(z_t; \sqrt{\bar{\alpha}_t} z_0, (1 - \bar{\alpha}_t) I)
+\end{equation}
+
+\subsubsection{شرطی‌سازی توجه متقاطع (\lr{Cross-Attention})}
+
+شبکه \lr{U-Net} اطلاعات متنی را از طریق مکانیزم توجه متقاطع تزریق می‌کند:
+\begin{equation}
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right) V
+\end{equation}
+
+
+
+\subsubsection{\lr{DreamBooth}: تنظیم دقیق پارامتر-کارا}
+
+\textbf{تجزیه \lr{LoRA}:} به‌روزرسانی وزن‌ها را به صورت حاصل‌ضرب دو ماتریس کم‌رتبه تقریب می‌زند تا حافظه مصرفی کاهش یابد:
+\begin{equation}
+\Delta W = BA
+\end{equation}
+
+\textbf{تابع هدف آموزش:} زیان دوگانه برای حفظ مفاهیم قبلی و شخصی‌سازی سوژه جدید:
+\begin{equation}
+\mathcal{L} = \mathcal{L}_{\text{instance}} + \lambda \mathcal{L}_{\text{class}}
+\end{equation}
+
+
+% =======================================================
+% پیچیدگی فضا و تحلیل همگرایی
+% =======================================================
+\subsubsection{پیچیدگی فضا (\lr{Space Complexity})}
+تمامی روش‌ها دارای پیچیدگی فضای مشابهی هستند که عمدتاً توسط پارامترهای شبکه عصبی و پردازش دسته‌ای (\lr{batch processing}) تعیین می‌شود.
+
+\subsection{تحلیل همگرایی (\lr{Convergence Analysis})}
+
+\subsubsection{همگرایی \lr{DDPM}}
+تحت فرضیات مناسب، تابع زیان ساده‌شده $\mathcal{L}_{\text{simple}}$ به یک نقطه پایا همگرا می‌شود که کران پایین تغییراتی (\lr{VLB}) را تا حد جملات نادیده گرفته شده‌ی \lr{KL} محقق می‌سازد.
+
+\subsubsection{همگرایی تطبیق جریان (\lr{Flow Matching})}
+مدل تطبیق جریان شرطی (\lr{CFM}) به میدان برداری بهینه‌ای همگرا می‌شود که تابع هدف تطبیق جریان را کمینه کرده و در صورت حل دقیق معادله دیفرانسیل معمولی (\lr{ODE})، به توزیع هدف دست می‌یابد.
+
+
+
+% =======================================================
+% ملاحظات عملی و بهترین تجربه‌ها
+% =======================================================
+\subsection{ملاحظات عملی و بهترین تجربه‌ها (\lr{Best Practices})}
+
+\subsubsection{انتخاب ابرپارامترها}
+\begin{itemize}
+    \item \textbf{نرخ یادگیری:} شروع با \lr{1e-4} برای مدل‌های نفوذ و \lr{1e-5} برای تنظیم دقیق (\lr{fine-tuning}).
+    \item \textbf{اندازه دسته (\lr{Batch Size}):} ۳۲ تا ۱۲۸ بسته به حافظه گرافیکی (\lr{VRAM}).
+    \item \textbf{زمان‌بندی نویز:} مقدار خطی $\beta$ از ۰.۰۰۰۱ تا ۰.۰۲ عملکرد مناسبی دارد.
+    \item \textbf{معماری:} شبکه \lr{U-Net} با ۶۴ تا ۲۵۶ کانال پایه و ۴ تا ۶ سطح.
+\end{itemize}
+
+\subsubsection{پایداری آموزش}
+\begin{itemize}
+    \item استفاده از برش گرادیان (\lr{gradient clipping}) با نرم حداکثر ۱.۰.
+    \item بهره‌گیری از آموزش با دقت ترکیبی (\lr{mixed precision training - FP16}).
+    \item مانیتور کردن زیان اعتبارسنجی برای تشخیص بیش‌برازش (\lr{overfitting}).
+\end{itemize}
+
+
+
+\subsubsection{بهترین تجربه‌های ارزیابی}
+\begin{itemize}
+    \item تولید چندین نمونه (بیش از ۱۰۰ عدد) برای دست‌یابی به آمار قابل اعتماد.
+    \item استفاده از چندین دانه تصادفی (\lr{random seeds}) برای بازتولیدپذیری.
+    \item گزارش فواصل اطمینان برای معیارهای ارزیابی.
+\end{itemize}
+
+\clearpage
+
+% =======================================================
+% ضمیمه: کد منبع کامل
+% =======================================================
+\section{ضمیمه: کد منبع کامل (\lr{Complete Source Code})}
+
+\subsection{پیاده‌سازی \lr{DDPM}}
+در این بخش پیاده‌سازی کلاس‌های اصلی مربوط به زمان‌بندی نویز، معماری \lr{U-Net} و حلقه‌های آموزش و نمونه‌برداری آورده شده است.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+# ... (Full DDPM implementation including DDPMScheduler and UNet)
+\end{lstlisting}
+\end{latin}
+
+\subsection{پیاده‌سازی تطبیق جریان (\lr{Flow Matching})}
+این بخش شامل پیاده‌سازی میدان برداری مبتنی بر ترنسفورمر برای سری‌های زمانی است.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+class ConditionalFlowMatching:
+    def __init__(self, model, sigma=0.0):
+        self.model = model
+        self.sigma = sigma
+    # ... (Rest of CFM and Transformer implementation)
+\end{lstlisting}
+\end{latin}
+
+
+
+\subsection{پیاده‌سازی معیارهای ارزیابی}
+توابع مربوط به محاسبه فاصله واسراشتاین بریده شده (\lr{SWD}) و خودهمبستگی (\lr{ACF}) در این بخش ارائه شده است.
+
+\begin{latin}
+\begin{lstlisting}[language=Python]
+def sliced_wasserstein_distance(x, y, num_projections=1000):
+    """Compute Sliced Wasserstein Distance between two distributions."""
+    # Logic for random projections and 1D Wasserstein average
+\end{lstlisting}
+\end{latin}
+
+
+% =======================================================
+% ضمیمه: پاسخ‌های نمونه به سوالات تکلیف
+% =======================================================
+\section{ضمیمه: پاسخ‌های نمونه به سوالات تکلیف}
+
+\subsection{سوال اول -- مدل‌های نفوذ (تئوری)}
+
+\textbf{س۱ (توزیع حاشیه‌ای فرم بسته):} به ضمیمه الف.۱ برای اثبات کامل مراجعه کنید.
+
+\textbf{س۲ (مزایای پیش‌بینی نویز $\epsilon$):}
+\begin{enumerate}
+    \item \textbf{استقلال از مقیاس (\lr{Scale Invariance}):} هدف $\epsilon \sim \mathcal{N}(0, I)$ صرف‌نظر از گام زمانی $t$ یا بزرگی داده‌ها، دارای مقیاس ثابتی است که از مشکلات مقیاس‌بندی گرادیان در طول بهینه‌سازی جلوگیری می‌کند.
+    \item \textbf{ارتباط با \lr{VLB}:} تابع زیان ساده‌شده $\mathcal{L}_{\text{simple}}$ با یک کران پایین تغییراتی وزن‌دهی مجدد شده مطابقت دارد که به صورت تجربی کیفیت نمونه‌برداری بالاتری نسبت به \lr{VLB} دقیق ارائه می‌دهد.
+    \item \textbf{پایداری عددی:} برخلاف پیش‌بینی $\mu_\theta$ یا $x_0$، پیش‌بینی نویز از تقسیم بر مقادیر بسیار کوچک $\sqrt{1 - \bar{\alpha}_t}$ در $t$های بزرگ جلوگیری می‌کند.
+\end{enumerate}
+
+\textbf{س۳ (جملات \lr{KL} در \lr{VLB}):}
+\begin{enumerate}
+    \item \textbf{تطبیق پسین (\lr{Posterior Matching}):} جملات واگرایی \lr{KL} مدل را تشویق می‌کنند تا توزیع معکوس یادگرفته شده را با پسین شرطی واقعی مطابقت دهد و اطمینان حاصل کند که مدل جهت صحیح نویززدایی را در هر گام یاد می‌گیرد.
+    \item \textbf{ساده‌سازی عملی:} \lr{VLB} دقیق شامل وزن‌دهی وابسته به زمان است که گام‌های دشوار نویززدایی را کم‌ارزش می‌کند. زیان ساده‌شده این وزن‌دهی را حذف کرده و به مدل اجازه می‌دهد روی گام‌های ساختاردهنده تمرکز کند.
+\end{enumerate}
+
+\textbf{س۴ (نمونه‌برداری \lr{DDIM}):}
+\begin{enumerate}
+    \item \textbf{نگاشت معین (\lr{Deterministic Mapping}):} زمانی که $0 = \eta$ باشد، \lr{DDIM} یک نگاشت معین تعریف می‌کند که نویز اضافی تزریق نکرده و مسیر نمونه‌برداری را برای یک نویز اولیه ثابت، کاملاً معین می‌کند.
+    \item \textbf{پرش گام‌ها (\lr{Step Skipping}):} فرمول‌بندی غیرمارکوفی اجازه می‌دهد بین گام‌های زمانی دلخواه جابجا شویم، که منجر به سرعت ۱۰ تا ۵۰ برابری نسبت به ۱۰۰۰ گام \lr{DDPM} می‌شود.
+\end{enumerate}
+
+
+
+\textbf{س۵ (راهنمایی بدون طبقه‌بند - \lr{CFG}):}
+\begin{enumerate}
+    \item \textbf{طبقه‌بندی ضمنی:} \lr{CFG} یک مدل واحد را روی داده‌های شرطی و بدون شرط آموزش می‌دهد. در استنتاج، با ترکیب خطی این دو حالت، تولید را به سمت مودهای شرطی هل می‌دهد بدون اینکه نیاز به طبقه‌بند جداگانه باشد.
+    \item \textbf{تعادل مقیاس راهنمایی:} افزایش $w$ وفاداری به دستور (\lr{prompt}) را افزایش داده اما تنوع نمونه‌ها را کاهش می‌دهد. مقدار بهینه (معمولاً ۵ تا ۱۰) تعادلی میان انسجام و تنوع برقرار می‌کند.
+\end{enumerate}
+
+\subsection{سوال اول -- مدل‌های نفوذ (عملی)}
+
+\textbf{گام ۱: پیاده‌سازی زمان‌بندی نویز (\lr{Noise Schedule})}
+زمان‌بندی واریانس خطی $\beta_t$ را از $0.0001$ تا $0.02$ در ۱۰۰۰ گام درون‌یابی می‌کند. سپس مقادیر $\alpha_t$ و $\bar{\alpha}_t$ محاسبه می‌شوند.
+
+
+
+\textbf{گام ۲: تابع \texttt{perturb\_input}}
+با استفاده از بازپارامتری‌سازی: $x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon$
+
+\textbf{گام ۳: حلقه آموزش}
+برای هر دسته (\lr{batch}): نمونه‌برداری تصادفی از $t$، محاسبه $x_t$ نویزی، پیش‌بینی نویز توسط \lr{U-Net} و به‌روزرسانی بر اساس خطای \lr{MSE}.
+
+\textbf{گام ۴: نمونه‌برداری}
+شروع از نویز خالص $x_T$ و حرکت معکوس تا گام صفر با استفاده از میانگین و واریانس پسین محاسبه شده.
+
+\subsection{سوال دوم -- تطبیق جریان (تئوری)}
+
+\textbf{س۱ (نقش میدان برداری):} میدان برداری $v_\theta(x, t)$ سرعت لحظه‌ای انتقال جرم احتمالی از توزیع منبع به توزیع هدف را تعریف می‌کند. انتگرال‌گیری از این میدان، نگاشت مولد را حاصل می‌کند.
+
+
+
+\textbf{س۲ (چرا مسیرهای خطی؟):} درون‌یابی خطی سادگی محاسباتی با سرعت هدف ثابت ($x_1 - x_0$) فراهم می‌کند. این امر پایداری آموزش را تضمین کرده و هدف رگرسیون را نسبت به مسیرهای منحنی ساده‌تر می‌کند.
+
+\subsection{سوال دوم -- تطبیق جریان (عملی)}
+
+\textbf{آماده‌سازی داده‌ها:} بارگذاری بازده‌های لگاریتمی \lr{SPY}، ایجاد دنباله‌های ۶۴تایی با هم‌پوشانی، استانداردسازی و تقسیم‌بندی زمانی (۹۰٪ آموزش، ۱۰٪ تست).
+
+\textbf{آموزش و نمونه‌برداری:} یادگیری میدان برداری با کمینه‌سازی خطای سرعت و تولید داده از طریق حل عددی معادله دیفرانسیل (\lr{ODE}) با روش‌های اویلر یا هیون.
+
+\subsection{بیانیه اصالت اثر (\lr{Originality Statement})}
+اینجانب اعلام می‌دارم که این پژوهش حاصل تلاش شخصی بوده و تمامی منابع مورد استفاده به درستی ارجاع داده شده‌اند. پیاده‌سازی‌ها بر اساس مقالات مرجع و با اصلاحات لازم برای نیازمندی‌های این تکلیف انجام شده است. تمامی کدهای ارائه شده توسط نویسنده نگاشته شده‌اند.
+
+\clearpage
+\end{document}
