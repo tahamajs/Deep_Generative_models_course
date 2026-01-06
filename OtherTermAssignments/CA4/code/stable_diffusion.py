@@ -250,7 +250,7 @@ def generate_class_images(
         for j, image in enumerate(images):
             image.save(class_data_root / f"class_image_{start_idx + i + j:04d}.png")
 
-    print(f"✅ Generated {num_to_generate} class images in {class_data_root}")
+    print(f"Done: Generated {num_to_generate} class images in {class_data_root}")
 
     # Clear memory
     del pipeline
@@ -341,7 +341,7 @@ class DreamBoothTrainer:
         # VAE scaling factor
         self.vae_scale_factor = 0.18215
 
-        print("✅ DreamBooth trainer initialized!")
+        print("Done: DreamBooth trainer initialized!")
 
     def _setup_mock(self):
         """Setup mock components when diffusers is not available."""
@@ -468,7 +468,7 @@ class DreamBoothTrainer:
             self.loss_history.append(avg_loss)
             print(f"Epoch {epoch}/{num_epochs} - Loss: {avg_loss:.4f}")
 
-        print("✅ DreamBooth training complete!")
+        print("Done: DreamBooth training complete!")
 
     def save_lora_weights(self, save_path):
         """Save LoRA weights."""
@@ -476,7 +476,7 @@ class DreamBoothTrainer:
             return
 
         self.unet.save_pretrained(save_path)
-        print(f"✅ LoRA weights saved to {save_path}")
+        print(f"Done: LoRA weights saved to {save_path}")
 
     def plot_loss(self):
         """Plot training loss."""
@@ -520,7 +520,7 @@ class DreamBoothInference:
             print(f"Loading LoRA weights from {lora_weights_path}")
             self.pipeline.unet.load_adapter(lora_weights_path)
 
-        print("✅ Inference pipeline ready!")
+        print("Done: Inference pipeline ready!")
 
     @torch.no_grad()
     def generate(

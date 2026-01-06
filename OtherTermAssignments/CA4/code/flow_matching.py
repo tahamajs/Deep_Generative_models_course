@@ -423,7 +423,7 @@ class FlowMatchingTrainer:
 
             print(f"Epoch {epoch}/{num_epochs} - Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}")
 
-        print("✅ Flow Matching training complete!")
+        print("Done: Flow Matching training complete!")
 
     def plot_loss(self):
         """Plot training and test loss curves."""
@@ -768,7 +768,7 @@ def evaluate_generated_samples(real_data, generated_data):
     print(f"\n  OVERALL SCORE: {overall_score:.1f}%")
 
     if overall_score > 80:
-        print("  ✅ Excellent model performance!")
+        print("  Done: Excellent model performance!")
     elif overall_score > 60:
         print("  ⚠️ Good performance, room for improvement")
     else:
@@ -1039,6 +1039,6 @@ def visualize_flow_matching_results(real_data, generated_data, loss_history=None
         save_fig('fm_training_loss.png')
         plt.show()
 
-    print("✅ Visualization complete - all plots saved!")
+    print("Done: Visualization complete - all plots saved!")
 
 

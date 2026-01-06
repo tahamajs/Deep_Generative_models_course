@@ -112,7 +112,7 @@ class DDPMTrainer:
                     'optimizer_state_dict': self.optimizer.state_dict(),
                     'loss': avg_loss,
                 }, f"{save_path}/checkpoint_epoch_{epoch}.pt")
-        print("✅ Training complete!")
+        print("Done: Training complete!")
         return self.loss_history
 
     def plot_loss(self, save_path=None):
@@ -130,5 +130,5 @@ class DDPMTrainer:
             save_path = Path(save_path)
             save_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=200, bbox_inches="tight")
-            print(f"✅ Saved: {save_path}")
+            print(f"Done: Saved: {save_path}")
         plt.show()

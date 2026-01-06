@@ -243,10 +243,10 @@ class DDPMScheduler:
         # Calculate alphas: α_t = 1 - β_t
         self.alphas = 1.0 - self.betas
 
-        # Calculate cumulative products: ᾱ_t = ∏(α_s) for s=1 to t
+        # Calculate cumulative products: alpha_bar_t = prod(alpha_s) for s=1 to t
         self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
 
-        # ᾱ_{t-1} (shifted by 1, with first element = 1)
+        # alpha_bar_{t-1} (shifted by 1, with first element = 1)
         self.alphas_cumprod_prev = F.pad(self.alphas_cumprod[:-1], (1, 0), value=1.0)
 
         # Pre-compute useful quantities for forward process
@@ -256,7 +256,7 @@ class DDPMScheduler:
         # Pre-compute useful quantities for reverse process
         self.sqrt_recip_alphas = torch.sqrt(1.0 / self.alphas)
 
-        # Posterior variance: β̃_t = β_t * (1 - ᾱ_{t-1}) / (1 - ᾱ_t)
+        # Posterior variance: beta_tilde_t = beta_t * (1 - alpha_bar_{t-1}) / (1 - alpha_bar_t)
         self.posterior_variance = self.betas * (1.0 - self.alphas_cumprod_prev) / (1.0 - self.alphas_cumprod)
 
         # Coefficient for mean reconstruction
@@ -284,7 +284,7 @@ class DDPMScheduler:
         Step 2: Forward Process (Perturb Input)
 
         Adds noise to x_0 to get x_t using the reparameterization trick:
-        x_t = √(ᾱ_t) * x_0 + √(1 - ᾱ_t) * ε
+        x_t = sqrt(alpha_bar_t) * x_0 + sqrt(1 - alpha_bar_t) * eps
 
         Args:
             x_0: Original clean images [B, C, H, W]
@@ -401,7 +401,7 @@ class DDPMTrainer:
                     'loss': avg_loss,
                 }, f"{save_path}/checkpoint_epoch_{epoch}.pt")
 
-        print("✅ Training complete!")
+        print("Done: Training complete!")
         return self.loss_history
 
     def plot_loss(self, save_path=None):
@@ -419,7 +419,7 @@ class DDPMTrainer:
             save_path = Path(save_path)
             save_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=200, bbox_inches="tight")
-            print(f"✅ Saved: {save_path}")
+            print(f"Done: Saved: {save_path}")
 
         plt.show()
 
@@ -431,7 +431,7 @@ class DDPMSampler:
     Algorithm:
     For t = T, T-1, ..., 1:
         z ~ N(0, I) if t > 1 else z = 0
-        x_{t-1} = (1/√α_t)(x_t - (1-α_t)/√(1-ᾱ_t) * ε_θ(x_t, t)) + σ_t * z
+        x_{t-1} = (1/sqrt(alpha_t))(x_t - (1-alpha_t)/sqrt(1-alpha_bar_t) * eps_theta(x_t, t)) + sigma_t * z
     """
     def __init__(self, model, scheduler, device):
         self.model = model
@@ -482,7 +482,7 @@ class DDPMSampler:
                 noise = torch.zeros_like(x)
 
             # DDPM update rule
-            # x_{t-1} = (1/√α_t)(x_t - (1-α_t)/√(1-ᾱ_t) * ε_θ) + σ_t * z
+            # x_{t-1} = (1/sqrt(alpha_t))(x_t - (1-alpha_t)/sqrt(1-alpha_bar_t) * eps_theta) + sigma_t * z
             x = (1 / torch.sqrt(alpha)) * (
                 x - ((1 - alpha) / torch.sqrt(1 - alpha_cumprod)) * noise_pred
             ) + torch.sqrt(beta) * noise
@@ -496,12 +496,12 @@ class DDPMSampler:
 
 class DDIMSampler:
     """
-    DDIM Sampling: Deterministic (η=0) or semi-stochastic reverse process.
+    DDIM Sampling: Deterministic (eta=0) or semi-stochastic reverse process.
     Can skip timesteps for faster generation.
 
     Key difference from DDPM:
     - Non-Markovian process
-    - Deterministic when η=0
+    - Deterministic when eta=0
     - Can use fewer steps (e.g., 50 instead of 1000)
     """
     def __init__(self, model, scheduler, device):
@@ -557,14 +557,14 @@ class DDIMSampler:
                 alpha_cumprod_t_prev = torch.tensor(1.0, device=self.device)
 
             # Predict x_0 from x_t and noise prediction
-            # x_0 = (x_t - √(1-ᾱ_t) * ε) / √(ᾱ_t)
+            # x_0 = (x_t - sqrt(1-alpha_bar_t) * eps) / sqrt(alpha_bar_t)
             pred_x0 = (x - torch.sqrt(1 - alpha_cumprod_t) * noise_pred) / torch.sqrt(alpha_cumprod_t)
 
             # Optionally clip x_0 to [-1, 1]
             pred_x0 = torch.clamp(pred_x0, -1, 1)
 
             # Compute direction pointing to x_t
-            # "direction" = √(1-ᾱ_{t-1} - σ²) * ε_θ
+            # "direction" = sqrt(1-alpha_bar_{t-1} - sigma^2) * eps_theta
             sigma = eta * torch.sqrt((1 - alpha_cumprod_t_prev) / (1 - alpha_cumprod_t)) * \
                     torch.sqrt(1 - alpha_cumprod_t / alpha_cumprod_t_prev)
 
@@ -577,7 +577,7 @@ class DDIMSampler:
                 noise = torch.zeros_like(x)
 
             # DDIM update rule
-            # x_{t-1} = √(ᾱ_{t-1}) * pred_x0 + direction + σ * noise
+            # x_{t-1} = sqrt(alpha_bar_{t-1}) * pred_x0 + direction + sigma * noise
             x = torch.sqrt(alpha_cumprod_t_prev) * pred_x0 + direction + sigma * noise
 
             # Store intermediate
@@ -629,7 +629,7 @@ def visualize_samples(samples, title="Generated Samples", save_path=None):
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(save_path, dpi=200, bbox_inches="tight")
-        print(f"✅ Saved: {save_path}")
+        print(f"Done: Saved: {save_path}")
     plt.show()
 
 

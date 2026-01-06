@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     # Visualize
     visualize_forward_process(scheduler)
-    print("✅ Forward process visualization complete!")
+    print("Done: Forward process visualization complete!")
 
     # Image transformations
     transform = transforms.Compose([
