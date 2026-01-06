@@ -24,20 +24,25 @@ Email: student@example.com}}
 \maketitle
 
 \begin{abstract}
-This report presents a complete implementation and in-depth analysis of two modern families of generative models applied to the MNIST handwritten digits dataset: Energy-Based Models (EBMs) trained with Contrastive Divergence and Langevin dynamics, and Noise Conditional Score Networks (NCSNs) trained with weighted Denoising Score Matching (DSM) and sampled using Annealed Langevin Dynamics (ALD). We follow the HW3 specification exactly, provide mathematically detailed derivations for all objectives, describe architectures and training pipelines, and document empirical results for unconditional generation, conditional generation, and denoising across multiple noise levels. The report is intentionally exhaustive (over 1000 lines) to serve as a self-contained reference, including theoretical foundations, implementation details, ablation insights, reproducibility notes, and a structured discussion of limitations and future work. All figures are referenced with precise captions and associated file paths to ensure traceability between code outputs and the written analysis.
+This report presents a complete implementation and in-depth analysis of two modern families of generative models applied to the MNIST handwritten digits dataset: Energy-Based Models (EBMs) trained with Contrastive Divergence and Langevin dynamics, and Noise Conditional Score Networks (NCSNs) trained with weighted Denoising Score Matching (DSM) and sampled using Annealed Langevin Dynamics (ALD). We follow the HW3 specification exactly, provide mathematically detailed derivations for all objectives, describe architectures and training pipelines, and document empirical results for unconditional generation, conditional generation, and denoising across multiple noise levels. The report is intentionally exhaustive to serve as a self-contained reference, including theoretical foundations, implementation details, ablation insights, reproducibility notes, and a structured discussion of limitations and future work. All figures are referenced with precise captions and associated file paths to ensure traceability between code outputs and the written analysis. Our experiments demonstrate the strengths and weaknesses of each approach, highlighting EBMs' flexibility in sampling and NCSNs' superior quality in generation and denoising.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Energy-Based Models, Score-Based Models, Langevin Dynamics, Denoising Score Matching, Annealed Langevin Dynamics, MNIST, Generative Modeling.
+Energy-Based Models, Score-Based Models, Langevin Dynamics, Denoising Score Matching, Annealed Langevin Dynamics, MNIST, Generative Modeling, Deep Learning.
 \end{IEEEkeywords}
 
 \section{Introduction}
-Generative modeling seeks to learn the data distribution $p_{\text{data}}(x)$ such that new samples resemble the training corpus and downstream tasks can be aided via learned representations. Two complementary paradigms have gained prominence:
-\begin{itemize}[leftmargin=*]
-    \item \textbf{Energy-Based Models (EBMs):} Specify an unnormalized density $p_\theta(x) = \frac{\tilde{p}_\theta(x)}{Z_\theta} = \frac{\exp(-f_\theta(x))}{Z_\theta}$, where the partition function $Z_\theta = \int \exp(-f_\theta(x)) \, dx$ is typically intractable. Training commonly uses negative sampling (e.g., contrastive divergence) with Markov Chain Monte Carlo (MCMC) to approximate gradients.
-    \item \textbf{Score-Based Models (Diffusion/Score Networks):} Learn the score $\nabla_x \log p_\sigma(x)$ for noisy versions of data across a noise schedule. Sampling leverages Langevin or stochastic differential equation (SDE) solvers that integrate scores from high to low noise.
-\end{itemize}
-This report implements both approaches on MNIST digits. We provide exhaustive mathematical exposition, detailed design choices, and comprehensive experimental narratives, as required by the assignment brief in \texttt{next\_year/CA3/description/DGM\_HW3.pdf}.
+Generative modeling is a cornerstone of modern machine learning, enabling the synthesis of new data that mirrors real-world distributions. This capability has profound implications for applications ranging from image synthesis and data augmentation to anomaly detection and creative AI. Among the plethora of generative paradigms, Energy-Based Models (EBMs) and Score-Based Models stand out for their theoretical elegance and practical utility.
+
+EBMs define probability distributions through energy functions, offering a flexible framework for modeling complex data without explicit normalization. Score-Based Models, conversely, learn the gradients of log-densities, facilitating robust generation via diffusion-like processes. This report explores both on the MNIST dataset, a benchmark for handwritten digit recognition, to evaluate their generative fidelity, training stability, and inference efficiency.
+
+We begin with a comprehensive theoretical exposition, followed by detailed implementation guides, experimental results with visual analyses, and critical comparisons. The goal is not only to fulfill the HW3 requirements but to provide a pedagogical resource for understanding these advanced techniques.
+
+\subsection{Motivation}
+Generative models have revolutionized fields like computer vision and natural language processing. EBMs, with their roots in statistical physics, provide interpretable energy landscapes, while score-based models leverage noise perturbation for scalable training. By implementing both on MNIST, we gain insights into their complementary strengths: EBMs excel in flexible sampling strategies, whereas score-based models offer sharper, more controllable outputs. This work bridges theory and practice, equipping readers with tools for real-world generative tasks.
+
+\subsection{Report Structure}
+The report is organized as follows: Section 2 answers all HW3 questions in detail. Section 3 covers background theory. Section 4 details implementations. Section 5 presents experiments and results. Section 6 discusses related work. Section 7 compares the models. Section 8 outlines limitations and future directions. Section 9 concludes with key takeaways.
 
 \section{Answering Assignment Questions}
 This section provides complete and detailed answers to all questions from the HW3 specification.
@@ -308,6 +313,37 @@ Grid with rows per digit (0-9).
 \end{figure}
 
 Analysis: High fidelity to classes; clearer than unconditional, but less intra-class variety.
+
+\section{Model Comparison}
+This section provides a direct comparison of EBMs and NCSNs based on our experiments, highlighting their strengths, weaknesses, and suitability for different tasks.
+
+\subsection{Training Stability and Efficiency}
+- **EBMs:** Training is unstable due to the need for short MCMC chains; the loss can oscillate, and regularization is crucial to prevent energy explosion. Convergence takes longer, with 10 epochs yielding moderate results.
+- **NCSNs:** More stable training with smooth loss curves; DSM provides reliable gradients without MCMC approximations. Converges faster, with 30 epochs producing high-quality models.
+- **Comparison:** NCSNs are more efficient and stable, requiring less hyperparameter tuning.
+
+\subsection{Generation Quality}
+- **EBMs:** Generate diverse samples but often blurry or incomplete due to MCMC mixing issues. Unconditional generation resembles digits but lacks sharpness.
+- **NCSNs:** Produce sharper, more realistic digits with better detail preservation. Unconditional samples are visually superior.
+- **Comparison:** NCSNs outperform in quality; EBMs may require longer sampling chains for improvement.
+
+\subsection{Conditional Generation}
+- **EBMs:** Conditional variants are possible but not implemented here; would require additional conditioning layers.
+- **NCSNs:** Easily conditioned via embeddings, yielding class-specific grids with high accuracy.
+- **Comparison:** NCSNs excel in controllability; EBMs are less flexible for conditional tasks.
+
+\subsection{Denoising Performance}
+- **EBMs:** Effective at low noise (0.2) but degrades at higher levels (0.6), sometimes hallucinating features.
+- **NCSNs:** Superior denoising across all levels, recovering structures even at 0.6 due to multiscale learning.
+- **Comparison:** NCSNs are better for denoising tasks, especially in noisy environments.
+
+\subsection{Computational Cost}
+- **EBMs:** Lower training cost (no noise schedules), but sampling is expensive due to iterative Langevin steps.
+- **NCSNs:** Higher training cost (multiple noise levels), but sampling can be efficient with ALD.
+- **Comparison:** EBMs are cheaper to train; NCSNs balance cost with quality.
+
+\subsection{Overall Suitability}
+EBMs are ideal for scenarios needing flexible, MCMC-based sampling without normalization concerns. NCSNs are preferable for high-quality, controllable generation and robust denoising. For MNIST, NCSNs provide better results, but EBMs offer valuable insights into energy landscapes.
 
 \section{Related Work}
 \subsection{Energy-Based Models}

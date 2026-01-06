@@ -20,7 +20,6 @@
 \usepackage{hyperref}
 \usepackage{tikz}
 \usepackage{etoolbox}
-\usepackage{lastpage}
 
 % =========================================
 % PAGE GEOMETRY
@@ -61,7 +60,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\leftmark}
-\fancyhead[R]{\thepage\ of \pageref{LastPage}}
+\fancyhead[R]{\thepage}
 \fancyfoot[C]{\footnotesize Deep Generative Models - Homework 4}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
@@ -395,13 +394,12 @@ This corresponds to a reweighted Variational Lower Bound (VLB) that focuses on d
 
 To generate samples, start from pure noise $x_T \sim \mathcal{N}(0, I)$ and iteratively denoise:
 
-\begin{algorithmic}[1]
-\For{$t = T$ \textbf{downto} $1$}
-    \State $z \gets \mathcal{N}(0, I)$ if $t > 1$ else $0$
-    \State $\epsilon \gets \epsilon_\theta(x_t, t)$
-    \State $x_{t-1} \gets \frac{1}{\sqrt{\alpha_t}} \left( x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}} \epsilon \right) + \sigma_t z$
-\EndFor
-\end{algorithmic}
+\begin{lstlisting}[language=Python, caption=DDPM Sampling Algorithm]
+for t in range(T, 0, -1):
+    z = torch.randn_like(x_t) if t > 1 else 0
+    epsilon = epsilon_theta(x_t, t)
+    x_{t-1} = (1/sqrt(alpha_t)) * (x_t - (1-alpha_t)/sqrt(1-alpha_bar_t) * epsilon) + sigma_t * z
+\end{lstlisting}
 
 \subsubsection{DDIM: Deterministic Variant}
 
@@ -569,19 +567,18 @@ This simplifies the learning objective to:
 4. Split chronologically (90% train, 10% test)
 
 \textbf{Training Loop:}
-\begin{algorithmic}[1]
-\For{each epoch}
-    \For{each batch}
-        \State Sample $x_1 \sim$ data distribution
-        \State Sample $x_0 \sim \mathcal{N}(0, I)$
-        \State Sample $t \sim \text{Uniform}(0, 1)$
-        \State $x_t \gets (1-t) x_0 + t x_1$
-        \State $v_\text{target} \gets x_1 - x_0$
-        \State $v_\text{pred} \gets v_\theta(x_t, t)$
-        \State Compute MSE loss and backpropagate
-    \EndFor
-\EndFor
-\end{algorithmic}
+\begin{lstlisting}[language=Python, caption=Flow Matching Training]
+for each epoch:
+    for each batch:
+        x1 = sample_from_data()
+        x0 = torch.randn_like(x1)
+        t = torch.rand(x1.shape[0])
+        xt = (1-t)*x0 + t*x1
+        v_target = x1 - x0
+        v_pred = v_theta(xt, t)
+        loss = MSE(v_pred, v_target)
+        loss.backward()
+\end{lstlisting}
 
 \subsubsection{Sampling via ODE Integration}
 
@@ -840,7 +837,7 @@ class DDIMSampler:
         \textbf{Parameter} & \textbf{Value} \\
         \midrule
         Inference Steps & 50 \\
-        η (Noise Scale) & 0.0 (deterministic) \\
+        eta (Noise Scale) & 0.0 (deterministic) \\
         Stride & 20 (1000/50) \\
         \bottomrule
     \end{tabular}
@@ -2910,8 +2907,8 @@ This section provides a comprehensive analysis of the code flow and implementati
 self.betas = torch.linspace(beta_start=0.0001, beta_end=0.02, 1000)  # Linear schedule
 self.alphas = 1.0 - self.betas  # α_t = 1 - β_t
 self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)  # ∏_{s=1}^t α_s
-self.sqrt_alphas_cumprod = torch.sqrt(self.alphas_cumprod)  # √(ᾱ_t)
-self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - self.alphas_cumprod)  # √(1-ᾱ_t)
+self.sqrt_alphas_cumprod = torch.sqrt(self.alphas_cumprod)  # \sqrt(\bar{\alpha}_t)
+self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - self.alphas_cumprod)  # \sqrt(1-\bar{\alpha}_t)
 ```
 
 The scheduler pre-computes all diffusion coefficients for efficiency. The linear beta schedule ensures gradual noise addition, with small $\beta_{\text{start}}$ preserving early details and $\beta_{\text{end}}$ ensuring complete corruption.
@@ -2956,9 +2953,9 @@ The training minimizes $\mathcal{L}_{\text{simple}} = \mathbb{E}[\|\epsilon - \e
 x = torch.randn(shape)  # x_T ~ N(0,I)
 for t in reversed(range(T)):
     noise_pred = model(x, t)
-    mean = (1/√α_t) * (x - (β_t/√(1-ᾱ_t)) * noise_pred)  # Posterior mean
+    mean = (1/\sqrt{\alpha_t}) * (x - (\beta_t/\sqrt(1-\bar{\alpha}_t)) * noise_pred)  # Posterior mean
     if t > 0:
-        x = mean + √(β_t) * torch.randn_like(x)  # Add stochasticity
+        x = mean + \sqrt(\beta_t) * torch.randn_like(x)  # Add stochasticity
     else:
         x = mean  # Deterministic at t=0
 ```
@@ -2973,9 +2970,9 @@ timesteps = torch.flip(timesteps, [0])  # Reverse: T to 0
 
 for i, t in enumerate(timesteps):
     noise_pred = model(x, t)
-    pred_x0 = (x - √(1-ᾱ_t) * noise_pred) / √ᾱ_t  # Predict clean image
-    dir_xt = √(1-ᾱ_{t-1} - η²(1-ᾱ_t/ᾱ_{t-1})) * noise_pred  # Direction
-    x = √ᾱ_{t-1} * pred_x0 + dir_xt + η * noise  # Update (η controls stochasticity)
+    pred_x0 = (x - \sqrt(1-\bar{\alpha}_t) * noise_pred) / \sqrt{\bar{\alpha}}_t  # Predict clean image
+    dir_xt = \sqrt(1-\bar{\alpha}_{t-1} - \eta^2(1-\bar{\alpha}_t/\bar{\alpha}_{t-1})) * noise_pred  # Direction
+    x = \sqrt{\bar{\alpha}}_{t-1} * pred_x0 + dir_xt + \eta * noise  # Update (\eta controls stochasticity)
 ```
 
 DDIM enables 20x speedup by skipping steps. $\eta=0$ makes it deterministic, $\eta=1$ approaches DDPM quality. The non-Markovian formulation allows direct jumps between timesteps.
@@ -3311,11 +3308,11 @@ class ResidualBlock(nn.Module):
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         
         # برای لایه آخر (Upsample یا Downsample)
-        # اگر سایز ورودی و خروجی یکی نباشد یا بخواهیم سایز تصویر را تغییر دهیم
+        # If input and output sizes are not the same or we want to change image size
         self.transform = nn.Conv2d(out_channels, out_channels, kernel_size, 2, 1)
-        # توجه: ما برای Upsample از ConvTranspose2d در خود UNet یا اینجا استفاده می‌کنیم
-        # اما برای سادگی، لایه transform را فقط برای تغییر رزولوشن نگه می‌داریم
-        # و Upsample اصلی را با ConvTranspose جایگزین می‌کنیم (در پایین ببینید).
+        # Note: We use ConvTranspose2d for Upsample in the UNet itself or here
+        # For simplicity, we keep the transform layer only for resolution change
+        # Replace main Upsample with ConvTranspose (see below).
 
         num_groups = 32 if out_channels % 32 == 0 else min(out_channels // 4, 8)
         self.bn1 = nn.GroupNorm(num_groups, out_channels)
@@ -3487,17 +3484,17 @@ class DDPMScheduler:
 
         # ============================================
         # Step 1: Linear Variance Schedule
-        # β_t increases linearly from β_start to β_end
+        # beta_t increases linearly from beta_start to beta_end
         # ============================================
         self.betas = torch.linspace(beta_start, beta_end, num_timesteps, device=device)
 
-        # Calculate alphas: α_t = 1 - β_t
+        # Calculate alphas: alpha_t = 1 - beta_t
         self.alphas = 1.0 - self.betas
 
-        # Calculate cumulative products: ᾱ_t = ∏(α_s) for s=1 to t
+        # Calculate cumulative products: alpha_bar_t = prod(alpha_s) for s=1 to t
         self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
 
-        # ᾱ_{t-1} (shifted by 1, with first element = 1)
+        # alpha_bar_{t-1} (shifted by 1, with first element = 1)
         self.alphas_cumprod_prev = F.pad(self.alphas_cumprod[:-1], (1, 0), value=1.0)
 
         # Pre-compute useful quantities for forward process
@@ -3507,7 +3504,7 @@ class DDPMScheduler:
         # Pre-compute useful quantities for reverse process
         self.sqrt_recip_alphas = torch.sqrt(1.0 / self.alphas)
 
-        # Posterior variance: β̃_t = β_t * (1 - ᾱ_{t-1}) / (1 - ᾱ_t)
+        # Posterior variance: beta_tilde_t = beta_t * (1 - alpha_bar_{t-1}) / (1 - alpha_bar_t)
         self.posterior_variance = self.betas * (1.0 - self.alphas_cumprod_prev) / (1.0 - self.alphas_cumprod)
 
         # Coefficient for mean reconstruction
@@ -3535,7 +3532,7 @@ class DDPMScheduler:
         Step 2: Forward Process (Perturb Input)
 
         Adds noise to x_0 to get x_t using the reparameterization trick:
-        x_t = √(ᾱ_t) * x_0 + √(1 - ᾱ_t) * ε
+        x_t = \sqrt(\bar{\alpha}_t) * x_0 + \sqrt(1 - \bar{\alpha}_t) * \epsilon
 
         Args:
             x_0: Original clean images [B, C, H, W]
@@ -3652,7 +3649,7 @@ class DDPMTrainer:
                     'loss': avg_loss,
                 }, f"{save_path}/checkpoint_epoch_{epoch}.pt")
 
-        print("✅ Training complete!")
+        print("[SUCCESS] Training complete!")
         return self.loss_history
 
     def plot_loss(self, save_path=None):
@@ -3670,7 +3667,7 @@ class DDPMTrainer:
             save_path = Path(save_path)
             save_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=200, bbox_inches="tight")
-            print(f"✅ Saved: {save_path}")
+            print(f"[SUCCESS] Saved: {save_path}")
 
         plt.show()
 
@@ -3682,7 +3679,7 @@ class DDPMSampler:
     Algorithm:
     For t = T, T-1, ..., 1:
         z ~ N(0, I) if t > 1 else z = 0
-        x_{t-1} = (1/√α_t)(x_t - (1-α_t)/√(1-ᾱ_t) * ε_θ(x_t, t)) + σ_t * z
+        x_{t-1} = (1/\sqrt{\alpha_t})(x_t - (1-\alpha_t)/\sqrt(1-\bar{\alpha}_t) * \epsilon_\theta(x_t, t)) + \sigma_t * z
     """
     def __init__(self, model, scheduler, device):
         self.model = model
@@ -3733,7 +3730,7 @@ class DDPMSampler:
                 noise = torch.zeros_like(x)
 
             # DDPM update rule
-            # x_{t-1} = (1/√α_t)(x_t - (1-α_t)/√(1-ᾱ_t) * ε_θ) + σ_t * z
+            # x_{t-1} = (1/\sqrt{\alpha_t})(x_t - (1-\alpha_t)/\sqrt(1-\bar{\alpha}_t) * \epsilon_\theta) + \sigma_t * z
             x = (1 / torch.sqrt(alpha)) * (
                 x - ((1 - alpha) / torch.sqrt(1 - alpha_cumprod)) * noise_pred
             ) + torch.sqrt(beta) * noise
@@ -3747,12 +3744,12 @@ class DDPMSampler:
 
 class DDIMSampler:
     """
-    DDIM Sampling: Deterministic (η=0) or semi-stochastic reverse process.
+    DDIM Sampling: Deterministic (eta=0) or semi-stochastic reverse process.
     Can skip timesteps for faster generation.
 
     Key difference from DDPM:
     - Non-Markovian process
-    - Deterministic when η=0
+    - Deterministic when eta=0
     - Can use fewer steps (e.g., 50 instead of 1000)
     """
     def __init__(self, model, scheduler, device):
@@ -3813,7 +3810,7 @@ P. Vincent, ``A connection between score matching and denoising autoencoders,'' 
 % =======================================================
 \section{Appendix: Concepts and Algorithms}
 
-\subsection{Diffusion Models — Key Equations}
+\subsection{Diffusion Models - Key Equations}
 The forward (noising) process used in DDPMs is a discrete-time Markov chain:
 \[
 q(x_t\mid x_{t-1}) = \mathcal{N}(x_t;\sqrt{\alpha_t}x_{t-1},\,(1-\alpha_t)I),
@@ -3836,14 +3833,14 @@ DDIM defines a non-Markovian deterministic sampling rule (\(\eta=0\)) that corre
 \]
 which is deterministic and preserves marginals; approximate solvers (Euler, Heun, RK4) trade compute for accuracy.
 
-\subsection{Flow Matching — Core Idea}
+\subsection{Flow Matching - Core Idea}
 Conditional Flow Matching learns a vector field $v_{\theta}(x,t)$ that transports samples along simple conditional paths (e.g., linear interpolation). Using linear paths $x_t=(1-t)x_0+t x_1$ the training loss becomes
 \[
 \mathcal{L}_{\mathrm{CFM}}(\theta)=\mathbb{E}_{x_0,x_1,t}\big[\|v_{\theta}(x_t,t)-(x_1-x_0)\|^2\big].
 \]
 Sampling solves the ODE $dx/dt=v_{\theta}(x,t)$ from $t=0$ (noise) to $t=1$ (data).
 
-\subsection{Pseudocode — Training and Sampling}
+\subsection{Pseudocode - Training and Sampling}
 \begin{lstlisting}[language=Python]
 # DDPM training (simplified)
 for x0 in dataloader:
@@ -3878,7 +3875,7 @@ return xt
 - Wasserstein / KS tests: marginal distribution similarity.
 - Higher-order moments: skewness and kurtosis to assess tail behaviour.
 
-\subsection{Reproducing Experiments — Quick Commands}
+\subsection{Reproducing Experiments - Quick Commands}
 Run the main scripts from the `code/` folder. Example commands:
 \begin{verbatim}
 cd OtherTermAssignments/CA4/code
@@ -4209,43 +4206,46 @@ For time series $x_t$, the autocorrelation at lag $k$ is:
 
 \subsubsection{DDPM Training Algorithm}
 
-\begin{algorithmic}[1]
-\State \textbf{Input:} Dataset $\mathcal{D}$, noise schedule $\beta_1, \dots, \beta_T$
-\State Initialize $\theta$ for $\epsilon_\theta$
-\For{each training step}
-    \State Sample $x_0 \sim \mathcal{D}$
-    \State Sample $t \sim \text{Uniform}(\{1, \dots, T\})$
-    \State Sample $\epsilon \sim \mathcal{N}(0, I)$
-    \State $x_t \leftarrow \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon$
-    \State Take gradient step on $\nabla_\theta \|\epsilon - \epsilon_\theta(x_t, t)\|^2$
-\EndFor
-\end{algorithmic}
+\begin{lstlisting}[language=Python, caption=DDPM Training Algorithm]
+# Input: Dataset D, noise schedule beta_1 to beta_T
+# Initialize theta for epsilon_theta
+
+for each training step:
+    x0 = sample_from_dataset(D)
+    t = torch.randint(1, T+1, (x0.shape[0],))
+    epsilon = torch.randn_like(x0)
+    xt = sqrt(alpha_bar_t[t]) * x0 + sqrt(1 - alpha_bar_t[t]) * epsilon
+    loss = MSE(epsilon, epsilon_theta(xt, t))
+    loss.backward()
+\end{lstlisting}
 
 \subsubsection{Flow Matching Training Algorithm}
 
-\begin{algorithmic}[1]
-\State \textbf{Input:} Dataset $\mathcal{D}$, model $v_\theta$
-\For{each training step}
-    \State Sample $x_1 \sim \mathcal{D}$, $x_0 \sim \mathcal{N}(0, I)$
-    \State Sample $t \sim \text{Uniform}([0, 1])$
-    \State Sample $x_t$ from conditional path $p_t(x | x_0, x_1)$
-    \State Compute target velocity $u_t = x_1 - x_0$
-    \State Take gradient step on $\nabla_\theta \|v_\theta(x_t, t) - u_t\|^2$
-\EndFor
-\end{algorithmic}
+\begin{lstlisting}[language=Python, caption=Flow Matching Training Algorithm]
+# Input: Dataset D, model v_theta
+
+for each training step:
+    x1 = sample_from_dataset(D)
+    x0 = torch.randn_like(x1)
+    t = torch.rand(x1.shape[0])
+    xt = sample_from_conditional_path(xt | x0, x1)
+    u_t = x1 - x0  # target velocity
+    loss = MSE(v_theta(xt, t), u_t)
+    loss.backward()
+\end{lstlisting}
 
 \subsubsection{ODE Sampling Algorithm}
 
-\begin{algorithmic}[1]
-\State \textbf{Input:} Trained $v_\theta$, initial $x_0$, step count $N$
-\State $dt \leftarrow 1/N$
-\State $x \leftarrow x_0$
-\For{$i = 0$ to $N-1$}
-    \State $t \leftarrow i \cdot dt$
-    \State $x \leftarrow x + dt \cdot v_\theta(x, t)$
-\EndFor
-\State \textbf{Return} $x$
-\end{algorithmic}
+\begin{lstlisting}[language=Python, caption=ODE Sampling Algorithm]
+# Input: Trained v_theta, initial x0, step count N
+
+dt = 1.0 / N
+x = x0
+for i in range(N):
+    t = i * dt
+    x = x + dt * v_theta(x, t)
+return x
+\end{lstlisting}
 
 \subsection{Computational Complexity Analysis}
 
@@ -4564,7 +4564,41 @@ def compute_statistics(x):
 
 \subsection{Question One -- Diffusion Models (Practical)}
 
-Complete implementation details provided in the main text and source code appendix.
+\textbf{Step 1: Noise Schedule Implementation}
+The linear variance schedule interpolates $\beta_t$ from $\beta_{start} = 0.0001$ to $\beta_{end} = 0.02$ over $T = 1000$ steps:
+\[
+\beta_t = \beta_{start} + t \cdot \frac{\beta_{end} - \beta_{start}}{T-1}, \quad t = 0, \dots, T-1
+\]
+Then compute $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$.
+
+**(3 Points)**
+
+\textbf{Step 2: \texttt{perturb\_input} function}
+Using reparameterization:
+\[
+x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0, I)
+\]
+Return $x_t$ and $\epsilon$ for loss computation.
+
+**(4 Points)**
+
+\textbf{Step 3: Training Loop}
+For each batch:
+- Sample $t \sim \Uniform\{0, \dots, T-1\}$
+- Compute $x_t, \epsilon = \perturb(x_0, t)$
+- Predict $\epsilon_\theta = \unet(x_t, t)$
+- Loss = MSE$(\epsilon, \epsilon_\theta)$
+- Backpropagate and update.
+
+**(4 Points)**
+
+\textbf{Step 4: Sampling}
+Start with $x_T \sim \mathcal{N}(0, I)$, then for $t = T-1$ downto $0$:
+- Predict $\epsilon_\theta = \unet(x_t, t)$
+- Compute posterior mean $\tilde{\mu}_t = \frac{\sqrt{\bar{\alpha}_{t-1}} (1 - \alpha_t)}{1 - \bar{\alpha}_t} x_t + \frac{\sqrt{\alpha_t} (1 - \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t} \epsilon_\theta$
+- Sample $x_{t-1} \sim \mathcal{N}(\tilde{\mu}_t, \tilde{\beta}_t I)$, where $\tilde{\beta}_t = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \beta_t$
+
+**(4 Points)**
 
 \subsection{Question Two -- Flow Matching (Theory)}
 
@@ -4576,7 +4610,30 @@ Complete implementation details provided in the main text and source code append
 
 \subsection{Question Two -- Flow Matching (Practical)}
 
-Complete implementation details and evaluation results provided in the main text.
+\textbf{Data Preparation:}
+- Load SPY log-returns from 2010-2023.
+- Compute log-returns: $r_t = \log(p_t / p_{t-1})$
+- Create sequences of length 64 with overlap.
+- Standardize: $r' = (r - \mu) / \sigma$
+- Split chronologically: 90% train, 10% test.
+
+**(Implementation Notes:)** Use MLP or Transformer for $v_\theta(x, t)$.
+
+\textbf{Training:}
+- Sample $x_0 \sim \mathcal{N}(0, I)$, $x_1 \sim$ data, $t \sim \Uniform[0,1]$
+- $x_t = (1-t) x_0 + t x_1$
+- Loss: $\mathbb{E} \|v_\theta(x_t, t) - (x_1 - x_0)\|^2$
+
+\textbf{Sampling:}
+- Start $x \leftarrow \mathcal{N}(0, I)$
+- Solve $\frac{dx}{dt} = v_\theta(x, t)$ from $t=0$ to $1$ using Euler/Heun.
+
+\textbf{Evaluation:}
+- SWD: Approximate Wasserstein with 1D projections.
+- ACF MSE: Compare autocorrelation functions.
+- Moments: Mean, variance, volatility.
+
+**(30 Points)**
 
 \subsection{Originality Statement}
 
