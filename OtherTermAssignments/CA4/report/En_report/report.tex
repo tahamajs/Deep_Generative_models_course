@@ -282,7 +282,7 @@ Our framework utilizes a 64-length overlapping window of SPY log-returns standar
 \subsubsection{Question 2: Advantage of Noise Prediction}
 \textit{Write down two advantages of predicting $\epsilon$ instead of $\mu_\theta$.}
 
-\begin{tcolorbox}[solutionbox]
+\begin{solutionbox}
     \begin{enumerate}
         \item \textbf{Numerical Stability and Consistent Scaling:} 
         Predicting the noise $\epsilon$ is numerically more stable than predicting the mean $\mu_\theta$ or the original image $x_0$. Since the target noise is always drawn from a standard Gaussian distribution $\mathcal{N}(0, I)$ regardless of the timestep $t$, the output scale remains consistent throughout the training process. In contrast, predicting $\mu_\theta$ or $x_0$ would require the model to handle vastly different scales of signal versus noise as $t$ changes (especially when $t \to T$ and the signal is nearly destroyed).
@@ -290,7 +290,7 @@ Our framework utilizes a 64-length overlapping window of SPY log-returns standar
         \item \textbf{Improved Sample Quality via Reweighted Loss:}
         Ho et al. (DDPM, 2020) empirically demonstrated that predicting $\epsilon$ leads to higher quality sample generation. Mathematically, predicting $\epsilon$ corresponds to a specific reweighting of the Variational Lower Bound (VLB) terms. This "simplified" loss function ($\mathcal{L}_{\text{simple}}$) implicitly down-weights the loss at very low noise levels (small $t$) where the task is trivial, allowing the model to focus on the more difficult, structure-defining denoising steps at higher $t$.
     \end{enumerate}
-\end{tcolorbox}
+\end{solutionbox}
 
 % Q3
 \subsubsection{Question 3: Cost Function Analysis (VLB)}
@@ -1365,7 +1365,7 @@ def sample_from_flow(model, x0, num_steps=100):
 \subsubsection{Subsection 1: DDPM and DDIM Implementation}
 
 \textbf{Step 1: Noise Schedule Implementation}
-\begin{solutionbox}
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 1: Noise Schedule Implementation]
     The linear variance schedule is implemented by linearly interpolating $\beta_t$ from $\beta_{start}$ to $\beta_{end}$. We also precompute all necessary coefficients for the forward and reverse processes.
     
 \begin{lstlisting}[language=Python]
@@ -1391,10 +1391,10 @@ class DDPMScheduler:
         self.sqrt_one_minus_alphas_cumprod = torch.sqrt(
             1.0 - self.alphas_cumprod)
 \end{lstlisting}
-\end{solutionbox}
+\end{tcolorbox}
 
 \textbf{Step 2: \texttt{perturb\_input} Implementation}
-\begin{solutionbox}
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 2: perturb\_input Implementation]
     The forward process uses the reparameterization trick to add noise: $x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon$
     
 \begin{lstlisting}[language=Python]
@@ -1418,10 +1418,10 @@ def perturb_input(self, x_0, t, noise=None):
     
     return x_t, noise
 \end{lstlisting}
-\end{solutionbox}
+\end{tcolorbox}
 
 \textbf{Step 3: Training Loop Implementation}
-\begin{solutionbox}
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 3: Training Loop Implementation]
     The training loop samples random timesteps, adds noise using the forward process, predicts the noise with the U-Net, and minimizes the MSE loss.
     
 \begin{lstlisting}[language=Python]
@@ -1451,10 +1451,10 @@ def train_step(self, x_0):
     
     return loss.item()
 \end{lstlisting}
-\end{solutionbox}
+\end{tcolorbox}
 
 \textbf{Step 4: Sampling Implementation}
-\begin{solutionbox}
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 4: Sampling Implementation]
     DDPM sampling starts from pure Gaussian noise and iteratively denoises using the learned model. The update rule is: $x_{t-1} = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}}\epsilon_\theta) + \sigma_t z$
     
 \begin{lstlisting}[language=Python]
@@ -1492,10 +1492,10 @@ def sample(self, batch_size, img_size=(3, 32, 32)):
         
     return x
 \end{lstlisting}
-\end{solutionbox}
+\end{tcolorbox}
 
 	extbf{Step 5: Visual Results (DDPM vs DDIM)}
-\begin{solutionbox}
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 5: Visual Results (DDPM vs DDIM)]
     The following figures are exported directly from the notebook runs. DDPM uses many reverse steps (e.g., 1000) and is stochastic, while DDIM can use fewer steps (e.g., 50) and becomes deterministic for $\eta=0$. In practice, DDIM is much faster with only a small quality drop for moderate step counts.
 
     \begin{figure}[H]
