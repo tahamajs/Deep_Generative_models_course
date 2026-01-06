@@ -25,7 +25,6 @@ ENV/
 *.npz
 *.h5
 *.hdf5
-*.zip
 *.tar.gz
 data/
 datasets/
