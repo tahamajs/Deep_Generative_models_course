@@ -160,6 +160,13 @@ Email: student@example.com}}
 \begin{document}
 \maketitle
 
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+
 \begin{abstract}
 This report presents a complete implementation and in-depth analysis of two modern families of generative models applied to the MNIST handwritten digits dataset: Energy-Based Models (EBMs) trained with Contrastive Divergence and Langevin dynamics, and Noise Conditional Score Networks (NCSNs) trained with weighted Denoising Score Matching (DSM) and sampled using Annealed Langevin Dynamics (ALD). We follow the HW3 specification exactly, provide mathematically detailed derivations for all objectives, describe architectures and training pipelines, and document empirical results for unconditional generation, conditional generation, and denoising across multiple noise levels. The report is intentionally exhaustive to serve as a self-contained reference, including theoretical foundations, implementation details, ablation insights, reproducibility notes, and a structured discussion of limitations and future work. All figures are referenced with precise captions and associated file paths to ensure traceability between code outputs and the written analysis. Our experiments demonstrate the strengths and weaknesses of each approach, highlighting EBMs' flexibility in sampling and NCSNs' superior quality in generation and denoising.
 \end{abstract}
@@ -516,6 +523,8 @@ The log-likelihood is $\mathcal{L}(\theta) = \mathbb{E}_{x \sim p_{\text{data}}}
 
 Contrastive Divergence approximates the model expectation with short MCMC samples $\tilde{x} \sim q_\theta$, yielding $\nabla_\theta \mathcal{L} \approx -\mathbb{E}_{p_{\text{data}}} [\nabla_\theta f_\theta(x)] + \mathbb{E}_{q_\theta} [\nabla_\theta f_\theta(\tilde{x})]$. The positive phase lowers energy on data, the negative phase raises energy on generated samples.
 
+EBMs are powerful because they can model any distribution without assuming a specific form, unlike GANs or VAEs. However, training requires careful MCMC approximation, and sampling can be slow due to iterative updates.
+
 \subsubsection{Langevin Dynamics}
 To sample from $p_\theta \propto \exp(-f_\theta(x))$, we use Langevin MCMC:
 \begin{equation}
@@ -523,8 +532,12 @@ To sample from $p_\theta \propto \exp(-f_\theta(x))$, we use Langevin MCMC:
 \end{equation}
 This simulates the SDE $dx = -\frac{1}{2} \nabla_x f_\theta(x) dt + dW_t$. For images, we clamp to [0,1] to stay in valid range. Short chains (60 steps) approximate the distribution but may not fully mix.
 
+Langevin dynamics is derived from the Fokker-Planck equation, ensuring convergence to the target distribution under mild conditions. The step size $\eta$ controls exploration vs. exploitation; too large leads to instability, too small slows convergence.
+
 \subsubsection{Rejection Sampling Rationale}
 Rejection sampling with proposal $q = \mathcal{N}(\mu, \sigma_q^2 I)$ and target $\tilde{p} = \mathcal{N}(\mu, \sigma_p^2 I)$ has acceptance rate $\alpha = 1/M$ where $M = (\sigma_q / \sigma_p)^d$. For $\sigma_q = 1.01 \sigma_p$ and $d=784$, $M \approx e^{7.8} \approx 2440$, so $\alpha \approx 4 \times 10^{-4}$. This is impractical, motivating MCMC for high dimensions.
+
+Rejection sampling works well in low dimensions but suffers exponential decay in acceptance rate with dimension, making it unsuitable for images. This highlights why MCMC methods like Langevin are essential for generative modeling in high-dimensional spaces.
 
 \subsection{Score-Based Models and Denoising Score Matching}
 \subsubsection{Score Function and Score Matching}
@@ -533,6 +546,8 @@ For a density $p(x)$, the score is $s(x) = \nabla_x \log p(x)$. Score matching m
     J(\theta) = \frac{1}{2} \int p_{\text{data}}(x) \|\nabla_x \log p_\theta(x) - \nabla_x \log p_{\text{data}}(x)\|_2^2 \, dx.
 \end{equation}
 This requires knowing $p_{\text{data}}$, which we don't. Denoising Score Matching (DSM) perturbs data with noise and matches scores of the noisy distribution.
+
+Score-based models are attractive because they learn gradients directly, avoiding the need for normalization constants. The score function provides a way to navigate the probability landscape, enabling both generation and denoising.
 
 \subsubsection{Score-Based Foundations}
 The score relates to energy as $s(x) = -\nabla_x f(x)$ for EBMs. DSM perturbs $x$ to $\tilde{x} = x + \sigma \epsilon$, where the noisy score is $\nabla_{\tilde{x}} \log p_\sigma(\tilde{x}) = -\epsilon / \sigma$. Minimizing $\mathbb{E} \frac{1}{2} \| s_\theta(\tilde{x}, \sigma) + \epsilon / \sigma \|^2$ matches this, avoiding the Hessian trace in original score matching.
@@ -553,6 +568,8 @@ The DSM loss is
 \end{equation}
 Weighting by $\sigma^2$ (as in our implementation) emphasizes high-noise levels for stability.
 
+DSM is a breakthrough because it turns an intractable problem into a supervised learning task, where the "labels" are the known scores of Gaussian noise. This allows training deep networks to predict scores at any noise level.
+
 \subsubsection{Annealed Langevin Dynamics}
 To sample from $p_0$ (clean data), start from high noise $p_{L}$ and anneal down. For levels $\sigma_1 > \dots > \sigma_L = 0.01$:
 \begin{equation}
@@ -560,11 +577,17 @@ To sample from $p_0$ (clean data), start from high noise $p_{L}$ and anneal down
 \end{equation}
 This reverses the diffusion process, refining from coarse to fine scales.
 
+ALD is efficient because it leverages the learned scores to guide sampling, reducing the need for many steps at each level. The annealing ensures that large-scale structures are captured first, followed by fine details.
+
 \subsubsection{Conditional Score Modeling}
 To condition on class $y$, append a learned embedding $e(y)$ to the noise embedding. The score becomes $s_\theta(x, \sigma, y)$, allowing class-specific generation. This uses FiLM: modulate features by $e(y)$.
 
+Conditioning in score-based models is straightforward because scores are additive; the conditional score is the unconditional score plus a term depending on the condition.
+
 \subsubsection{Why Score-Based Models Work}
 Score-based models learn to denoise at multiple scales, enabling robust generation. Unlike EBMs, they avoid intractable $Z_\theta$ by focusing on gradients. The annealing ensures progressive refinement, mimicking diffusion models.
+
+Score-based models unify generative modeling with denoising, providing a principled way to handle noise in data. They are particularly effective for images, where noise corruption is a natural augmentation.
 
 \section{Implementation Overview}
 All code resides in \texttt{next\_year/CA3/codes/} and follows modular, DRY principles:
