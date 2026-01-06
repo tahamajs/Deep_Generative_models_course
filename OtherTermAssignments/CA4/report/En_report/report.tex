@@ -1372,10 +1372,10 @@ class DDPMScheduler:
         self.sqrt_one_minus_alphas_cumprod = torch.sqrt(
             1.0 - self.alphas_cumprod)
 \end{lstlisting}
-\end{tcolorbox}
+\end{solutionbox}
 
 \textbf{Step 2: \texttt{perturb\_input} Implementation}
-\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 2: perturb\_input Implementation]
+\begin{solutionbox}
     The forward process uses the reparameterization trick to add noise: $x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon$
     
 \begin{lstlisting}[language=Python]
@@ -1399,10 +1399,10 @@ def perturb_input(self, x_0, t, noise=None):
     
     return x_t, noise
 \end{lstlisting}
-\end{tcolorbox}
+\end{solutionbox}
 
 \textbf{Step 3: Training Loop Implementation}
-\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 3: Training Loop Implementation]
+\begin{solutionbox}
     The training loop samples random timesteps, adds noise using the forward process, predicts the noise with the U-Net, and minimizes the MSE loss.
     
 \begin{lstlisting}[language=Python]
@@ -1432,10 +1432,10 @@ def train_step(self, x_0):
     
     return loss.item()
 \end{lstlisting}
-\end{tcolorbox}
+\end{solutionbox}
 
 \textbf{Step 4: Sampling Implementation}
-\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 4: Sampling Implementation]
+\begin{solutionbox}
     DDPM sampling starts from pure Gaussian noise and iteratively denoises using the learned model. The update rule is: $x_{t-1} = \frac{1}{\sqrt{\alpha_t}}(x_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}}\epsilon_\theta) + \sigma_t z$
     
 \begin{lstlisting}[language=Python]
@@ -1473,10 +1473,10 @@ def sample(self, batch_size, img_size=(3, 32, 32)):
         
     return x
 \end{lstlisting}
-\end{tcolorbox}
+\end{solutionbox}
 
 	extbf{Step 5: Visual Results (DDPM vs DDIM)}
-\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Step 5: Visual Results (DDPM vs DDIM)]
+\begin{solutionbox}
     The following figures are exported directly from the notebook runs. DDPM uses many reverse steps (e.g., 1000) and is stochastic, while DDIM can use fewer steps (e.g., 50) and becomes deterministic for $\eta=0$. In practice, DDIM is much faster with only a small quality drop for moderate step counts.
 
     \begin{figure}[H]
@@ -3926,5 +3926,67 @@ If you want, I will now:
     \item Finish inserting remaining full-source `lstlisting` blocks into the appendix (complete code listings).
     \item Run a local LaTeX compile and fix any errors that appear.
 \end{enumerate}
+\clearpage
+\section{Appendix: Model Answers to Assignment Questions}
 
+\subsection{Question One -- Diffusion Models (Theory)}
+	extbf{Q1 (Closed-form marginal).} Given the forward step
+\[q(x_t\mid x_{t-1})=\mathcal{N}(x_t;\sqrt{\alpha_t}x_{t-1},(1-\alpha_t)I),\]
+the marginal after $t$ steps is
+\[x_t=\sqrt{\bar{\alpha}_t}x_0+\sqrt{1-\bar{\alpha}_t}\,\epsilon,\quad\epsilon\sim\mathcal{N}(0,I),\]
+with $\bar{\alpha}_t=\prod_{s=1}^t\alpha_s$. Proof (sketch): recursively substitute the one-step Gaussian, collecting means and variances; Gaussian composition gives the displayed mean and variance.
+
+	extbf{Q2 (Advantages of predicting noise $\epsilon$).}
+\begin{enumerate}
+    \item Predicting $\epsilon$ gives a target with fixed unit Gaussian scale across $t$, stabilizing optimization and removing dependence on data magnitude.
+    \item The noise-prediction objective reduces to a simple MSE with good empirical behavior and matches terms in the variational bound after reparameterization.
+\end{enumerate}
+
+	extbf{Q3 (VLB KL terms).}
+\begin{enumerate}
+    \item The KL terms force the learned reverse transitions to match the true posteriors $q(x_{t-1}\mid x_t,x_0)$, encouraging correct uncertainty and mean behavior for each step.
+    \item In practice the simplified $\epsilon$-prediction loss focuses learning on the dominant term and is empirically sufficient; many KL terms are small or can be subsumed by noise-prediction gradients, making optimization simpler.
+\end{enumerate}
+
+	extbf{Q4 (DDIM sampling).}
+\begin{enumerate}
+    \item DDIM becomes deterministic when the stochasticity parameter $\eta=0$ because the sampling update uses a deterministic mapping from $x_t$ to $x_{t-1}$ given the model prediction — no additional Gaussian noise is injected.
+    \item DDIM can use non-Markovian, deterministic updates that allow skipping intermediate steps while approximately preserving marginals, yielding high-quality samples in far fewer steps.
+\end{enumerate}
+
+	extbf{Q5 (Classifier-Free Guidance).}
+\begin{enumerate}
+    \item Classifier-Free Guidance trains a model that accepts an optional conditioning input; at inference it linearly combines unconditional and conditional model outputs: $\hat{\epsilon}=\epsilon_{\varnothing}+s(\epsilon_{y}-\epsilon_{\varnothing})$. It is "classifier-free" because it avoids training an external classifier for guidance.
+    \item Increasing the guidance scale $s$ typically increases fidelity to the condition (sharper adherence to prompt) but reduces diversity and may introduce artifacts if $s$ is too large.
+\end{enumerate}
+
+\subsection{Question One -- Diffusion Models (Practical)}
+Concise implementation checklist and notes:
+\begin{itemize}
+    \item Implement linear or cosine noise schedule for $\beta_t$; precompute $\alpha_t$ and $\bar{\alpha}_t$.
+    \item `perturb_input(x0,t)` using reparameterization: sample $\epsilon\sim\mathcal{N}(0,I)$ and return $x_t=\sqrt{\bar{\alpha}_t}x_0+\sqrt{1-\bar{\alpha}_t}\,\epsilon$ and $\epsilon$ as target.
+    \item Training loop: sample $t$, compute $x_t$ and predicted $\epsilon_{\theta}(x_t,t)$, minimize MSE to $\epsilon$.
+    \item Sampling (DDPM): iterate from $T$ to $1$, predict $\epsilon$, compute posterior mean and optionally add noise; for DDIM with $\eta=0$ use deterministic update.
+\end{itemize}
+
+\subsection{Question Two -- Flow Matching (Theory)}
+	extbf{Q1 (Vector field role).} The learned vector field $v_{\theta}(x,t)$ defines an instantaneous velocity that transports samples from the source distribution (noise) toward the data distribution along time-dependent trajectories; integrating this field yields a mapping from noise to data.
+
+	extbf{Q2 (Why linear paths?).} Linear interpolation $x_t=(1-t)x_0+t x_1$ is simple, analytically tractable, and yields a closed-form target velocity $(x_1-x_0)$ for training. It is not always optimal physically, but it provides a stable, low-variance objective and simplifies the loss.
+
+	extbf{Q3 (Loss rewriting).} Under denoising/score-matching derivations, the loss can be transformed into an expectation over $t$ and noisy intermediates with squared errors between model outputs and the target vector $(x_1-x_0)$ or score-scaled variants — see the text for detailed derivation reproduced from the Flow Matching paper.
+
+\subsection{Question Two -- Flow Matching (Practical)}
+Implementation checklist and sampling notes:
+\begin{itemize}
+    \item Prepare time-series dataset of log-returns, split chronologically, and standardize sequences.
+    \item Train $v_{\theta}$ with samples $(x_0\sim\mathcal{N},x_1\sim\text{data},t\sim U[0,1])$ minimizing \(\mathbb{E}[\|v_{\theta}(x_t,t)-(x_1-x_0)\|^2]\).
+    \item Sampling solves $dx/dt=v_{\theta}(x,t)$ from $t=0$ to $1$; the solver step count trades off fidelity and compute — more steps reduce discretization error but increase runtime.
+    \item Use Euler/Heun/RK4 integrators; report and plot effect of step count on generated sample quality (SWD, ACF MSE).
+\end{itemize}
+
+\subsection{Practical Evaluation and Reporting Notes}
+Include in the report: training and test loss curves, representative generated samples (normalized and denormalized), distribution comparisons (histograms/KDE), SWD values, autocorrelation comparisons, and numeric tables for mean/variance/volatility with short interpretation.
+
+\clearpage
 \end{document}
