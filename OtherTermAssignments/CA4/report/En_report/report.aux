@@ -5,31 +5,250 @@
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \babel@aux{english}{}
-\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{7}{section.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {2}Methodology}{7}{section.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}Question One: Diffusion Models}{7}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Part One: Theory Questions}{7}{subsection.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}Question 1: Closed Form Proof}{7}{subsubsection.3.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}Question 2: Advantage of Noise Prediction}{8}{subsubsection.3.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.3}Question 3: Cost Function Analysis (VLB)}{9}{subsubsection.3.1.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.4}Question 4: DDIM Sampling}{9}{subsubsection.3.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.5}Question 5: Classifier-Free Guidance (CFG)}{10}{subsubsection.3.1.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}Comprehensive Model Explanations}{11}{section.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Denoising Diffusion Probabilistic Models (DDPM)}{11}{subsection.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.1}Overview and Intuition}{11}{subsubsection.4.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.2}Mathematical Foundation}{11}{subsubsection.4.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.3}Network Architecture}{12}{subsubsection.4.1.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.4}Training Objective}{12}{subsubsection.4.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.5}Sampling Process}{12}{subsubsection.4.1.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.6}DDIM: Deterministic Variant}{12}{subsubsection.4.1.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Stable Diffusion and DreamBooth}{12}{subsection.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.1}Stable Diffusion Architecture}{12}{subsubsection.4.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.2}Diffusion in Latent Space}{13}{subsubsection.4.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.3}Text Conditioning}{13}{subsubsection.4.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.4}Classifier-Free Guidance (CFG)}{13}{subsubsection.4.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.5}DreamBooth: Personalization Technique}{13}{subsubsection.4.2.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.6}LoRA: Parameter-Efficient Fine-Tuning}{14}{subsubsection.4.2.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.7}DreamBooth Training Process}{14}{subsubsection.4.2.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.8}Inference with DreamBooth}{14}{subsubsection.4.2.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Flow Matching for Time Series Generation}{14}{subsection.4.3}\protected@file@percent }
-\@writefile{toc}{\conte
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{8}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Methodology}{8}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Question One: Diffusion Models}{8}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Part One: Theory Questions}{8}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}Question 1: Closed Form Proof}{8}{subsubsection.3.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.2}Question 2: Advantage of Noise Prediction}{9}{subsubsection.3.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.3}Question 3: Cost Function Analysis (VLB)}{10}{subsubsection.3.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.4}Question 4: DDIM Sampling}{10}{subsubsection.3.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.5}Question 5: Classifier-Free Guidance (CFG)}{11}{subsubsection.3.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Comprehensive Model Explanations}{12}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Denoising Diffusion Probabilistic Models (DDPM)}{12}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.1}Overview and Intuition}{12}{subsubsection.4.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.2}Mathematical Foundation}{12}{subsubsection.4.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.3}Network Architecture}{13}{subsubsection.4.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.4}Training Objective}{13}{subsubsection.4.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.5}Sampling Process}{13}{subsubsection.4.1.5}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}DDPM Sampling Algorithm}{13}{lstlisting.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.6}DDIM: Deterministic Variant}{13}{subsubsection.4.1.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Stable Diffusion and DreamBooth}{14}{subsection.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.1}Stable Diffusion Architecture}{14}{subsubsection.4.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.2}Diffusion in Latent Space}{14}{subsubsection.4.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.3}Text Conditioning}{14}{subsubsection.4.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.4}Classifier-Free Guidance (CFG)}{14}{subsubsection.4.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.5}DreamBooth: Personalization Technique}{14}{subsubsection.4.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.6}LoRA: Parameter-Efficient Fine-Tuning}{15}{subsubsection.4.2.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.7}DreamBooth Training Process}{15}{subsubsection.4.2.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.8}Inference with DreamBooth}{15}{subsubsection.4.2.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Flow Matching for Time Series Generation}{15}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.1}Overview}{15}{subsubsection.4.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.2}Mathematical Foundation}{15}{subsubsection.4.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.3}Linear Interpolation Paths}{16}{subsubsection.4.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.4}Network Architecture}{16}{subsubsection.4.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.5}Training Process}{16}{subsubsection.4.3.5}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}Flow Matching Training}{16}{lstlisting.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.6}Sampling via ODE Integration}{17}{subsubsection.4.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.7}Evaluation Metrics}{17}{subsubsection.4.3.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.3.8}Advantages over Diffusion Models}{17}{subsubsection.4.3.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Implementation Details and Architectures}{18}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Denoising Diffusion Probabilistic Models (DDPM)}{18}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.1}Architecture: U-Net for Noise Prediction}{18}{subsubsection.5.1.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces DDPM Training Parameters}}{21}{table.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.2}DDIM Sampling}{21}{subsubsection.5.1.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces DDIM Sampling Parameters}}{22}{table.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Stable Diffusion with DreamBooth}{22}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.1}Architecture Overview}{22}{subsubsection.5.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.2}DreamBooth Fine-tuning}{24}{subsubsection.5.2.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces DreamBooth Training Parameters}}{26}{table.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Flow Matching for Time Series Generation}{26}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.1}Conditional Flow Matching Theory}{26}{subsubsection.5.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.2}Transformer-based Flow Matching Architecture}{26}{subsubsection.5.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.3}Conditional Flow Matching Training}{28}{subsubsection.5.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.4}Time Series Dataset and Training}{29}{subsubsection.5.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.5}Sampling from Trained Flow}{30}{subsubsection.5.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.6}Data Preprocessing}{31}{subsubsection.5.3.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Flow Matching Training Parameters}}{31}{table.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Common Implementation Details}{31}{subsection.5.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.1}Training Infrastructure}{31}{subsubsection.5.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.4.2}Evaluation Metrics}{32}{subsubsection.5.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Part Two: Practical Questions}{33}{subsection.5.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.5.1}Subsection 1: DDPM and DDIM Implementation}{33}{subsubsection.5.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces DDPM samples (e.g., 1000 reverse steps).}}{35}{figure.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces DDIM samples (e.g., 50 inference steps, $\eta =0$).}}{35}{figure.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces DDPM training loss curve (noise-prediction MSE).}}{35}{figure.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.5.2}Subsection 2: Stable Diffusion and DreamBooth}{36}{subsubsection.5.5.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Example instance training image used for DreamBooth fine-tuning.}}{36}{figure.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces DreamBooth generations for prompts containing the identifier token (example prompt shown in caption).}}{38}{figure.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Question Two: Flow Matching and Time Series}{39}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Part One: Theory Questions}{39}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.1}Question 1: Vector Field}{39}{subsubsection.6.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.2}Question 2: Linear Paths}{39}{subsubsection.6.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {6.1.3}Question 3: Loss Function Proof}{40}{subsubsection.6.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Part Two: Practical Report & Evaluation}{42}{subsection.6.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Training vs Test Loss}}{42}{figure.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Generated Time Series Samples}}{43}{figure.7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Real (Test Set) vs Generated Data}}{43}{figure.8}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Log-Returns Distribution Comparison}}{43}{figure.9}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Statistical Metrics Comparison}}{44}{table.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Autocorrelation}}{44}{figure.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Part Two: Practical Report \& Evaluation}{45}{subsection.6.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Flow Matching Training Loss (Blue) vs Test Loss (Orange) over 50 Epochs.}}{45}{figure.11}\protected@file@percent }
+\newlabel{fig:fm_loss}{{11}{45}{Flow Matching Training Loss (Blue) vs Test Loss (Orange) over 50 Epochs}{figure.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Generated Time Series Samples. Top: Normalized Log-Returns. Bottom: Denormalized (Scale restored).}}{46}{figure.12}\protected@file@percent }
+\newlabel{fig:fm_samples}{{12}{46}{Generated Time Series Samples. Top: Normalized Log-Returns. Bottom: Denormalized (Scale restored)}{figure.12}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Qualitative Comparison. Top Row: Real Data. Middle Row: Generated Data. Bottom Row: Overlaid Comparison.}}{46}{figure.13}\protected@file@percent }
+\newlabel{fig:fm_qualitative}{{13}{46}{Qualitative Comparison. Top Row: Real Data. Middle Row: Generated Data. Bottom Row: Overlaid Comparison}{figure.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces Distribution Analysis. Histogram (Top-Left), KDE (Top-Right), Q-Q Plot (Bottom-Left), CDF (Bottom-Right).}}{48}{figure.14}\protected@file@percent }
+\newlabel{fig:fm_dist}{{14}{48}{Distribution Analysis. Histogram (Top-Left), KDE (Top-Right), Q-Q Plot (Bottom-Left), CDF (Bottom-Right)}{figure.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Statistical Metrics Comparison. Left: Mean/Variance. Middle: Volatility Distribution. Right: Higher-Order Moments.}}{48}{figure.15}\protected@file@percent }
+\newlabel{fig:fm_stats}{{15}{48}{Statistical Metrics Comparison. Left: Mean/Variance. Middle: Volatility Distribution. Right: Higher-Order Moments}{figure.15}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Statistical Moments Comparison}}{48}{table.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Advanced Evaluation. Left: Autocorrelation Function (ACF). Right: Evaluation Summary.}}{49}{figure.16}\protected@file@percent }
+\newlabel{fig:fm_advanced}{{16}{49}{Advanced Evaluation. Left: Autocorrelation Function (ACF). Right: Evaluation Summary}{figure.16}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}All Notebook Figures}{49}{appendix.A}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Step 1: Variance Scheduler - Linear Schedule (Cell 11, Output 2)}}{49}{figure.17}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Visualize Forward Diffusion Process (Cell 13, Output 2)}}{49}{figure.18}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces Dataset Preparation (Cell 22, Output 2)}}{49}{figure.19}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces Step 3: DDPM Training Loop (Cell 26, Output 42)}}{49}{figure.20}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces Step 4: DDPM and DDIM Sampling - DDPM Samples (Cell 34, Output 2)}}{50}{figure.21}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces Step 4: DDPM and DDIM Sampling - DDIM Samples (Cell 34, Output 4)}}{50}{figure.22}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces Step 4: DDPM and DDIM Sampling (Cell 36, Output 1)}}{50}{figure.23}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces Step 4: DDPM and DDIM Sampling (Cell 36, Output 2)}}{50}{figure.24}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces Step 5: Inference and Testing (Cell 49, Output 6)}}{50}{figure.25}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {26}{\ignorespaces Step 5: Inference and Testing (Cell 49, Output 9)}}{50}{figure.26}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {27}{\ignorespaces Step 5: Inference and Testing (Cell 49, Output 12)}}{50}{figure.27}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {28}{\ignorespaces Data Preparation (Cell 54, Output 2)}}{50}{figure.28}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {29}{\ignorespaces Flow Matching Training (Cell 64, Output 102)}}{50}{figure.29}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {30}{\ignorespaces Steps 4-5: Visualizing Generated Time Series (Cell 69, Output 2)}}{50}{figure.30}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {31}{\ignorespaces Steps 4-5: Visualizing Generated Time Series (Cell 69, Output 4)}}{50}{figure.31}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {32}{\ignorespaces Step 6: Distribution Comparison - Histogram KDE (Cell 71, Output 2)}}{51}{figure.32}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {33}{\ignorespaces Step 7: Basic Statistical Evaluation and Volatility (Cell 73, Output 2)}}{51}{figure.33}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {34}{\ignorespaces Step 8: Advanced Structural and Temporal Evaluation (Cell 80, Output 2)}}{51}{figure.34}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {35}{\ignorespaces Summary and Conclusion (Cell 85, Output 2)}}{51}{figure.35}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {A}Appendix: Mathematical Derivations and Frameworks}{52}{appendix.A}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}A. The Diffusion Model Framework}{52}{subsection.A.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {A.1.1}A.1 Forward Process (Markov Chain)}{52}{subsubsection.A.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {A.1.2}A.2 The Reverse Process (Generative Step)}{52}{subsubsection.A.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}B. Flow Matching Theory (The ODE Perspective)}{52}{subsection.A.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {A.2.1}B.1 Vector Fields and Probability Paths}{52}{subsubsection.A.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {A.2.2}B.2 Linear Conditional Paths}{52}{subsubsection.A.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}C. Advanced Statistical Evaluation Metrics}{53}{subsection.A.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}Practical Implementation: Diffusion Models}{54}{appendix.B}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.1}DDPM and DDIM Implementation}{54}{subsection.B.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.1.1}Noise Schedule and Forward Process}{54}{subsubsection.B.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.1.2}Forward Diffusion Process}{55}{subsubsection.B.1.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {36}{\ignorespaces Forward Diffusion Process Visualization: Progressive noise addition over 1000 timesteps on MNIST digits. Each column shows the same digit at different noise levels.}}{56}{figure.36}\protected@file@percent }
+\newlabel{fig:forward_process}{{36}{56}{Forward Diffusion Process Visualization: Progressive noise addition over 1000 timesteps on MNIST digits. Each column shows the same digit at different noise levels}{figure.36}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.1.3}U-Net Architecture for Noise Prediction}{56}{subsubsection.B.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.1.4}Training Implementation}{58}{subsubsection.B.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.1.5}DDPM Sampling}{59}{subsubsection.B.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.1.6}DDIM Sampling Implementation}{60}{subsubsection.B.1.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.1.7}Experimental Results and Analysis}{61}{subsubsection.B.1.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Quantitative comparison of DDPM and DDIM sampling on MNIST dataset. FID scores measure sample quality, lower is better.}}{61}{table.7}\protected@file@percent }
+\newlabel{tab:ddpm_ddim_comparison}{{7}{61}{Quantitative comparison of DDPM and DDIM sampling on MNIST dataset. FID scores measure sample quality, lower is better}{table.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {37}{\ignorespaces Sample quality comparison: DDPM (left) vs DDIM with 50 steps (right). DDIM maintains visual fidelity while being significantly faster.}}{63}{figure.37}\protected@file@percent }
+\newlabel{fig:ddpm_ddim_samples}{{37}{63}{Sample quality comparison: DDPM (left) vs DDIM with 50 steps (right). DDIM maintains visual fidelity while being significantly faster}{figure.37}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.2}Stable Diffusion with DreamBooth Fine-tuning}{63}{subsection.B.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.2.1}DreamBooth Dataset Implementation}{63}{subsubsection.B.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.2.2}LoRA Fine-tuning Implementation}{65}{subsubsection.B.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.2.3}Class Image Generation for Prior Preservation}{67}{subsubsection.B.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.2.4}DreamBooth Results and Analysis}{68}{subsubsection.B.2.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {38}{\ignorespaces DreamBooth fine-tuning results. Left: Original subject. Middle: Generated with instance prompt. Right: Generated with novel contexts.}}{68}{figure.38}\protected@file@percent }
+\newlabel{fig:dreambooth_results}{{38}{68}{DreamBooth fine-tuning results. Left: Original subject. Middle: Generated with instance prompt. Right: Generated with novel contexts}{figure.38}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces DreamBooth performance analysis across different guidance scales (scores out of 10, higher is better).}}{69}{table.8}\protected@file@percent }
+\newlabel{tab:dreambooth_analysis}{{8}{69}{DreamBooth performance analysis across different guidance scales (scores out of 10, higher is better)}{table.8}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.2.5}Ablation Study: Components of DreamBooth}{69}{subsubsection.B.2.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Ablation study comparing different DreamBooth implementation variants.}}{69}{table.9}\protected@file@percent }
+\newlabel{tab:dreambooth_ablation}{{9}{69}{Ablation study comparing different DreamBooth implementation variants}{table.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.3}Computational Considerations and Best Practices}{70}{subsection.B.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.3.1}Memory Optimization}{70}{subsubsection.B.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.3.2}Hyperparameter Tuning}{70}{subsubsection.B.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.3.3}Common Pitfalls and Solutions}{70}{subsubsection.B.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.4}Complete Code Flow Analysis}{70}{subsection.B.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.4.1}DDPM/DDIM Implementation Flow}{71}{subsubsection.B.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.4.2}Stable Diffusion with DreamBooth Flow}{72}{subsubsection.B.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.4.3}Flow Matching Implementation Flow}{73}{subsubsection.B.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {B.4.4}Overall Architecture and Data Flow}{74}{subsubsection.B.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {C}Appendix: Source Code}{75}{appendix.C}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.1}ddpm.py}{75}{subsection.C.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.2}Evaluation Metrics (Concise)}{87}{subsection.C.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.3}Reproducing Experiments - Quick Commands}{88}{subsection.C.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.4}Assignment Requirements Mapping}{88}{subsection.C.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.5}Submission Checklist}{89}{subsection.C.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.6}Quick Reproducibility Commands}{89}{subsection.C.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.7}Final Notes}{89}{subsection.C.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {D}Appendix: Comprehensive Mathematical Framework}{90}{appendix.D}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.1}Diffusion Models: Complete Mathematical Theory}{90}{subsection.D.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.1}Forward Process: Closed-Form Marginal Distribution}{90}{subsubsection.D.1.1}\protected@file@percent }
+\newlabel{eq:single_step}{{15}{90}{Forward Process: Closed-Form Marginal Distribution}{equation.15}{}}
+\newlabel{eq:reparam_t}{{16}{90}{Forward Process: Closed-Form Marginal Distribution}{equation.16}{}}
+\newlabel{eq:reparam_t_minus_1}{{17}{90}{Forward Process: Closed-Form Marginal Distribution}{equation.17}{}}
+\newlabel{eq:expanded_xt}{{19}{90}{Forward Process: Closed-Form Marginal Distribution}{equation.19}{}}
+\newlabel{eq:recursive_form}{{20}{90}{Forward Process: Closed-Form Marginal Distribution}{equation.20}{}}
+\newlabel{eq:variance_term}{{21}{90}{Forward Process: Closed-Form Marginal Distribution}{equation.21}{}}
+\newlabel{eq:total_variance}{{22}{90}{Forward Process: Closed-Form Marginal Distribution}{equation.22}{}}
+\newlabel{eq:marginal_closed_form}{{23}{90}{Forward Process: Closed-Form Marginal Distribution}{equation.23}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.2}Reverse Process: Variational Lower Bound}{91}{subsubsection.D.1.2}\protected@file@percent }
+\newlabel{eq:vlb_definition}{{24}{91}{Reverse Process: Variational Lower Bound}{equation.24}{}}
+\newlabel{eq:vlb_terms}{{28}{91}{Reverse Process: Variational Lower Bound}{equation.28}{}}
+\newlabel{eq:simple_loss}{{29}{91}{Reverse Process: Variational Lower Bound}{equation.29}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.3}DDIM: Deterministic Sampling}{91}{subsubsection.D.1.3}\protected@file@percent }
+\newlabel{eq:ddim_general}{{30}{91}{DDIM: Deterministic Sampling}{equation.30}{}}
+\newlabel{eq:ddim_epsilon_t}{{31}{91}{DDIM: Deterministic Sampling}{equation.31}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.4}Classifier-Free Guidance: Mathematical Foundation}{91}{subsubsection.D.1.4}\protected@file@percent }
+\newlabel{eq:conditional_score}{{32}{91}{Classifier-Free Guidance: Mathematical Foundation}{equation.32}{}}
+\newlabel{eq:cfg_formula}{{33}{91}{Classifier-Free Guidance: Mathematical Foundation}{equation.33}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.2}Flow Matching: Complete Mathematical Framework}{92}{subsection.D.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.2.1}Continuous-Time Flow Definition}{92}{subsubsection.D.2.1}\protected@file@percent }
+\newlabel{eq:flow_ode}{{34}{92}{Continuous-Time Flow Definition}{equation.34}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.2.2}Conditional Flow Matching Loss}{92}{subsubsection.D.2.2}\protected@file@percent }
+\newlabel{eq:conditional_path}{{35}{92}{Conditional Flow Matching Loss}{equation.35}{}}
+\newlabel{eq:conditional_velocity}{{36}{92}{Conditional Flow Matching Loss}{equation.36}{}}
+\newlabel{eq:cfm_loss}{{37}{92}{Conditional Flow Matching Loss}{equation.37}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.2.3}Connection to Denoising Score Matching}{92}{subsubsection.D.2.3}\protected@file@percent }
+\newlabel{eq:dsm_loss}{{38}{92}{Connection to Denoising Score Matching}{equation.38}{}}
+\newlabel{eq:score_linear}{{39}{92}{Connection to Denoising Score Matching}{equation.39}{}}
+\newlabel{eq:velocity_from_score}{{40}{92}{Connection to Denoising Score Matching}{equation.40}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.2.4}Optimal Transport Coupling}{92}{subsubsection.D.2.4}\protected@file@percent }
+\newlabel{eq:ot_cost}{{41}{92}{Optimal Transport Coupling}{equation.41}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.3}Stable Diffusion: Latent Space Mathematics}{93}{subsection.D.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.3.1}VAE Autoencoder in Latent Space}{93}{subsubsection.D.3.1}\protected@file@percent }
+\newlabel{eq:vae_encoder}{{42}{93}{VAE Autoencoder in Latent Space}{equation.42}{}}
+\newlabel{eq:vae_decoder}{{43}{93}{VAE Autoencoder in Latent Space}{equation.43}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.3.2}Diffusion in Latent Space}{93}{subsubsection.D.3.2}\protected@file@percent }
+\newlabel{eq:latent_diffusion}{{44}{93}{Diffusion in Latent Space}{equation.44}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.3.3}Cross-Attention Conditioning}{93}{subsubsection.D.3.3}\protected@file@percent }
+\newlabel{eq:cross_attention}{{45}{93}{Cross-Attention Conditioning}{equation.45}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.3.4}DreamBooth: Parameter-Efficient Fine-Tuning}{93}{subsubsection.D.3.4}\protected@file@percent }
+\newlabel{eq:lora_decomposition}{{46}{93}{DreamBooth: Parameter-Efficient Fine-Tuning}{equation.46}{}}
+\newlabel{eq:dreambooth_loss}{{47}{93}{DreamBooth: Parameter-Efficient Fine-Tuning}{equation.47}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.4}Evaluation Metrics: Mathematical Foundations}{93}{subsection.D.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.4.1}Sliced Wasserstein Distance}{93}{subsubsection.D.4.1}\protected@file@percent }
+\newlabel{eq:swd_definition}{{48}{93}{Sliced Wasserstein Distance}{equation.48}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.4.2}Autocorrelation Function}{93}{subsubsection.D.4.2}\protected@file@percent }
+\newlabel{eq:autocorrelation}{{49}{93}{Autocorrelation Function}{equation.49}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.4.3}Higher-Order Moments}{94}{subsubsection.D.4.3}\protected@file@percent }
+\newlabel{eq:skewness}{{50}{94}{Higher-Order Moments}{equation.50}{}}
+\newlabel{eq:kurtosis}{{51}{94}{Higher-Order Moments}{equation.51}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.5}Implementation Algorithms}{94}{subsection.D.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.5.1}DDPM Training Algorithm}{94}{subsubsection.D.5.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}DDPM Training Algorithm}{94}{lstlisting.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.5.2}Flow Matching Training Algorithm}{94}{subsubsection.D.5.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4}Flow Matching Training Algorithm}{94}{lstlisting.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.5.3}ODE Sampling Algorithm}{94}{subsubsection.D.5.3}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5}ODE Sampling Algorithm}{94}{lstlisting.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.6}Computational Complexity Analysis}{95}{subsection.D.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.6.1}Time Complexity}{95}{subsubsection.D.6.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Computational complexity comparison. $T$: diffusion steps, $C$: model complexity, $S$: sampling steps, $N$: ODE steps.}}{95}{table.10}\protected@file@percent }
+\newlabel{tab:complexity}{{10}{95}{Computational complexity comparison. $T$: diffusion steps, $C$: model complexity, $S$: sampling steps, $N$: ODE steps}{table.10}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.6.2}Space Complexity}{95}{subsubsection.D.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.7}Convergence Analysis}{95}{subsection.D.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.7.1}DDPM Convergence}{95}{subsubsection.D.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.7.2}Flow Matching Convergence}{95}{subsubsection.D.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.8}Practical Considerations and Best Practices}{95}{subsection.D.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.8.1}Hyperparameter Selection}{95}{subsubsection.D.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.8.2}Training Stability}{96}{subsubsection.D.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.8.3}Evaluation Best Practices}{96}{subsubsection.D.8.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {E}Appendix: Complete Source Code}{97}{appendix.E}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.1}DDPM Implementation}{97}{subsection.E.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.2}Flow Matching Implementation}{99}{subsection.E.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.3}Evaluation Metrics Implementation}{100}{subsection.E.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {F}Appendix: Model Answers to Assignment Questions}{102}{appendix.F}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.1}Question One -- Diffusion Models (Theory)}{102}{subsection.F.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.2}Question One -- Diffusion Models (Practical)}{103}{subsection.F.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.3}Question Two -- Flow Matching (Theory)}{103}{subsection.F.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.4}Question Two -- Flow Matching (Practical)}{103}{subsection.F.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {F.5}Originality Statement}{103}{subsection.F.5}\protected@file@percent }
+\gdef \@abspage@last{103}
