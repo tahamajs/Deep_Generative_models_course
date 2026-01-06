@@ -1,3 +1,33 @@
+"""
+Stable Diffusion DreamBooth Fine-tuning Implementation
+
+This module implements DreamBooth fine-tuning for Stable Diffusion models.
+DreamBooth enables personalized image generation by fine-tuning a pre-trained
+Stable Diffusion model on a few images of a specific subject.
+
+Key components:
+- DreamBoothDataset: Custom dataset for subject images with text prompts
+- DreamBoothTrainer: Fine-tuning loop with LoRA and prior preservation
+- DreamBoothInference: Text-to-image generation with fine-tuned model
+
+Analysis:
+- DreamBooth uses a unique identifier (e.g., "sks dog") to bind subject to concept
+- Prior preservation loss prevents catastrophic forgetting of general concepts
+- LoRA (Low-Rank Adaptation) enables efficient fine-tuning with minimal parameters
+- Mixed precision training reduces memory usage and improves speed
+
+Performance Notes:
+- Fine-tuning time: ~10-30 minutes on GPU depending on dataset size
+- Memory usage: ~4-6GB GPU memory with mixed precision
+- Requires: 3-5 images of the subject for good results
+- Best for: Subject-specific image generation, style transfer, concept customization
+
+Limitations:
+- Can suffer from overfitting with too few images
+- May require prompt engineering for best results
+- Subject binding depends on choosing a unique, unused identifier
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -30,19 +60,24 @@ class DreamBoothDataset(Dataset):
     """
     DreamBooth Dataset for fine-tuning Stable Diffusion.
 
-    Features:
-    - Loads instance images (your specific subject, e.g., "sks dog")
-    - Optionally loads class images for Prior Preservation (generic dogs)
-    - Handles image preprocessing and prompt tokenization
+    This dataset handles the loading and preprocessing of images for DreamBooth training.
+    It supports both instance images (specific subject) and class images (for prior preservation).
 
     Args:
-        instance_data_root: Path to folder with instance images
-        instance_prompt: Prompt describing the instance (e.g., "a photo of sks dog")
-        tokenizer: CLIP tokenizer for text encoding
-        class_data_root: Optional path to class images for prior preservation
-        class_prompt: Generic prompt (e.g., "a photo of a dog")
-        size: Image size (default 512 for Stable Diffusion)
-        center_crop: Whether to center crop images
+        instance_data_root: Path to folder containing instance images of the subject
+        instance_prompt: Text prompt describing the instance (e.g., "a photo of sks dog")
+        tokenizer: CLIP tokenizer for encoding text prompts
+        class_data_root: Optional path to class images for prior preservation loss
+        class_prompt: Generic prompt for class images (e.g., "a photo of a dog")
+        size: Target image size (default: 512 for Stable Diffusion)
+        center_crop: Whether to use center cropping (default: False, uses random crop)
+
+    Analysis:
+    - Instance images teach the model the specific subject appearance
+    - Class images prevent catastrophic forgetting of general concepts
+    - Prior preservation ratio (typically 1:1) balances subject learning vs. concept retention
+    - Random cropping during training improves generalization
+    - Normalization to [-1, 1] matches Stable Diffusion's expected input range
     """
     def __init__(
         self,

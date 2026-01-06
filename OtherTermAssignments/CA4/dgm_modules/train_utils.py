@@ -21,11 +21,28 @@ def train_loop(model, dataloader, optimizer, device, epochs=1, save_path=None):
             p.parent.mkdir(parents=True, exist_ok=True)
             torch.save(model.state_dict(), str(p))
 
-def save_checkpoint(model, path):
-    import torch
+def visualize_denoising_process(intermediates, title="Denoising Process"):
+    """Visualize the progressive denoising."""
+    import matplotlib.pyplot as plt
+    import numpy as np
     from pathlib import Path
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), path)
+
+    n_steps = min(len(intermediates), 10)
+    fig, axes = plt.subplots(1, n_steps, figsize=(2 * n_steps, 2))
+
+    step_indices = np.linspace(0, len(intermediates) - 1, n_steps, dtype=int)
+
+    for idx, step_idx in enumerate(step_indices):
+        img = intermediates[step_idx][0].permute(1, 2, 0).cpu().numpy()
+        img = (img + 1) / 2
+        img = np.clip(img, 0, 1)
+        axes[idx].imshow(img)
+        axes[idx].axis('off')
+        axes[idx].set_title(f'Step {step_idx}')
+
+    plt.suptitle(title)
+    plt.tight_layout()
+    plt.show()
 
 
 def visualize_samples(samples, title="Generated Samples", save_path=None):
