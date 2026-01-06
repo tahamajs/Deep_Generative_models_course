@@ -42,7 +42,7 @@ We begin with a comprehensive theoretical exposition, followed by detailed imple
 Generative models have revolutionized fields like computer vision and natural language processing. EBMs, with their roots in statistical physics, provide interpretable energy landscapes, while score-based models leverage noise perturbation for scalable training. By implementing both on MNIST, we gain insights into their complementary strengths: EBMs excel in flexible sampling strategies, whereas score-based models offer sharper, more controllable outputs. This work bridges theory and practice, equipping readers with tools for real-world generative tasks.
 
 \subsection{Report Structure}
-The report is organized as follows: Section 2 answers all HW3 questions in detail. Section 3 covers background theory. Section 4 details implementations. Section 5 presents experiments and results. Section 6 discusses related work. Section 7 compares the models. Section 8 outlines limitations and future directions. Section 9 concludes with key takeaways.
+The report is organized as follows: Section 2 answers all HW3 questions in detail. Section 3 covers background theory. Section 4 details implementations. Section 5 presents experiments and results. Section 6 compares the models. Section 7 discusses related work. Section 8 outlines limitations and future directions. Section 9 concludes with key takeaways.
 
 \section{Answering Assignment Questions}
 This section provides complete and detailed answers to all questions from the HW3 specification.
@@ -342,6 +342,18 @@ This section provides a direct comparison of EBMs and NCSNs based on our experim
 - **NCSNs:** Higher training cost (multiple noise levels), but sampling can be efficient with ALD.
 - **Comparison:** EBMs are cheaper to train; NCSNs balance cost with quality.
 
+\subsection{Quality vs. Cost}
+EBM sampling requires more Langevin steps (e.g., 100-200) for decent quality, leading to slower inference than NCSN's ALD (150 steps total across levels). NCSN samples are sharper with fewer effective steps.
+
+\subsection{Stability}
+NCSNs are less sensitive to hyperparameters like learning rate; EBMs require careful tuning of $\lambda$ and step sizes.
+
+\subsection{Mode Coverage}
+Both avoid severe mode collapse on MNIST, but EBMs show more diversity, while NCSNs focus on fidelity.
+
+\subsection{Theoretical Connections}
+NCSNs learn gradients of an implicit energy function, unifying with EBMs via $s(x) = -\nabla f(x)$.
+
 \subsection{Overall Suitability}
 EBMs are ideal for scenarios needing flexible, MCMC-based sampling without normalization concerns. NCSNs are preferable for high-quality, controllable generation and robust denoising. For MNIST, NCSNs provide better results, but EBMs offer valuable insights into energy landscapes.
 
@@ -363,23 +375,12 @@ An EBM defines
 \end{equation}
 Here, $f_\theta(x)$ is the energy function, parameterized by a neural network. Lower energy corresponds to higher probability. The partition function $Z_\theta$ normalizes the distribution but is intractable for high-dimensional $x$.
 
-The log-likelihood over data $\{x_i\}_{i=1}^N$ is
-\begin{equation}
-    \mathcal{L}(\theta) = \frac{1}{N} \sum_{i=1}^N \log p_\theta(x_i) = -\frac{1}{N} \sum_{i=1}^N f_\theta(x_i) - \log Z_\theta.
-\end{equation}
-Maximizing this is equivalent to minimizing the energy on data while ensuring the model distribution matches the data distribution.
+\subsubsection{EBM Foundations}
+The partition function $Z_\theta$ is the integral over all possible $x$, making it computationally infeasible for complex distributions. This intractability prevents direct normalization and sampling.
 
-The gradient decomposes into data and model expectations:
-\begin{equation}
-    \nabla_\theta \mathcal{L}(\theta) = - \mathbb{E}_{x \sim p_{\text{data}}}[\nabla_\theta f_\theta(x)] + \mathbb{E}_{x \sim p_\theta}[\nabla_\theta f_\theta(x)].
-\end{equation}
-The first term pushes down energy on real data; the second term (model expectation) is intractable.
+The log-likelihood is $\mathcal{L}(\theta) = \mathbb{E}_{x \sim p_{\text{data}}} [\log p_\theta(x)] = \mathbb{E}_{x \sim p_{\text{data}}} [-f_\theta(x) - \log Z_\theta]$. Maximizing this via MLE leads to the gradient $\nabla_\theta \mathcal{L} = -\mathbb{E}_{p_{\text{data}}} [\nabla_\theta f_\theta(x)] + \mathbb{E}_{p_\theta} [\nabla_\theta f_\theta(x)]$.
 
-Exact sampling from $p_\theta$ is impossible due to $Z_\theta$, so we use MCMC like Langevin dynamics. The loss used is contrastive divergence:
-\begin{equation}
-    \mathcal{L}_{\text{CD}} = \mathbb{E}_{x \sim p_{\text{data}}}[f_\theta(x)] - \mathbb{E}_{\tilde{x} \sim q_\theta} [f_\theta(\tilde{x})] + \lambda \, \mathbb{E}[f_\theta(x)^2 + f_\theta(\tilde{x})^2],
-\end{equation}
-where $q_\theta$ approximates $p_\theta$ with short MCMC chains, and $\lambda$ regularizes to prevent energy explosion.
+Contrastive Divergence approximates the model expectation with short MCMC samples $\tilde{x} \sim q_\theta$, yielding $\nabla_\theta \mathcal{L} \approx -\mathbb{E}_{p_{\text{data}}} [\nabla_\theta f_\theta(x)] + \mathbb{E}_{q_\theta} [\nabla_\theta f_\theta(\tilde{x})]$. The positive phase lowers energy on data, the negative phase raises energy on generated samples.
 
 \subsubsection{Langevin Dynamics}
 To sample from $p_\theta \propto \exp(-f_\theta(x))$, we use Langevin MCMC:
@@ -398,6 +399,13 @@ For a density $p(x)$, the score is $s(x) = \nabla_x \log p(x)$. Score matching m
     J(\theta) = \frac{1}{2} \int p_{\text{data}}(x) \|\nabla_x \log p_\theta(x) - \nabla_x \log p_{\text{data}}(x)\|_2^2 \, dx.
 \end{equation}
 This requires knowing $p_{\text{data}}$, which we don't. Denoising Score Matching (DSM) perturbs data with noise and matches scores of the noisy distribution.
+
+\subsubsection{Score-Based Foundations}
+The score relates to energy as $s(x) = -\nabla_x f(x)$ for EBMs. DSM perturbs $x$ to $\tilde{x} = x + \sigma \epsilon$, where the noisy score is $\nabla_{\tilde{x}} \log p_\sigma(\tilde{x}) = -\epsilon / \sigma$. Minimizing $\mathbb{E} \frac{1}{2} \| s_\theta(\tilde{x}, \sigma) + \epsilon / \sigma \|^2$ matches this, avoiding the Hessian trace in original score matching.
+
+The manifold hypothesis posits data lies on low-dimensional manifolds in high-dimensional space, leaving empty regions with undefined scores. Noise perturbation fills these, enabling learning.
+
+Annealed Langevin Dynamics anneals from high noise ($\sigma_L = 30$) to low ($\sigma_1 = 0.01$), reversing diffusion for generation.
 
 Perturb data: $\tilde{x} = x + \sigma \epsilon$, $\epsilon \sim \mathcal{N}(0,I)$. The score of the noisy density $p_\sigma(\tilde{x}) = \int p_{\text{data}}(x) \mathcal{N}(\tilde{x}; x, \sigma^2 I) \, dx$ is
 \begin{equation}
@@ -433,6 +441,49 @@ All code resides in \texttt{next\_year/CA3/codes/} and follows modular, DRY prin
     \item \texttt{ncsn\_model.py}, \texttt{ncsn\_loss.py}, \texttt{ncsn\_sampling.py}, \texttt{ncsn\_train.py}, \texttt{ncsn\_infer.py}: Score network, DSM loss, ALD sampler, training loop (unconditional and conditional), and inference utilities.
     \item \texttt{utils.py}: Seeding, directory helpers, and grid saving.
 \end{itemize}
+
+\subsection{EBM Specifics}
+\subsubsection{Architecture Diagram/Table}
+The EBM uses a convolutional neural network as shown in Table 1, with layers: Conv2d, LeakyReLU(0.2), downsampling via Conv2d with stride 2, AdaptiveAvgPool2d, Flatten, and Linear to scalar energy.
+
+\subsubsection{Langevin Dynamics Algorithm}
+Pseudocode for sampling:
+\begin{verbatim}
+def langevin_sample(x_init, energy_fn, steps=60, step_size=0.1):
+    x = x_init
+    for _ in range(steps):
+        grad = energy_fn.grad(x)
+        noise = torch.randn_like(x) * sqrt(step_size)
+        x = x - 0.5 * step_size * grad + noise
+        x = torch.clamp(x, 0, 1)
+    return x
+\end{verbatim}
+
+\subsubsection{Replay Buffer}
+No replay buffer was used for MNIST, as short MCMC chains suffice for mixing in this low-dimensional space.
+
+\subsection{NCSN Specifics}
+\subsubsection{U-Net Architecture}
+The ScoreNet is a U-Net with encoder-decoder, AdaptiveResBlocks (Conv + GroupNorm + SiLU), skip connections via concatenation after upsampling.
+
+\subsubsection{Noise Schedule}
+Geometric progression: $\sigma_i = 30 \times (0.01 / 30)^{i/10}$ for $i=1$ to 10.
+
+\subsubsection{Conditional Injection}
+Class embedding: `nn.Embedding(10, 256)`, summed with noise embedding before FiLM in AdaptiveResBlocks.
+
+\subsubsection{ALD Algorithm}
+Pseudocode:
+\begin{verbatim}
+def annealed_langevin_dynamics(x, score_fn, sigmas, steps_per_level=150):
+    for sigma in reversed(sigmas):
+        step_size = (sigma / sigmas[0])**2 * 2e-5
+        for _ in range(steps_per_level):
+            score = score_fn(x, sigma)
+            noise = torch.randn_like(x) * sqrt(2 * step_size)
+            x = x + step_size * score + noise
+    return x
+\end{verbatim}
 
 \section{Architecture Specifications}
 \subsection{EBM CNN (Table from HW)}
@@ -891,6 +942,20 @@ def annealed_langevin_dynamics(
 \section{Ethical Considerations}
 Although MNIST is benign, generative models can be misused. This work focuses on educational purposes; no personal data is involved. Future applications must consider fairness and misuse risks.
 
+\section{Limitations and Future Work}
+\subsection{Limitations}
+- **EBMs:** Sampling inefficiency due to MCMC; short chains lead to mode collapse or blurriness. Training instability without proper regularization.
+- **NCSNs:** High computational cost from multiple noise levels; sensitive to sigma scheduling. Conditional models require labeled data.
+- **General:** Both struggle with high-dimensional data beyond MNIST; evaluation is qualitative, lacking quantitative metrics like FID.
+- **Dataset:** MNIST is simple; results may not generalize to complex distributions.
+
+\subsection{Future Directions}
+- **Hybrid Models:** Combine EBM energies with score-based sampling for faster, higher-quality generation.
+- **Accelerated Sampling:** Implement consistency models or distilled samplers for one-step generation.
+- **Scalability:** Extend to larger datasets like CIFAR-10 or ImageNet with hierarchical architectures.
+- **Evaluation:** Add quantitative metrics (e.g., Inception Score, FID) and user studies for perceptual quality.
+- **Applications:** Explore in drug discovery, anomaly detection, or creative AI with ethical safeguards.
+
 \section{Conclusion}
 We implemented and analyzed EBMs and NCSNs on MNIST per HW3 guidelines. EBMs learn an energy landscape optimized with contrastive divergence, while NCSNs learn multiscale scores enabling sharp sampling and effective denoising. Conditional NCSN improves class fidelity. The provided codebase is modular, reproducible, and paired with this comprehensive IEEE-format report.
 
@@ -900,6 +965,56 @@ In summary, this work demonstrates the practical implementation of two foundatio
 We acknowledge the contributions of the PyTorch team for the deep learning framework, and the original authors of the papers on EBMs and score-based models for their foundational work. This implementation builds upon open-source codebases and assignment specifications.
 
 \appendices
+
+\section{Code Snippets}
+
+\subsection{Langevin Sampling Function}
+\begin{verbatim}
+def langevin_sample(x, energy_fn, steps=60, step_size=0.1):
+    for _ in range(steps):
+        grad = torch.autograd.grad(energy_fn(x).sum(), x)[0]
+        noise = torch.randn_like(x) * (step_size ** 0.5)
+        x = x - 0.5 * step_size * grad + noise
+        x = torch.clamp(x, 0, 1)
+    return x
+\end{verbatim}
+
+\subsection{DSM Loss Function}
+\begin{verbatim}
+def dsm_loss(score_net, x, sigma, eps):
+    pred_score = score_net(x, sigma)
+    target_score = -eps / sigma
+    loss = 0.5 * sigma**2 * torch.mean((pred_score - target_score)**2)
+    return loss
+\end{verbatim}
+
+\section{Consolidated Hyperparameter Table}
+\begin{table}[H]
+\centering
+\caption{All hyperparameters used in experiments.}
+\label{tab:all_hyperparams}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Component & Parameter & Value & Description \\
+\midrule
+EBM & epochs & 10 & Training epochs \\
+EBM & lr & 2e-4 & Learning rate \\
+EBM & $\lambda$ & 1e-3 & Regularization strength \\
+EBM & Langevin steps & 60 & MCMC steps per batch \\
+EBM & step size & 0.1 & Langevin step size \\
+NCSN & epochs & 30 & Training epochs \\
+NCSN & lr & 2e-4 & Learning rate \\
+NCSN & batch size & 64 & Batch size \\
+NCSN & levels L & 10 & Noise levels \\
+NCSN & $\sigma_{\max}$ & 30.0 & Max noise \\
+NCSN & $\sigma_{\min}$ & 0.01 & Min noise \\
+NCSN & ALD steps/level & 150 & Steps per level \\
+NCSN & ALD step size & 2e-5 & Base step size \\
+General & seed & 42 & Random seed \\
+General & device & auto & CPU/GPU \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Derivation: Contrastive Divergence Gradient}
 Starting from
