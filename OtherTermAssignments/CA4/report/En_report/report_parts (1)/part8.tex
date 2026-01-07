@@ -1,0 +1,246 @@
+
+%%
+%% Part 8 - Appendices and Supplementary Material
+%%
+%% This final part compiles supplementary material referenced throughout
+%% the report.  It includes placeholders for figures exported from
+%% notebooks, comprehensive mathematical derivations, pseudocode for
+%% algorithms, evaluation metric definitions, how-to-run instructions
+%% and reproducibility guidelines.  These appendices preserve all
+%% details from the original assignment while organising them in a
+%% coherent structure.
+
+\section{Notebook Figures}
+
+During the execution of our experiments we generated numerous figures
+illustrating intermediate results, training curves and sample grids.
+Due to space constraints in the main text, these images are gathered
+here.  Each figure is labelled with its original notebook cell
+number for traceability.  Where applicable, placeholders indicate
+where to insert the actual graphic files.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.9\linewidth}{\centering
+    \textit{Figure Placeholder:}\newline
+    Variance Scheduler – Linear Schedule (Cell 11, Output 2).}}
+  \caption{Variance scheduler visualisation.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.9\linewidth}{\centering
+    \textit{Figure Placeholder:}\newline
+    Visualise Forward Diffusion Process (Cell 13, Output 2).}}
+  \caption{Forward diffusion process on a sample digit.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.9\linewidth}{\centering
+    \textit{Figure Placeholder:}\newline
+    Additional dataset preparation visualisations.}}
+  \caption{Dataset preparation steps.}
+\end{figure}
+
+The above placeholders correspond to figures that would be included
+using \texttt{\includegraphics} or a similar command.  When
+compiling this report with access to the image files, replace each
+placeholder with the appropriate image file names.
+
+\section{Mathematical Derivations}
+
+\subsection{Marginal Distribution of the Forward Process}
+
+We derive the closed-form expression for the marginal distribution
+$q(x_t\mid x_0)$ used in diffusion models.  Starting with
+\(x_t = \sqrt{\alpha_t}x_{t-1} + \sqrt{1-\alpha_t}\,\epsilon_{t-1}\),
+we expand recursively and collect terms to arrive at
+\(x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon\).
+This derivation is fully presented in Part~2; here we recall the
+important steps and emphasise the independence of noise terms.
+
+\subsection{Variational Lower Bound Decomposition}
+
+The variational lower bound (VLB) on the log-likelihood decomposes as
+\begin{equation}
+  L_{\mathrm{VLB}} = L_0 + \sum_{t=1}^{T-1} L_t + L_T,
+\end{equation}
+where
+\begin{align}
+  L_0 &= \mathbb{E}_{q}\bigl[\log p_\theta(x_0\mid x_1)\bigr],\\
+  L_t &= \mathbb{E}_{q}\bigl[D_{\text{KL}}\bigl(q(x_{t-1}\mid x_t,x_0)\| p_\theta(x_{t-1}\mid x_t)\bigr)\bigr],\\
+  L_T &= \mathbb{E}_{q}\bigl[D_{\text{KL}}\bigl(q(x_T\mid x_0)\| p(x_T)\bigr)\bigr].
+\end{align}
+The KL terms encourage the learned reverse transitions to match the
+true posteriors.  In practice they reduce to weighted MSE terms as
+explained earlier.
+
+\subsection{Score Matching and Flow Matching}
+
+We show how the score matching objective in denoising score matching
+reduces to the Flow Matching velocity regression.  For a Gaussian
+perturbation kernel, the score satisfies
+\(\nabla_{x_t}\log q(x_t\mid x_0) = (x_0 - x_t)/\sigma_t^2\).  By
+choosing variance schedules such that $\sigma_t^2 = t(1-t)\sigma^2$ and
+introducing a conditioning on a target sample $x_1$, we obtain a
+constant velocity field equal to $x_1 - x_0$ along linear paths.  This
+identifies the regression target used in Flow Matching.
+
+\section{Algorithms and Pseudocode}
+
+For completeness, we reproduce the pseudocode for training and
+sampling algorithms discussed in previous chapters.  These snippets
+can be used as templates when implementing the models from scratch.
+
+\subsection{DDPM Training Loop}
+
+\begin{lstlisting}[language=Python, caption=DDPM Training Pseudocode]
+for each batch x0 in dataloader:
+    t = random integer in [0, T)
+    noise = standard normal
+    xt = sqrt(alpha_bar_t[t]) * x0 + sqrt(1 - alpha_bar_t[t]) * noise
+    noise_pred = unet(xt, t)
+    loss = mse(noise_pred, noise)
+    backpropagate and update parameters
+\end{lstlisting}
+
+\subsection{DDIM Sampling Loop}
+
+\begin{lstlisting}[language=Python, caption=DDIM Sampling Pseudocode]
+x = standard normal
+for t in reversed(selected_timesteps):
+    noise_pred = unet(x, t)
+    alpha_bar_t = scheduler.alphas_cumprod[t]
+    alpha_bar_prev = scheduler.alphas_cumprod[t_prev] if t_prev else 1
+    pred_x0 = (x - sqrt(1 - alpha_bar_t) * noise_pred) / sqrt(alpha_bar_t)
+    direction = sqrt(1 - alpha_bar_prev - eta**2 * (1 - alpha_bar_t/alpha_bar_prev)) * noise_pred
+    noise = 0 if eta == 0 else standard normal
+    x = sqrt(alpha_bar_prev) * pred_x0 + direction + eta * noise
+\end{lstlisting}
+
+\subsection{Flow Matching Training and Sampling}
+
+\begin{lstlisting}[language=Python, caption=Flow Matching Training]
+for each batch in dataloader:
+    x1 = sample data
+    x0 = sample noise
+    t = random uniform in [0,1]
+    xt = (1 - t) * x0 + t * x1
+    target_velocity = x1 - x0
+    pred_velocity = model(xt, t)
+    loss = mse(pred_velocity, target_velocity)
+    backpropagate and update parameters
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption=Flow Matching Sampling]
+x = sample noise
+for i in range(num_steps):
+    t = i / num_steps
+    v = model(x, t)
+    x = x + v * (1/num_steps)
+return x
+\end{lstlisting}
+
+\section{Evaluation Metrics Definitions}
+
+For reference, we formally define the evaluation metrics used in
+this report.
+
+\paragraph{Sliced Wasserstein Distance.}  The SWD between two
+probability measures $\mu$ and $\nu$ in $\mathbb{R}^d$ is
+\begin{equation}
+  \mathrm{SWD}(\mu,\nu) = \mathbb{E}_{\theta\sim \mathrm{Uniform}(S^{d-1})}
+  \bigl[W_1\bigl(\langle \theta,\mu\rangle, \langle \theta,\nu\rangle\bigr)\bigr],
+\end{equation}
+where $W_1$ is the one-dimensional Wasserstein distance and
+$\langle\theta,\cdot\rangle$ denotes projection onto the unit vector
+$\theta$.
+
+\paragraph{Autocorrelation Function (ACF).}  For a time series
+$\{x_t\}$ with mean $\bar{x}$ and variance $\sigma^2$, the ACF at lag
+$k$ is
+\begin{equation}
+  \rho(k) = \frac{\sum_{t=1}^{T-k} (x_t - \bar{x})(x_{t+k} - \bar{x})}{\sum_{t=1}^T (x_t - \bar{x})^2}.
+\end{equation}
+
+\paragraph{Skewness and Kurtosis.}  The skewness and kurtosis of a
+random variable $X$ with mean $\mu$ and standard deviation $\sigma$ are
+\begin{align}
+  \gamma_1 &= \frac{\mathbb{E}[(X-\mu)^3]}{\sigma^3},\\
+  \gamma_2 &= \frac{\mathbb{E}[(X-\mu)^4]}{\sigma^4} - 3.
+\end{align}
+
+\section{How to Run the Code}
+
+To reproduce the experiments, follow these steps:
+
+\begin{enumerate}[label=\arabic*., leftmargin=2em]
+  \item Install the required Python packages listed in the
+    accompanying \texttt{requirements.txt} using pip or conda.
+  \item Navigate to the \texttt{code/} directory of the repository.
+  \item Train the diffusion model by running \texttt{python run\_ddpm.py}.
+  \item Train the Flow Matching model by running
+    \texttt{python run\_flow\_matching.py}.
+  \item (Optional) Run \texttt{python run\_stable\_diffusion.py} to
+    fine-tune Stable Diffusion via DreamBooth.
+  \item Compile this report using \LaTeX{} with
+    \texttt{pdflatex main.tex}.
+\end{enumerate}
+
+Make sure you have a CUDA-capable GPU for efficient training.  Set the
+random seed for reproducibility if needed.
+
+\section{Assignment Specification Mapping}
+
+Table~\ref{tab:assignmentmap} maps the content of this report to the
+requirements of the original assignment.  Each row lists a requirement
+and the corresponding section or part where it is satisfied.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{p{0.45\linewidth}p{0.45\linewidth}}
+    \toprule
+    Assignment Requirement & Location in Report \\
+    \midrule
+    Derive closed-form $q(x_t\mid x_0)$ & Part~2, Section 2.1 \\
+    Discuss noise prediction vs mean & Part~2, Section 2.2 \\
+    Explain VLB terms & Part~2, Section 2.3 \\
+    Describe DDIM sampling & Part~2, Section 2.4 \\
+    Explain classifier-free guidance & Part~2, Section 2.5 \\
+    U-Net architecture details & Part~3, Section 3.1 \\
+    Implement variance schedule & Part~3, Section 3.2 \\
+    Implement training loop & Part~3, Section 3.3 \\
+    Implement sampling & Part~3, Section 3.4 \\
+    Present visual results & Part~3, Section 3.5 \\
+    Describe Stable Diffusion and DreamBooth & Part~4 \\
+    Vector field role & Part~5, Section 5.1 \\
+    Linear path justification & Part~5, Section 5.2 \\
+    Loss derivation & Part~5, Section 5.3 \\
+    Implement Flow Matching & Part~6 \\
+    Evaluation and metrics & Parts~6 and 7 \\
+    Appendices, pseudocode and metrics & Part~8 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Mapping of assignment requirements to report sections.}
+  \label{tab:assignmentmap}
+\end{table}
+
+\section{Originality Statement}
+
+I hereby declare that this work is original and that all sources have
+been properly cited.  The implementations are based on the referenced
+papers, with appropriate modifications for the specific assignment
+requirements.  All code was written by the author unless otherwise
+noted.
+
+\section{Contact Information}
+
+For questions or feedback, please contact the assignment organisers at
+\href{mailto:mollahoseini@ut.ac.ir}{mollahoseini@ut.ac.ir} or
+\href{mailto:fatemehnadir@gmail.com}{fatemehnadir@gmail.com}.
+
+\section{End of Report}
+
+This concludes the appendices and the report as a whole.  Thank you
+for reading.

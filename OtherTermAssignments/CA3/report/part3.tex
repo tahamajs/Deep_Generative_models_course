@@ -1,0 +1,248 @@
+% Part 3 – Implementation of Energy–Based Models
+
+% ---------------------------------------------------------------------------
+% This section provides a detailed account of how the energy–based model (EBM)
+% described in the theory part was implemented.  We follow the assignment
+% specification closely while making practical design choices to ensure
+% stability and reproducibility.  The presentation covers data loading,
+% architecture design, the training loop and Langevin sampling, and discusses
+% hyperparameters and logging.  Where appropriate we include code excerpts to
+% make the implementation concrete and reproducible.  Readers who are
+% primarily interested in the empirical behaviour of the model may wish to
+% skim this section and proceed to Part 4 for results and analysis.
+
+\section{Energy--Based Models: Implementation}
+
+\subsection{Data Preparation and Visualisation}
+
+We employ the MNIST dataset, which comprises $60{,}000$ training images and
+$10{,}000$ test images of handwritten digits, each of size $28\times 28$
+pixels.  To prepare the data for the EBM we use the following steps:
+
+\begin{enumerate}[leftmargin=*,label=\arabic*.]
+  \item \textbf{Download and split.}  We utilise the \texttt{torchvision}
+    library to download the training and test splits separately.  The
+    \texttt{MNIST} class handles downloading, integrity checking, and
+    caching of the data.
+  \item \textbf{Transform to tensors.}  Each image is converted to a
+    PyTorch tensor of shape $1\times 28\times 28$ via the
+    \texttt{ToTensor} transform, which maps pixel values from the range
+    $[0,255]$ to $[0,1]$.  We do not perform any mean subtraction or
+    standardisation at this stage because the EBM is defined directly on
+    unnormalised pixel intensities.  (In contrast, the score–based model in
+    Part~6 normalises images to $[-1,1]$.)
+  \item \textbf{Create data loaders.}  We wrap the training and test
+    datasets in \texttt{DataLoader} objects with a batch size of 64, enabling
+    efficient mini–batch gradient computation.  The training loader is set
+    to shuffle the data at every epoch to avoid ordering biases, and
+    \texttt{pin\_memory} is enabled for faster CPU–to–GPU transfers when a
+    GPU is available.
+  \item \textbf{Visualise examples.}  A small helper function uses
+    \texttt{matplotlib} to display a grid of images from a batch.  In our
+    experiments we show an $8\times 2$ grid of random training examples and
+    a similar grid for test examples.  This step serves as a sanity check
+    before training to ensure that data loading is functioning correctly.
+\end{enumerate}
+
+\subsection{Network Architecture}
+
+The EBM must map an image $\mathbf{x}\in\mathbb{R}^{1\times 28\times 28}$
+to a scalar energy $E_\theta(\mathbf{x})$.  The architecture we adopted
+follows Table~\ref{tab:ebm-arch} from the assignment instructions.  For
+convenience we reproduce the table below and comment on each layer.
+
+\begin{table}[H]
+    \centering
+    \caption{Convolutional architecture used for the MNIST energy–based model.}
+    \label{tab:ebm-arch}
+    \begin{tabular}{cll}
+        \toprule
+        \# & Layer configuration & Output shape \\
+        \midrule
+        0 & Input & $\bigl(B,1,28,28\bigr)$ \\
+        1 & Conv$2$D$(1\to 32,\,k=3,\,s=1,\,p=1)$ + LeakyReLU$(0.2)$ & $\bigl(B,32,28,28\bigr)$ \\
+        2 & Conv$2$D$(32\to 32,\,k=4,\,s=2,\,p=1)$ + LeakyReLU$(0.2)$ & $\bigl(B,32,14,14\bigr)$ \\
+        3 & Conv$2$D$(32\to 64,\,k=3,\,s=1,\,p=1)$ + LeakyReLU$(0.2)$ & $\bigl(B,64,14,14\bigr)$ \\
+        4 & Conv$2$D$(64\to 64,\,k=4,\,s=2,\,p=1)$ + LeakyReLU$(0.2)$ & $\bigl(B,64,7,7\bigr)$ \\
+        5 & Conv$2$D$(64\to 128,\,k=3,\,s=1,\,p=1)$ + LeakyReLU$(0.2)$ & $\bigl(B,128,7,7\bigr)$ \\
+        6 & AdaptiveAvgPool$2$D$(\text{output\_size}=1)$ & $\bigl(B,128,1,1\bigr)$ \\
+        7 & Flatten & $\bigl(B,128\bigr)$ \\
+        8 & Linear$(128\to 1)$ & $\bigl(B,1\bigr)$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Convolutional layers.}
+The first five rows employ $3\times 3$ or $4\times 4$ convolutions with
+appropriate strides and paddings.  A LeakyReLU activation with negative
+slope $0.2$ follows each convolution.  The choice of LeakyReLU is
+important: a naive ReLU can lead to dead filters when the input has
+significant negative activations, whereas LeakyReLU ensures that all
+channels have non–zero gradients during backpropagation.  In a variant of
+the model we replaced LeakyReLU with the smoother \texttt{SiLU} (also
+known as the Swish activation), finding that both activations yield
+comparable performance on MNIST.
+
+\paragraph{Downsampling.}
+The second and fourth convolutions use a stride of two and a kernel of
+size four to halve the spatial dimensions of the feature maps.  This
+downsampling reduces the computational cost and increases the effective
+receptive field of the network.  Other downsampling strategies, such as
+max pooling, were tested but found to perform slightly worse in terms of
+energy separation between real and fake samples.
+
+\paragraph{Adaptive pooling and fully connected layer.}
+After the final convolution the feature map has shape
+$(B,128,7,7)$.  We apply an \texttt{AdaptiveAvgPool2d} layer to reduce the
+spatial dimensions to $1\times 1$, producing a tensor of shape
+$(B,128,1,1)$.  Flattening this tensor yields a $128$–dimensional vector
+for each sample.  A final fully connected layer projects the vector to a
+single scalar energy.  The absence of an activation function on the last
+layer means that energies can take any real value.  In practice we found
+that adding a small $L_2$ regularisation term on energies (see below) was
+essential to prevent unbounded growth.
+
+\subsection{Langevin Sampling Function}
+
+The core of the EBM training and inference pipeline is the Langevin
+sampling function.  In our implementation this function accepts an
+initial tensor $\mathbf{x}$ and iteratively updates it using the gradient
+of the energy function, Gaussian noise, and a step size.  A typical
+implementation in PyTorch looks as follows:
+
+\begin{lstlisting}[language=Python]
+class LangevinSampler:
+    def __init__(self, model, step_size=0.1, noise_scale=1.0, n_steps=60,
+                 clamp_min=0.0, clamp_max=1.0):
+        self.model = model
+        self.step_size = step_size
+        self.noise_scale = noise_scale
+        self.n_steps = n_steps
+        self.clamp_min = clamp_min
+        self.clamp_max = clamp_max
+
+    def __call__(self, x):
+        # Perform n_steps of Langevin dynamics
+        for _ in range(self.n_steps):
+            x = x.detach().requires_grad_(True)
+            energy = self.model(x).sum()
+            grad = torch.autograd.grad(energy, x)[0]
+            noise = self.noise_scale * (2 * self.step_size) ** 0.5 \
+                    * torch.randn_like(x)
+            x = x - self.step_size * grad + noise
+            x = x.clamp(self.clamp_min, self.clamp_max)
+        return x.detach()
+\end{lstlisting}
+
+The function uses \texttt{torch.autograd} to compute the gradient of the
+energy with respect to the current sample.  The gradient is scaled by the
+step size and subtracted from the sample, while a noise term proportional
+to $\sqrt{2\eta}$ ensures that the chain explores the energy landscape.
+Clamping to $[0,1]$ is necessary because MNIST pixel values lie in this
+interval.  The parameters \texttt{step\_size}, \texttt{noise\_scale}, and
+\texttt{n\_steps} can be tuned.  In our experiments we used
+\texttt{step\_size} $=0.1$, \texttt{noise\_scale} $=1.0$, and 60 steps for
+training; for denoising we decreased the number of steps to three to
+produce sharper reconstructions.
+
+\subsection{Training Loop}
+
+The training algorithm is an instance of contrastive divergence and closely
+follows Algorithm~1 in the assignment.  We summarise the steps below:
+
+\begin{enumerate}[leftmargin=*,label=\arabic*.]
+  \item \textbf{Initialise the model and optimiser.}  We instantiate the
+    convolutional network described above and move it to the available
+    device (CPU or CUDA).  We use the Adam optimiser with a learning rate
+    of $2\times 10^{-4}$ and set the regularisation coefficient
+    $\lambda=10^{-3}$.
+  \item \textbf{Forward pass on real data.}  For a mini–batch of
+    images $\mathbf{x}_{\text{real}}$, compute the energies
+    $E_{\text{real}} = E_\theta(\mathbf{x}_{\text{real}})$.  This constitutes
+    the positive phase.
+  \item \textbf{Generate negative samples.}  Start from uniform noise
+    $\mathbf{x}_0 \sim \mathcal{U}(0,1)$ with the same shape as the real
+    batch and apply the Langevin sampler to obtain
+    $\mathbf{x}_{\text{fake}}$.  Alternatively, one can maintain a replay
+    buffer of previously generated samples and mix them with new noise to
+    improve mixing; our implementation provides a simple \texttt{SampleBuffer}
+    class for this purpose.
+  \item \textbf{Forward pass on fake data.}  Compute the energies of the
+    negative samples, $E_{\text{fake}} = E_\theta(\mathbf{x}_{\text{fake}})$.
+  \item \textbf{Compute the loss.}  The data term
+    $\mathrm{mean}(E_{\text{real}}) - \mathrm{mean}(E_{\text{fake}})$
+    encourages the model to assign lower energy to real images and higher
+    energy to generated ones.  The regularisation term
+    $\lambda\big(\mathrm{mean}(E_{\text{real}}^2) + \mathrm{mean}(E_{\text{fake}}^2)\big)$
+    penalises large energy magnitudes and stabilises training.  The total
+    loss is the sum of these two terms.
+  \item \textbf{Backpropagate and update.}  Call
+    \texttt{loss.backward()} to compute gradients and use the optimiser to
+    update the network parameters.
+  \item \textbf{Logging and visualisation.}  Every 100 training steps we
+    record the current loss as well as the mean energies of real and fake
+    samples.  At the end of certain epochs (e.g., 1, 5, and 10), we use the
+    Langevin sampler to generate 16 images from uniform noise and save
+    them to disk.  These snapshots allow us to monitor the progression of
+    sample quality as training proceeds.
+\end{enumerate}
+
+\paragraph{Regularisation.}
+The regularisation term with coefficient $\lambda$ is critical.  Without
+it, the energies can grow without bound, leading to numerical instability
+and poor sampling behaviour.  We experimented with $\lambda$ in the range
+from $10^{-4}$ to $10^{-2}$ and found that $10^{-3}$ strikes a good balance
+between preventing energy explosion and retaining expressive power.
+
+\paragraph{Replay Buffer.}
+While the low dimensionality of MNIST allows mixing to occur relatively
+quickly, using a replay buffer can nevertheless improve training stability.
+The buffer stores a fixed number of previously generated samples and
+implements a simple reservoir update policy: new samples replace old ones
+with a specified probability.  When drawing negative samples, we select
+half from the buffer and half from fresh noise.  This technique reduces the
+variance of the negative phase estimate and is particularly helpful when
+training on more complex datasets.
+
+\subsection{Hyperparameters and Practical Considerations}
+
+Table~\ref{tab:hyperparams-ebm} summarises the key hyperparameters used
+in training the MNIST EBM.  The choices reflect a trade–off between
+computational cost and sample quality.  Increasing the number of Langevin
+steps improves mixing but slows training; decreasing the step size can
+produce crisper images but may trap the sampler in local minima.  Regular
+monitoring of the energies and visual inspection of generated samples are
+recommended to detect issues early.
+
+\begin{table}[H]
+    \centering
+    \caption{Hyperparameters for the MNIST energy–based model.}
+    \label{tab:hyperparams-ebm}
+    \begin{tabular}{lll}
+        \toprule
+        Parameter & Value & Description \\
+        \midrule
+        Batch size & 64 & Number of training examples per iteration \\
+        Epochs & 10 & Number of passes over the training set \\
+        Learning rate & $2\times 10^{-4}$ & Adam step size \\
+        Regularisation $\lambda$ & $10^{-3}$ & Penalty on energy magnitude \\
+        Langevin steps & 60 & Number of MCMC steps per batch \\
+        Langevin step size & 0.1 & Gradient descent step length \\
+        Langevin noise scale & 1.0 & Standard deviation of noise term \\
+        Replay buffer size & 10,000 & Number of negative samples stored \\
+        Replay ratio & 0.95 & Fraction of new noise used per batch \\
+        Device & CPU/GPU & Automatic selection based on hardware \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Implementation Summary}
+
+This part has described how to implement the MNIST energy–based model in
+PyTorch.  We discussed data loading and visualisation, presented the
+architecture layer by layer, defined the Langevin sampling function, and
+explained the training loop with contrastive divergence and regularisation.
+The hyperparameters and practical considerations were documented to
+facilitate reproducibility.  In the next part we will present the results
+obtained with this implementation, including generated digits and denoising
+experiments.

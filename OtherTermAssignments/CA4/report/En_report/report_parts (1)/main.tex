@@ -1,0 +1,224 @@
+\documentclass[a4paper,12pt]{article}
+
+% ====================================================================
+%                               PREAMBLE
+%
+% This file acts as the entry point for our modular report on generative
+% models.  It collects all of the separate chapter files into a single
+% document.  The report has been carefully reorganised into eight
+% self‑contained parts, each in its own file (part1.tex … part8.tex),
+% with the goal of improving readability while preserving every last
+% equation, paragraph and figure from the original assignment.  All
+% macros, packages and colour definitions reside here so that each part
+% can focus purely on its content.  If you wish to tweak the design
+% (e.g. colours or typography), you only need to edit this file.
+
+% ====================================================================
+%                           PACKAGE INCLUDES
+% The following packages provide support for mathematics, colours,
+% code listings, hyperlinks and page geometry.  They mirror the
+% selection from the original assignment but are centralised here.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{etoolbox}
+\usepackage{titlesec}
+
+% --------------------------------------------------------------------
+%                             PAGE LAYOUT
+% Geometry: adjust margins and head/foot sizes.  These values mirror
+% those in the original report.  Feel free to modify them globally
+% here without touching individual parts.
+\geometry{
+  left=25mm,
+  right=25mm,
+  top=30mm,
+  bottom=30mm,
+  headheight=15mm,
+  footskip=10mm
+}
+
+% --------------------------------------------------------------------
+%                              COLOURS
+% Define a professional palette used throughout the report.  These
+% colours will be referenced in the section formats, code listings
+% and custom boxes defined later.
+\definecolor{primary}{RGB}{31, 58, 147}      % Deep professional blue
+\definecolor{secondary}{RGB}{65, 105, 225}   % Royal blue
+\definecolor{accent}{RGB}{138, 43, 226}      % Blue violet
+\definecolor{success}{RGB}{34, 139, 34}      % Forest green
+\definecolor{warning}{RGB}{255, 140, 0}      % Dark orange
+\definecolor{danger}{RGB}{220, 20, 60}       % Crimson red
+\definecolor{info}{RGB}{70, 130, 180}        % Steel blue
+\definecolor{light}{RGB}{240, 248, 255}      % Alice blue
+\definecolor{dark}{RGB}{25, 25, 112}         % Midnight blue
+
+\definecolor{codebg}{RGB}{248, 250, 252}     % Very light gray-blue
+\definecolor{codetext}{RGB}{36, 41, 46}      % Dark gray
+\definecolor{comment}{RGB}{106, 115, 125}    % Medium gray
+\definecolor{keyword}{RGB}{0, 92, 197}       % Professional blue
+\definecolor{string}{RGB}{3, 106, 7}         % Dark green
+\definecolor{number}{RGB}{0, 134, 179}       % Teal blue
+\definecolor{function}{RGB}{111, 66, 193}    % Purple
+
+% --------------------------------------------------------------------
+%                        HEADER AND FOOTER
+% Use fancyhdr to customise headers and footers consistently across
+% all parts.  The left header shows the current section heading and
+% the right header shows the page number.  A centralised footer
+% reminds the reader of the assignment context.
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\fancyfoot[C]{\footnotesize Deep Generative Models – Homework 4}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% --------------------------------------------------------------------
+%                        TITLE FORMATTING
+% Redefine how \section, \subsection and \subsubsection headings
+% appear.  Each level of heading uses a different colour from the
+% palette defined above.  The horizontal rule at the end of \section
+% emphasises major breaks in the document.
+\titleformat{\section}
+  {\color{primary}\Large\bfseries}
+  {\color{primary}\thesection}{1em}{}
+  [\color{primary}\titlerule]
+
+\titleformat{\subsection}
+  {\color{secondary}\large\bfseries}
+  {\color{secondary}\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\color{accent}\bfseries}
+  {\color{accent}\thesubsubsection}{1em}{}
+
+% --------------------------------------------------------------------
+%                         CUSTOM ENVIRONMENTS
+% A coloured solution box used throughout the report.  Each part
+% inherits this environment without needing to redeclare it.  The
+% content inside the box is typeset in small font to distinguish
+% derivations or answers from the main narrative.
+\newenvironment{solutionbox}{
+  \par\vspace{0.5em}
+  \noindent
+  \colorbox{primary!10}{
+    \parbox{\dimexpr\textwidth-2\fboxsep\relax}{
+      \vspace{0.5em}
+      \textbf{\color{primary}Solution:}\vspace{0.3em}
+      \par\small
+    }
+  }\vspace{0.5em}\par
+}{
+  \endcolorbox\vspace{0.5em}\par
+}
+
+% --------------------------------------------------------------------
+%                        CODE LISTING SETTINGS
+% Configure the \lstlisting environment globally.  These settings
+% mirror those used previously but with improved default typography and
+% colours.  Comments are italicised; keywords are bold; numbers are
+% coloured teal.
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  commentstyle=\color{comment}\itshape,
+  keywordstyle=\color{keyword}\bfseries,
+  stringstyle=\color{string},
+  numberstyle=\color{number},
+  identifierstyle=\color{codetext},
+  numbers=left,
+  numberstyle=\tiny\color{codetext},
+  frame=single,
+  framesep=5pt,
+  breaklines=true,
+  captionpos=b,
+  numbersep=5pt,
+  showstringspaces=false,
+  emph={class, def, if, else, for, while, return, import, from, as, torch, nn, F, np, plt, self, super},
+  emphstyle=\color{keyword}\bfseries,
+  morekeywords={torch, nn, F, np, plt, self, super, model, optimizer, loss, batch, x, t, noise}
+}
+
+% --------------------------------------------------------------------
+%                       CUSTOM MACROS AND COMMANDS
+% Provide convenient commands used across multiple parts.  These
+% include \code for inline code, \mathdef for defining mathematical
+% terms, and \modelname for emphasising model names in sans‑serif.
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\mathdef}[1]{\textbf{#1}}
+\newcommand{\highlight}[1]{\colorbox{yellow!20}{#1}}
+\newcommand{\modelname}[1]{\textsf{#1}}
+
+% --------------------------------------------------------------------
+%                          HYPERLINK SETTINGS
+% Configure colours for hyperlinks.  Use the primary colour for links,
+% accent colour for citations, and secondary colour for URLs.
+\hypersetup{
+  colorlinks=true,
+  linkcolor=primary,
+  citecolor=accent,
+  urlcolor=secondary,
+  pdftitle={Deep Generative Models – Homework 4},
+  pdfauthor={Student Name},
+  pdfsubject={Diffusion Models, Stable Diffusion, Flow Matching}
+}
+
+% --------------------------------------------------------------------
+%                        TITLE INFORMATION
+% Provide the front matter of the report.  The title, author and
+% date are defined here so they apply globally.  The titlepage will
+% appear in part 1.
+\title{\Huge\color{primary}\textbf{Deep Generative Models}\\[0.5cm]
+  \Large\textbf{Homework Assignment 4}\\[0.5cm]
+  \normalsize\textit{Diffusion Models, Stable Diffusion \& Flow Matching}}
+
+\author{\textbf{Student Name}\\Student ID: XXXXXXXX}
+\date{\today}
+
+\begin{document}
+
+% --------------------------------------------------------------------
+%                             TITLE PAGE
+% Generate the title page.  The assignment name and subtitle appear
+% here.  A vertical space is inserted above the title to centre it.
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+% --------------------------------------------------------------------
+%                      TABLE OF CONTENTS
+\tableofcontents
+\newpage
+
+% --------------------------------------------------------------------
+%                      INCLUDE EXTERNAL PARTS
+% The eight parts of the report are included below.  Each file is
+% stored in the same directory as this main document.  They must be
+% compiled in sequence to produce the complete report.  The
+% separation into parts allows focused editing and reuse.
+\input{part1}
+\input{part2}
+\input{part3}
+\input{part4}
+\input{part5}
+\input{part6}
+\input{part7}
+\input{part8}
+\input{part9}
+
+% Conclude the document.
+\end{document}

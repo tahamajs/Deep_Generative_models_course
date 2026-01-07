@@ -1,0 +1,219 @@
+% Part 1 – Preface, Course Information and Introduction
+
+% ---------------------------------------------------------------------------
+% This file constitutes the first logical section of the full report.  It
+% introduces the assignment context, provides background on the motivation for
+% studying generative models, and lays out the overall structure of the report.
+% The content is designed to be self–contained and approachable, making it a
+% natural starting point for readers who may not be familiar with energy–
+% based or score–based generative modeling.  Throughout the text we adopt a
+% narrative tone, guiding the reader through the rationale for the project
+% while retaining scientific rigor.  Colour and emphasis commands defined in
+% the main document are used consistently to highlight key concepts without
+% overwhelming the reader.
+
+\section{Preface and Motivation}
+
+\subsection{University and Course Context}
+
+The work presented here was carried out as part of the \emph{Trustworthy~AI}
+course taught at the \textit{School of Electrical and Computer Engineering},
+\textbf{University of Tehran}.  The assignment forms the third homework in
+the course and is intended to deepen students' understanding of modern
+generative modeling techniques, including \emph{Energy–Based Models}
+(EBMs) and \emph{Noise Conditional Score Networks} (NCSNs).  The problem
+specification, provided in Persian and translated in the project description,
+outlines both theoretical questions and an extensive implementation task
+involving the MNIST dataset.  Students are expected to deliver both a working
+Python codebase and a comprehensive report documenting their methodology and
+findings.  This document constitutes the latter.
+
+\subsection{Invocation and Dedication}
+
+In keeping with local tradition and the formal tone of academic reports in
+Iran, we begin by invoking a short dedication.  The original assignment
+document opens with the phrase ``\emph{In the Name of God}'' to place the
+scientific endeavour within a broader cultural and ethical context.  We
+include the dedication here to honour that tradition while emphasising that
+the core of this work remains firmly grounded in empirical investigation and
+mathematical reasoning.
+
+\subsection{Assignment Overview}
+
+The assignment consists of two broad components: a set of theoretical
+questions exploring the properties of EBMs and score–based generative models,
+and a practical component requiring the implementation of these models on the
+MNIST handwritten digits dataset.  The theoretical questions probe topics
+such as the role of the partition function in energy–based modeling, the
+challenges of sampling and normalisation in high dimensions, and the
+fundamental principles of denoising score matching and multi–scale noise
+perturbation.  The practical component requires constructing a convolutional
+energy network and training it via contrastive divergence, implementing
+Langevin sampling for generation and denoising, and building a U–Net based
+score network that can generate digits via annealed Langevin dynamics.  A
+conditional version of the score network must also be trained to allow class
+controlled generation.  In both cases students are asked to report training
+curves, display representative samples, perform denoising experiments at
+multiple noise levels, and analyse the factors influencing sample quality.
+
+\subsection{Why Generative Modeling?}
+
+Generative modeling has emerged as a cornerstone of contemporary machine
+learning.  Unlike discriminative models, which learn to map inputs to labels
+or real–valued predictions, generative models aim to learn the entire
+distribution of the data.  Once trained, a generative model can synthesise
+novel samples that resemble the training examples, interpolate between
+existing examples, perform reconstruction and denoising, or serve as a
+regulariser for downstream tasks.  Classical approaches to generative
+modeling include \emph{Gaussian Mixture Models}, \emph{autoregressive
+models}, \emph{Variational Autoencoders}, and \emph{Generative Adversarial
+Networks}.  More recent methods, such as \emph{diffusion models} and
+\emph{score–based generative models}, have demonstrated remarkable
+performance on high–dimensional data like natural images.
+
+Within this landscape, EBMs and NCSNs occupy an interesting niche.  EBMs
+define an unnormalised density via an energy function and avoid the need to
+compute an explicit partition function.  Score–based models, on the other
+hand, model the gradient of the log–density and thereby sidestep
+normalisation entirely.  Both approaches harness stochastic differential
+equations—most notably Langevin dynamics—to transform random noise into
+coherent samples.  Understanding these models therefore provides insight
+into a broad class of generative techniques that emphasise sampling and
+implicit densities over explicit likelihood evaluation.
+
+\subsection{Report Structure}
+
+To make the presentation clear and modular, this report has been divided
+into eight parts, each compiled as a separate \TeX{} file and included into
+the final document.  Each part is designed to be self–contained and
+approximately two hundred lines in length, providing detailed explanations,
+mathematical derivations, implementation details, and experimental analyses.
+The division into multiple files allows us to maintain a logical flow
+without overwhelming the reader with a monolithic block of text.  It also
+facilitates the reuse of macros and colour definitions introduced in the
+main preamble.
+
+\begin{enumerate}[leftmargin=*,label=\arabic*.]
+  \item \textbf{Preface and Motivation (this section).}  This part lays out
+    the motivation for the project, summarises the assignment instructions
+    provided in the original prompt, and outlines the structure of the
+    report.  It introduces generative modeling concepts at a high level and
+    explains why EBMs and NCSNs are important to study.  It also places the
+    assignment within the context of the course on \emph{Trustworthy AI} at
+    the University of Tehran.
+  \item \textbf{Energy–Based Models: Theory.}  The second part delves into
+    the theoretical foundations of EBMs, including the definition of the
+    energy function, the role of the partition function, derivations of the
+    log–likelihood gradient, and sampling methods such as Langevin dynamics
+    and rejection sampling.  The mixture–of–Gaussians example is revisited
+    to illustrate why simple gradient–based sampling may fail to capture
+    multimodal distributions.  Key challenges such as computing the
+    partition function and drawing samples in high dimensions are analysed.
+  \item \textbf{Energy–Based Models: Implementation.}  Having covered the
+    theory, the third part describes how to implement an EBM for MNIST.
+    Details include data preprocessing, the convolutional architecture
+    specified in Table~\ref{tab:ebm-arch}, the training loop using contrastive
+    divergence, Langevin sampling for both positive and negative phases, and
+    practical considerations such as regularisation and hyperparameter
+    selection.  Pseudocode is provided and key functions are listed to
+    facilitate reproducibility.
+  \item \textbf{Energy–Based Models: Results and Analysis.}  This part
+    presents training curves, samples generated at different stages of
+    training, and denoising experiments at multiple noise levels.  Each
+    figure is accompanied by detailed commentary explaining the observed
+    behaviour and relating it to the underlying theory.  We analyse the
+    influence of the number of Langevin steps, step size, regularisation
+    strength, and other hyperparameters on sample quality.  The limitations
+    of the model and suggestions for improvement are discussed.
+  \item \textbf{Score–Based Models: Theory.}  The fifth part introduces
+    score–based generative modeling.  We define the score function,
+    demonstrate its independence from the partition function, and derive the
+    denoising score matching objective.  The difficulties of computing
+    divergence terms in the original score matching formulation are
+    explained, and multi–scale noise perturbation is presented as a remedy.
+    We also revisit the mixture–of–Gaussians example to show why the score
+    ignores mixing weights.  Connections to stochastic differential
+    equations and diffusion processes are highlighted.
+  \item \textbf{Score–Based Models: Implementation.}  This section outlines
+    the practical implementation of Noise Conditional Score Networks.  The
+    architecture, inspired by U–Nets and equipped with FiLM conditioning
+    based on Gaussian Fourier embeddings, is described in detail.  We cover
+    the weighted denoising score matching loss, the geometric noise ladder,
+    training schedules, and annealed Langevin dynamics for sampling.  A
+    class–conditional extension is developed by adding a label embedding and
+    training the network on labelled MNIST data.
+  \item \textbf{Score–Based Models: Results and Analysis.}  As with the
+    EBM, we report training curves, show samples produced by the score
+    network, visualise the annealing trajectory from noise to digits, and
+    evaluate denoising across several noise levels.  The conditional model
+    is used to generate a grid of digits conditioned on each class, and we
+    assess fidelity and diversity.  Comparisons with the EBM results are
+    drawn.
+  \item \textbf{Discussion, Limitations and Conclusions.}  The final part
+    brings together the theoretical insights and experimental findings from
+    the preceding sections.  It contrasts the strengths and weaknesses of
+    EBMs and NCSNs, summarises the hyperparameter sensitivity analyses,
+    enumerates limitations of the current implementations, and suggests
+    directions for future work.  Ethical considerations are also briefly
+    discussed.  The report concludes with key takeaways and reflections on
+    the learning journey.
+\end{enumerate}
+
+\subsection{Reading Guide}
+
+The report is deliberately long and detailed because it aims to serve as a
+self–contained reference for students and researchers interested in
+understanding energy–based and score–based generative models at both
+conceptual and practical levels.  To facilitate navigation, each part begins
+with its own introduction and ends with a summary of key points.  Readers
+who are already familiar with the underlying theory may wish to skim
+Part~2 and Part~5 and focus on the implementation and results sections.
+
+\subsection{Notation and Conventions}
+
+Throughout this report, vectors are denoted in boldface (e.g., $\mathbf{x}$)
+and matrices in uppercase boldface (e.g., $\mathbf{W}$).  The symbol $\theta$
+collectively denotes the parameters of a model.  Energy functions are
+written as $E_\theta(\mathbf{x})$ or $f_\theta(\mathbf{x})$ interchangeably, and
+probability densities defined via energy functions are written as
+$p_\theta(\mathbf{x}) \propto \exp\big(-f_\theta(\mathbf{x})\big)$.  The gradient
+with respect to a vector argument is denoted by $\nabla$, and the
+divergence of a vector field $\mathbf{s}(\mathbf{x})$ is written as
+$\nabla \cdot \mathbf{s}(\mathbf{x}) = \sum_i \partial s_i(\mathbf{x}) / \partial x_i$.
+For clarity, we consistently refer to the training distribution as
+$p_{\text{data}}$ and to the model distribution as $p_\theta$.
+
+In citations, we use bracket notation to refer to specific ranges of lines in
+source documents.  For example, the statement that EBMs do not require
+proper normalisation, thus providing more flexibility in designing loss
+functions, is supported by LeCun et~al. who note that probabilistic models
+must be normalised but ``\emph{since EBMs have no requirement for proper
+normalisation, this problem is naturally circumvented}''【861141214805006†L26-L33】.  This
+property underlies many of the advantages of energy–based modeling and is
+revisited throughout the report.
+
+\subsection{A Word on Scientific Rigor}
+
+The instructions emphasise that all explanations should be scientific and
+supported by reliable sources.  Where possible, we cite primary literature
+and authoritative tutorials, such as the classic work by LeCun et~al. on
+energy–based learning【861141214805006†L26-L33】.  For diffusion and score–based models,
+we rely on established theoretical results and the seminal papers by Song
+and collaborators.  While network constraints may limit access to some
+online resources, the core mathematical derivations are self–contained and
+draw upon widely known results in statistical physics and stochastic
+processes.  We strive to maintain transparency and reproducibility in both
+our theoretical arguments and implementation details.
+
+\subsection{Conclusion of Part 1}
+
+This introductory part has set the stage for the remainder of the report.  We
+have situated the assignment within the educational context of a graduate
+course on \emph{Trustworthy AI}, summarised the tasks to be accomplished,
+explained why generative modeling is worth studying, and described how the
+report is organised.  In the following part we will delve into the theory
+of energy–based models, starting from first principles and building up to
+the maximum–likelihood gradient used to train the MNIST EBM.  Readers who
+are eager to see code and results may jump ahead to the implementation
+sections, but we encourage a thorough reading of the theory to fully
+appreciate the challenges and solutions presented later on.

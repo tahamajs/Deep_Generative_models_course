@@ -1,0 +1,249 @@
+
+%%
+%% Part 6 - Flow Matching Implementation and Evaluation
+%%
+%% Building on the theoretical foundations laid in Part 5, this chapter
+%% describes how to implement Flow Matching for one-dimensional time
+%% series and evaluates its performance on synthetic financial data.
+%% We introduce the transformer-based velocity network, the training
+%% objective, sampling via numerical ODE solvers and a suite of
+%% evaluation metrics.
+
+\section{Flow Matching in Practice}
+
+This chapter translates the Flow Matching theory into a working
+algorithm for generating financial time series.  We present our
+network architecture, describe the training procedure, outline the
+sampling routine and analyse the resulting synthetic data.
+
+\subsection{Network Architecture}
+
+We model the velocity field $v_\theta(x,t)$ using a transformer
+encoder that operates on sequences of returns.  Each input is a
+matrix of shape $[\text{batch}, L, F]$, where $L$ is the sequence
+length and $F$ the number of features (here $F=1$ for univariate
+returns).  A sinusoidal time embedding of $t$ is added to every
+sequence position, and then multiple layers of multi-head
+self-attention and feed-forward networks are applied.  The output is
+projected back to the original dimensionality to yield a velocity
+vector for each time step in the sequence.
+
+\begin{lstlisting}[language=Python, caption=Time Series Flow Matching Model]
+class TimeSeriesFlowMatching(nn.Module):
+    def __init__(self, input_dim=1, hidden_dim=128, num_layers=4, num_heads=8):
+        super().__init__()
+        self.time_embed = nn.Sequential(
+            SinusoidalEmbedding(hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, hidden_dim)
+        )
+        self.input_proj = nn.Linear(input_dim, hidden_dim)
+        self.layers = nn.ModuleList([
+            nn.TransformerEncoderLayer(
+                d_model=hidden_dim,
+                nhead=num_heads,
+                dim_feedforward=4*hidden_dim,
+                dropout=0.1,
+                batch_first=True
+            ) for _ in range(num_layers)
+        ])
+        self.output_proj = nn.Linear(hidden_dim, input_dim)
+        self.norm = nn.LayerNorm(hidden_dim)
+
+    def forward(self, x, t):
+        batch_size, seq_len, _ = x.shape
+        t_embed = self.time_embed(t.unsqueeze(-1))
+        t_embed = t_embed.unsqueeze(1).expand(-1, seq_len, -1)
+        h = self.input_proj(x) + t_embed
+        for layer in self.layers:
+            h = layer(h)
+        velocity = self.output_proj(self.norm(h))
+        return velocity
+\end{lstlisting}
+
+\subsection{Conditional Flow Matching Loss}
+
+To train the model, we sample pairs $(x_0,x_1)$ of noise and data
+sequences and a random time $t\sim\mathrm{Uniform}(0,1)$.  We
+interpolate between the two sequences via $x_t = (1-t)x_0 + tx_1$ and
+compute the target velocity $v_{\text{target}} = x_1 - x_0$.  The
+loss is the mean squared error between the predicted and target
+velocity:
+\begin{lstlisting}[language=Python, caption=CFM Loss]
+def compute_cfm_loss(model, x0, x1, t):
+    t_view = t.view(-1, 1, 1)
+    xt = (1.0 - t_view) * x0 + t_view * x1
+    v_target = x1 - x0
+    v_pred = model(xt, t)
+    loss = F.mse_loss(v_pred, v_target)
+    return loss
+\end{lstlisting}
+
+Training proceeds over epochs, sampling new pairs from the dataset and
+optimising with Adam.  Typical hyperparameters are listed in
+Table~\ref{tab:fmparams}.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lc}
+    \toprule
+    Parameter & Value \\
+    \midrule
+    Sequence Length & 100 \\
+    Hidden Dimension & 128 \\
+    Number of Layers & 4 \\
+    Number of Heads & 8 \\
+    Batch Size & 32 \\
+    Learning Rate & $10^{-4}$ \\
+    Training Epochs & 100 \\
+    ODE Steps & 100 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Flow Matching training parameters.  Data are normalised
+    globally to mean zero and unit variance.}
+  \label{tab:fmparams}
+\end{table}
+
+\subsection{Sampling via ODE Integration}
+
+After training, we generate new sequences by solving the ODE
+\(dx/dt = v_\theta(x,t)\) from $t=0$ to $t=1$.  We initialise $x(0)$
+with Gaussian noise and approximate the solution using Euler's method
+or higher-order solvers.  For a simple Euler scheme with $N$ steps:
+\begin{lstlisting}[language=Python, caption=Euler Sampling for Flow]
+def sample_flow(model, x0, num_steps=100):
+    dt = 1.0 / num_steps
+    xt = x0.clone()
+    for i in range(num_steps):
+        t = i * dt
+        t_tensor = torch.full((x0.shape[0],), t, device=x0.device)
+        vt = model(xt, t_tensor)
+        xt = xt + vt * dt
+    return xt
+\end{lstlisting}
+
+Using more sophisticated solvers such as Heun's method or Runge–Kutta
+improves accuracy at the expense of additional evaluations of
+$v_\theta$.  We set $N=100$ in our experiments, which balances
+quality and computational cost.
+
+\subsection{Evaluation Metrics}
+
+We evaluate Flow Matching using several metrics:
+\begin{itemize}
+  \item \textbf{Training and validation loss.}  We monitor the mean
+    squared error on a held-out test set to detect overfitting.
+  \item \textbf{Sliced Wasserstein Distance (SWD).}  By projecting
+    both real and generated sequences onto random directions and
+    computing one-dimensional Wasserstein distances, we approximate
+    the Wasserstein distance in high dimensions.
+  \item \textbf{Autocorrelation Function (ACF).}  We compute the ACF of
+    real and generated returns for lags up to 20 and measure the mean
+    squared or absolute difference.
+  \item \textbf{Statistical Moments.}  We compare mean, variance,
+    volatility (standard deviation), skewness and kurtosis of the real
+    and synthetic returns.
+\end{itemize}
+
+\subsection{Empirical Results}
+
+\paragraph{Loss curves.}  Figure~\ref{fig:fm_losses} shows the
+training and test loss over 50 epochs.  The losses decrease smoothly,
+with the test loss closely tracking the training loss, indicating
+little overfitting.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.8\linewidth}{\centering
+    \textit{Plot Placeholder:}\newline
+    A line chart depicting training loss (blue) and test loss (orange)
+    over epochs.  Both curves decrease to approximately 1.5 by epoch
+    50.}}
+  \caption{Training and validation loss for Flow Matching.}
+  \label{fig:fm_losses}
+\end{figure}
+
+\paragraph{Synthetic sequences.}  Figure~\ref{fig:fm_synth} displays
+several generated sequences alongside real data.  The synthetic
+returns exhibit similar amplitudes, roughness and volatility
+clustering to the ground truth.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.9\linewidth}{\centering
+    \textit{Plot Placeholder:}\newline
+    A set of line plots comparing real log-returns (blue) and
+    generated log-returns (green dashed).  The patterns and
+    variability are visually similar.}}
+  \caption{Comparison of real and Flow Matching generated sequences.}
+  \label{fig:fm_synth}
+\end{figure}
+
+\paragraph{Distribution comparison.}  Histogram and kernel density
+estimations (Figure~\ref{fig:fm_dist}) reveal that the generated
+returns closely match the central part of the real distribution but
+underestimate extreme tails.  A Q-Q plot confirms that heavy-tailed
+behaviour is not fully captured.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.9\linewidth}{\centering
+    \textit{Plot Placeholder:}\newline
+    Panels showing histograms and KDE curves of real and generated
+    returns, a Q-Q plot and CDF comparison.  The central mass aligns
+    well while the tails differ.}}
+  \caption{Distribution comparison between real and generated data.}
+  \label{fig:fm_dist}
+\end{figure}
+
+\paragraph{Statistical metrics.}  Table~\ref{tab:stats} lists basic
+statistics of the real and synthetic data.  Mean and variance are
+accurately reproduced, volatility matches within 1\% and skewness is
+close to zero.  However, kurtosis is underestimated, reflecting
+lighter tails.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lcccc}
+    \toprule
+    Statistic & Real & Generated & Absolute Error & Relative Error \\
+    \midrule
+    Mean & 0.003770 & 0.000188 & 0.003582 & — \\
+    Variance & 0.927920 & 0.909990 & 0.017930 & 1.9\% \\
+    Volatility & 0.963286 & 0.953934 & 0.009352 & 0.97\% \\
+    Skewness & 0.3667 & 0.0344 & 0.3323 & — \\
+    Kurtosis & 2.2517 & 0.0784 & 2.1733 & — \\
+    \bottomrule
+  \end{tabular}
+  \caption{Comparison of statistical moments for real and Flow
+    Matching generated data.  The kurtosis discrepancy indicates
+    underestimation of tail heaviness.}
+  \label{tab:stats}
+\end{table}
+
+\paragraph{SWD and ACF.}  We compute a Sliced Wasserstein Distance of
+approximately 0.0985 between the real and synthetic distributions,
+indicating a good overall match.  The autocorrelation function of the
+returns is near zero for both real and generated data, with an ACF
+MSE of 0.0033.
+
+\subsection{Discussion}
+
+Flow Matching successfully captures the first two moments and the
+volatility structure of the data with a simple linear path and a
+transformer-based velocity field.  The deterministic nature of the
+sampling makes generation efficient.  The main limitation is the
+underestimation of extreme events, as manifested in the low kurtosis.
+Future work could explore non-linear paths or explicit tail
+modelling to address this issue.
+
+\subsection{Conclusion of Part 6}
+
+In this chapter we have implemented Flow Matching for financial time
+series, described the transformer velocity network, the training and
+sampling procedures, and evaluated the synthetic data.  Flow
+Matching offers an appealing alternative to stochastic diffusion
+models, with faster sampling and comparable performance on key
+statistics.  The next chapter synthesises the lessons learned and
+presents a comprehensive evaluation and conclusion.

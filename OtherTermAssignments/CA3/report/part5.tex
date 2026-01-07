@@ -1,0 +1,212 @@
+% Part 5 – Theory of Score–Based Generative Models
+
+% ---------------------------------------------------------------------------
+% This section introduces the theoretical underpinnings of score–based
+% generative models.  We build upon the notion of the score function
+% introduced in the energy–based model context and show how it can be
+% estimated without computing the normalising constant.  We discuss
+% score matching, denoising score matching, and multi–scale noise
+% perturbation.  We also explain why the divergence term in the original
+% score matching objective is problematic in high dimensions and how
+% multi–scale perturbations circumvent this issue.  Connections to
+% stochastic differential equations and diffusion processes are sketched to
+% motivate the sampling algorithms used later in the implementation.
+
+\section{Score--Based Models: Theory}
+
+\subsection{From Energies to Scores}
+
+In Part~2 we defined the score function $\mathbf{s}_\theta(\mathbf{x}) =
+\nabla_{\mathbf{x}} \log p_\theta(\mathbf{x})$ and observed that it can be
+expressed as $-\nabla_{\mathbf{x}} E_\theta(\mathbf{x})$ because the gradient
+of the partition function is zero【861141214805006†L26-L33】.  For
+score–based models we abandon the energy view entirely and instead seek to
+learn the score function directly.  This perspective has several
+advantages:
+
+\begin{itemize}[leftmargin=*]
+  \item The score function depends only on the gradient of the log–density
+    with respect to $\mathbf{x}$ and is independent of the normalising
+    constant $Z_\theta$, obviating the need to evaluate intractable
+    integrals.
+  \item Once a good estimate of the score function $\mathbf{s}_\theta$ is
+    available, one can perform sampling using Langevin dynamics on the
+    estimated gradient field.  The stationary distribution of the resulting
+    Langevin SDE is the target density (up to approximation error), even
+    though the density itself is not explicitly known.
+  \item Learning the score function is inherently flexible: one can model
+    gradients with arbitrarily expressive neural networks without imposing
+    global normalisation constraints.
+\end{itemize}
+
+Given a target density $p_{\text{data}}(\mathbf{x})$ (unknown up to the
+data samples), the goal is to learn a parameterised score function
+$\mathbf{s}_\theta(\mathbf{x})$ that approximates $\nabla_{\mathbf{x}} \log
+p_{\text{data}}(\mathbf{x})$ for most $\mathbf{x}$ in the support of the
+data distribution.  Several estimators have been proposed; we focus on
+score matching and its variants.
+
+\subsection{Score Matching and Its Limitations}
+
+\emph{Score matching}, introduced by Hyv\"arinen, provides a way to
+estimate the score function by minimising the Fisher divergence between the
+model score and the true data score:
+\begin{equation}
+    \mathcal{J}(\theta) = \frac{1}{2} \int p_{\text{data}}(\mathbf{x})
+    \big\| \mathbf{s}_\theta(\mathbf{x}) - \nabla_{\mathbf{x}}
+    \log p_{\text{data}}(\mathbf{x}) \big\|_2^2 \,\mathrm{d}\mathbf{x}.
+    \label{eq:fisher-divergence-sc}
+\end{equation}
+Differentiating Eq.~\eqref{eq:fisher-divergence-sc} with respect to $\theta$
+and integrating by parts yields an equivalent loss that does not
+explicitly depend on the unknown data score but does involve the divergence
+of the model score:
+\begin{equation}
+    \mathcal{J}(\theta) = \mathbb{E}_{\mathbf{x}\sim p_{\text{data}}}
+    \big[ \tfrac{1}{2} \| \mathbf{s}_\theta(\mathbf{x}) \|^2
+    + \nabla\cdot\mathbf{s}_\theta(\mathbf{x}) \big].
+    \label{eq:score-matching-loss-sc}
+\end{equation}
+While Eq.~\eqref{eq:score-matching-loss-sc} removes the unknown data score,
+it introduces the divergence term $\nabla\cdot\mathbf{s}_\theta(\mathbf{x}) =
+\sum_i \partial s_i(\mathbf{x}) / \partial x_i$, which requires computing
+second derivatives of the model output with respect to its input.  For
+high–dimensional data (e.g., images with thousands of pixels) this
+computation is expensive and often unstable.  Moreover, it imposes
+stringent smoothness requirements on the neural network architecture.  As a
+result, direct score matching has seen limited practical adoption in deep
+learning.
+
+\subsection{Denoising Score Matching}
+
+To avoid the divergence term and the dependence on the unknown data
+score, Vincent proposed \emph{denoising score matching} (DSM).  The key
+idea is to corrupt each data point with Gaussian noise and train a
+network to predict the denoising direction.  Let $\tilde{\mathbf{x}}$ be
+obtained from a clean sample $\mathbf{x}$ via
+\begin{equation}
+    \tilde{\mathbf{x}} = \mathbf{x} + \sigma \boldsymbol{\epsilon},
+    \quad \boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0},\mathbf{I}),
+    \label{eq:dsm-perturb}
+\end{equation}
+where $\sigma>0$ is a user–chosen noise level.  The distribution
+of $\tilde{\mathbf{x}}$ is the convolution of the data distribution with
+a Gaussian kernel.  A remarkable result shows that the score of this noisy
+distribution is proportional to the negative of the injected noise,
+namely
+\begin{equation}
+    \nabla_{\tilde{\mathbf{x}}} \log p_\sigma(\tilde{\mathbf{x}}) =
+    -\frac{\boldsymbol{\epsilon}}{\sigma}.
+\end{equation}
+DSM therefore trains a parameterised score function
+$\mathbf{s}_\theta(\tilde{\mathbf{x}},\sigma)$ to predict $-\boldsymbol{\epsilon}/\sigma$.
+The loss function for DSM can be written as
+\begin{equation}
+    \mathcal{L}_{\text{DSM}}(\theta) =
+    \mathbb{E}_{\mathbf{x},\boldsymbol{\epsilon}}
+    \Big[ \tfrac{1}{2} \sigma^2 \big\| \mathbf{s}_\theta(\mathbf{x} +
+    \sigma \boldsymbol{\epsilon}, \sigma) + \tfrac{\boldsymbol{\epsilon}}{\sigma}
+    \big\|^2 \Big].
+    \label{eq:dsm-loss-sec}
+\end{equation}
+Because the target $-\boldsymbol{\epsilon}/\sigma$ is known, DSM turns
+score estimation into a supervised learning problem.  Crucially, the
+loss in Eq.~\eqref{eq:dsm-loss-sec} does not involve the divergence
+operator and avoids computing second derivatives.  As $\sigma$ tends to
+zero, the DSM objective approaches the original score matching loss, but
+training at zero noise is unstable and provides no gradient signal away
+from the data manifold.  Adding a small amount of noise spreads the
+support of the data distribution and yields well–behaved gradients.
+
+\subsection{Multi--Scale Noise Perturbation and Weighted DSM}
+
+Using a single noise level $\sigma$ allows the model to learn the score
+of the noisy density $p_\sigma$, but it does not directly provide the
+score of the clean distribution.  To bridge this gap, Song and Ermon
+introduced a \emph{multi–scale noise schedule}.  They select a sequence
+of noise levels $\sigma_1 > \sigma_2 > \cdots > \sigma_L$ that spans a
+large range, typically on a logarithmic scale.  During training, each
+mini–batch is corrupted with a noise level sampled uniformly from this
+set, and the noise level itself is provided as an input to the network.
+
+To ensure that contributions from different noise scales are balanced,
+the DSM loss is weighted by $\sigma^2$:
+\begin{equation}
+    \mathcal{L}_{\text{MDSM}}(\theta) =
+    \mathbb{E}_{\mathbf{x},\boldsymbol{\epsilon}}
+    \mathbb{E}_{\sigma \sim \mathcal{U}(\{\sigma_1,\dots,\sigma_L\})}
+    \Big[ \tfrac{1}{2} \sigma^2 \big\|\mathbf{s}_\theta(\mathbf{x} +
+    \sigma \boldsymbol{\epsilon}, \sigma) + \tfrac{\boldsymbol{\epsilon}}{\sigma}
+    \big\|^2 \Big].
+    \label{eq:mdsm-loss}
+\end{equation}
+Here $\mathcal{U}(\{\sigma_1,\dots,\sigma_L\})$ denotes the uniform
+distribution over the discrete ladder.  Large noise levels dominate the
+loss due to the $\sigma^2$ weighting, forcing the model to focus on
+coarse–scale structures.  As the noise decreases, the model learns finer
+details.  This multi–scale denoising score matching (MDSM) objective
+provides gradients across the entire range of resolutions and is critical
+for high–quality generation.
+\subsection{Annealed Langevin Dynamics and Connections to Diffusion Processes}
+
+Once the score network has been trained across multiple noise levels,
+sampling proceeds by reversing the corruption process.  We start from a
+Gaussian distribution with variance $\sigma_L^2$ (the largest noise
+level) and iteratively refine the sample via \emph{annealed Langevin
+dynamics}.  For each level $\sigma_k$, we perform a fixed number of
+Langevin updates
+\begin{equation}
+    \mathbf{x}_{t+1} = \mathbf{x}_t + \eta_k\,\mathbf{s}_\theta(\mathbf{x}_t,
+    \sigma_k) + \sqrt{2\eta_k}\,\boldsymbol{\xi}_t,
+\end{equation}
+where $\eta_k$ is a step size proportional to $(\sigma_k/\sigma_1)^2$ and
+$\boldsymbol{\xi}_t \sim \mathcal{N}(\mathbf{0},\mathbf{I})$.  After $T$
+steps at level $\sigma_k$ the noise level is reduced to $\sigma_{k-1}$
+and the process repeats.  In the limit of infinitely many noise scales
+and infinitesimal step sizes, this discrete procedure approximates the
+solution of a reverse stochastic differential equation.  Song,
+Sohl–Dickstein and collaborators formalised this connection and showed
+that score–based models can be interpreted as simulating a diffusion
+process backwards in time using the learned score function.  Although the
+continuous SDE formulation provides a clear theoretical framework, the
+discrete ALD algorithm is simple to implement and performs well in
+practice.  We adopt this algorithm in our implementation.
+
+\subsection{Mixture Model Revisited and Mode Trapping}
+
+The mixture–of–Gaussians example from Part~2 illustrates a limitation of
+gradient–based samplers, whether they operate on energies or scores.
+Consider again the mixture density
+\begin{equation}
+    p(\mathbf{x}) = w_a p_a(\mathbf{x}) + w_b p_b(\mathbf{x}),
+\end{equation}
+where the supports of $p_a$ and $p_b$ are disjoint.  The score within
+each region depends only on the local component and ignores the mixing
+weights.  Consequently, if we initialise Langevin dynamics or ALD within
+component $a$, the trajectory will remain in the domain of $p_a$ because
+the gradient of the log–density vanishes at the boundary.  The sampler
+cannot cross the energy barrier separating the modes.  This phenomenon is
+often referred to as \emph{mode trapping}.  In practice, the multi–scale
+noise schedule helps to some extent: at large noise levels the Gaussian
+convolution blends the components and the score field becomes smoother,
+allowing the chain to cross between modes.  However, components with very
+small mixing weights may still be under–sampled.  Designing samplers that
+explore all modes proportionally remains an open research problem.
+
+\subsection{Summary of Score–Based Theory}
+
+This part has developed the theoretical foundations of score–based
+generative modeling.  Starting from the score function we derived the
+Fisher divergence loss and explained why its naive implementation is
+impractical for high–dimensional data.  We introduced denoising score
+matching, which circumvents the need for divergence terms by adding
+Gaussian noise to the data and casting score estimation as a supervised
+learning problem.  A multi–scale noise ladder and corresponding
+weighting scheme were presented to train the model across a range of
+resolutions.  We then described annealed Langevin dynamics, a discrete
+approximation to the reverse SDE used for sampling, and discussed its
+connection to diffusion processes.  Finally, we revisited the
+mixture–of–Gaussians example to highlight the mode trapping issue and
+underscored the need for careful sampler design.  These insights lay the
+groundwork for the practical implementation of noise conditional score
+networks in the next part.

@@ -1,0 +1,260 @@
+% Part 2 – Theory of Energy–Based Models
+
+% ---------------------------------------------------------------------------
+% This section delves into the theoretical foundations of energy–based models
+% (EBMs).  It expands upon the brief summary provided in Part 1 by defining
+% energy functions, partition functions, and score functions, deriving the
+% log–likelihood gradient used for training, and analysing sampling schemes
+% such as Langevin dynamics and rejection sampling.  We also revisit the
+% mixture–of–Gaussians example to illustrate how the score function can
+% ignore mixing weights, leading to multimodal sampling difficulties.
+
+\section{Energy--Based Models: Theory}
+
+\subsection{Definition of an Energy Function}
+
+An \emph{energy–based model} specifies a distribution over a high–
+dimensional variable $\mathbf{x}$ through a scalar–valued \emph{energy
+function} $E_\theta(\mathbf{x})$, parameterised by $\theta$:
+\begin{equation}
+    p_\theta(\mathbf{x}) = \frac{\exp\big(-E_\theta(\mathbf{x})\big)}{Z_\theta},
+    \quad \text{with} \quad Z_\theta = \int \exp\big(-E_\theta(\mathbf{x})\big)
+    \,\mathrm{d}\mathbf{x}.
+    \label{eq:ebm-density}
+\end{equation}
+Here $Z_\theta$ is the \emph{partition function} that normalises the density.
+In contrast to probabilistic models that explicitly compute $Z_\theta$, EBMs
+are often trained by maximising the log–likelihood of the data without
+evaluating $Z_\theta$ exactly.  As emphasised by LeCun et~al., the absence
+of a normalisation requirement confers great flexibility: probabilistic
+models must be properly normalised, which can require evaluating
+intractable integrals over all possible configurations, whereas EBMs have
+no such requirement and thus circumvent the problem of normalisation
+entirely【861141214805006†L26-L33】.  This property allows the design of
+loss functions that encourage the energy assigned to observed data to be
+smaller than that assigned to unobserved configurations【861141214805006†L46-L56】.
+
+Equation~\eqref{eq:ebm-density} suggests that low–energy points have high
+probability under the model.  Learning and inference are therefore
+formulated in terms of minimising $E_\theta(\mathbf{x})$ with respect to
+\emph{unobserved} variables and adjusting $\theta$ so that observed
+configurations lie in low–energy regions【861141214805006†L46-L63】.  We
+distinguish between two sets of variables: observed inputs $\mathbf{x}$ and
+variables to be predicted $\mathbf{y}$; the energy function $E(\mathbf{y},
+\mathbf{x})$ measures their compatibility, and inference corresponds to
+finding the value of $\mathbf{y}$ that minimises $E(\mathbf{y},\mathbf{x})$ at
+fixed $\mathbf{x}$【861141214805006†L261-L267】.
+
+\subsection{Partition Function and Log–Likelihood Gradient}
+
+Although the density in Eq.~\eqref{eq:ebm-density} depends on $Z_\theta$, we
+often avoid computing the partition function explicitly by working with
+gradients of the log–likelihood.  Given a dataset $\{\mathbf{x}^{(n)}\}$, the
+negative log–likelihood loss is
+\begin{equation}
+    \mathcal{L}(\theta) = -\frac{1}{N}\sum_{n=1}^N \log p_\theta\big(\mathbf{x}^{(n)}\big)
+    = \frac{1}{N}\sum_{n=1}^N \Big(E_\theta\big(\mathbf{x}^{(n)}\big) + \log Z_\theta\Big).
+\end{equation}
+The gradient of $\mathcal{L}(\theta)$ with respect to $\theta$ can be derived
+using the log–likelihood trick:
+\begin{align}
+    \nabla_\theta \log p_\theta(\mathbf{x})
+    &= \nabla_\theta \big(-E_\theta(\mathbf{x}) - \log Z_\theta\big) \\
+    &= -\nabla_\theta E_\theta(\mathbf{x}) + \frac{1}{Z_\theta} \nabla_\theta Z_\theta
+      \quad (\text{by differentiating under the integral sign}) \\
+    &= -\nabla_\theta E_\theta(\mathbf{x}) + \int \exp\big(-E_\theta(\mathbf{x}')\big)
+      \nabla_\theta E_\theta(\mathbf{x}') \; p_\theta(\mathbf{x}') \,\mathrm{d}\mathbf{x}' \\
+    &= -\nabla_\theta E_\theta(\mathbf{x}) + \mathbb{E}_{\mathbf{x}' \sim p_\theta}
+      \big[\nabla_\theta E_\theta(\mathbf{x}')\big],
+    \label{eq:ebm-gradient}
+\end{align}
+where we have used the fact that $\nabla_\theta Z_\theta = \int 
+\exp\big(-E_\theta(\mathbf{x}')\big)(-\nabla_\theta E_\theta(\mathbf{x}'))\,\mathrm{d}\mathbf{x}'$
+and that $p_\theta(\mathbf{x}') = \exp\big(-E_\theta(\mathbf{x}')\big)/Z_\theta$.
+Equation~\eqref{eq:ebm-gradient} is the key result underpinning maximum
+likelihood training for EBMs: the gradient consists of a \emph{positive
+phase} term $-\nabla_\theta E_\theta(\mathbf{x})$ that pushes down the energy
+of real data and a \emph{negative phase} term $\mathbb{E}_{p_\theta}[\nabla_\theta
+E_\theta(\mathbf{x}')]$ that pushes up the energy of model samples.  The
+training objective therefore encourages lower energy for data points and
+higher energy for synthetic samples drawn from the current model.
+
+\subsection{Sampling and the Challenge of the Negative Phase}
+
+The main computational difficulty in evaluating Eq.~\eqref{eq:ebm-gradient}
+lies in estimating the negative phase expectation over $p_\theta$.  Since
+directly sampling from $p_\theta$ is generally intractable, one must resort
+to approximate methods.  \emph{Contrastive divergence} (CD) is a popular
+technique introduced by Hinton that replaces the expectation over the model
+distribution with a short Markov chain starting from the data.  In CD-$k$
+training, for each data point $\mathbf{x}$, one initialises a chain at
+$\mathbf{x}$, performs $k$ steps of a Markov transition kernel (often
+Langevin dynamics or Gibbs sampling), and uses the resulting sample
+$\tilde{\mathbf{x}}$ to approximate the negative phase gradient.  The
+update direction is then
+\begin{equation}
+    \nabla_\theta \mathcal{L}_{\text{CD}} \approx -\frac{1}{N}\sum_{n=1}^N
+    \nabla_\theta E_\theta\big(\mathbf{x}^{(n)}\big) +
+    \frac{1}{N}\sum_{n=1}^N \nabla_\theta E_\theta\big(\tilde{\mathbf{x}}^{(n)}\big),
+\end{equation}
+where $\tilde{\mathbf{x}}^{(n)}$ denotes the sample after $k$ Markov steps.  The
+approximation becomes exact as $k\to\infty$ and the chain equilibrates, but
+in practice very few steps (e.g., $k=1$ or $k=10$) often suffice to
+produce useful updates.
+
+\subsection{Langevin Dynamics for Sampling}
+
+One of the most widely used sampling techniques for EBMs is \emph{Langevin
+dynamics}.  It arises from the discretisation of a stochastic differential
+equation (SDE) that simulates Brownian motion on an energy landscape.
+Starting from an initial configuration $\mathbf{x}_0$, Langevin updates are
+given by
+\begin{equation}
+    \mathbf{x}_{t+1} = \mathbf{x}_t - \frac{\eta}{2}
+    \nabla_{\mathbf{x}} E_\theta(\mathbf{x}_t) + \sqrt{\eta}\,\boldsymbol{\xi}_t,
+    \quad \boldsymbol{\xi}_t \sim \mathcal{N}(\mathbf{0}, \mathbf{I}),
+    \label{eq:langevin}
+\end{equation}
+where $\eta$ is the step size and $\boldsymbol{\xi}_t$ is a Gaussian noise
+vector.  Equation~\eqref{eq:langevin} can be derived by discretising the
+overdamped Langevin SDE $\mathrm{d}\mathbf{x} = -\nabla_{\mathbf{x}}
+E_\theta(\mathbf{x})\,\mathrm{d}t + \sqrt{2}\,\mathrm{d}\mathbf{W}(t)$, where
+$\mathbf{W}(t)$ is a Wiener process.  Under suitable conditions on
+$E_\theta$, the Markov chain defined by Eq.~\eqref{eq:langevin} has
+$p_\theta$ as its stationary distribution.  In practice, one clamps the
+iterate to a valid range (e.g., $[0,1]$ for image pixels) after each step
+to ensure that generated samples remain within the domain.
+
+Langevin dynamics is used both during training (to generate negative phase
+samples) and at inference time (to produce novel images or denoise noisy
+images).  The quality of the samples depends on the number of steps, the
+step size, and the balance between exploration (due to noise) and
+exploitation (due to the gradient term).  Longer chains allow the Markov
+process to mix more thoroughly but increase computational cost.
+
+\subsection{Rejection Sampling and High--Dimensional Acceptance Rates}
+
+As an alternative to gradient–based sampling, one could in principle use
+\emph{rejection sampling} to draw from $p_\theta(\mathbf{x})$.  Suppose
+one has a proposal distribution $q(\mathbf{x})$ from which samples are
+readily drawn and a target density proportional to $\tilde{p}(\mathbf{x})
+\propto \exp\big(-E_\theta(\mathbf{x})\big)$.  To perform rejection sampling
+we must find a constant $M$ such that
+\begin{equation}
+    \tilde{p}(\mathbf{x}) \leq M\,q(\mathbf{x}) \quad \text{for all }\mathbf{x}.
+\end{equation}
+Given a sample $\mathbf{x}\sim q$ and a uniform random number $u\sim
+\mathrm{Uniform}(0,M q(\mathbf{x}))$, the sample is accepted if $u \leq
+\tilde{p}(\mathbf{x})$ and rejected otherwise.  The acceptance probability is
+$1/M$, and the expected number of proposals before acceptance is $M$.
+
+For high–dimensional data, however, the acceptance rate can be vanishingly
+small.  Consider the case where both $q$ and $\tilde{p}$ are isotropic
+Gaussian densities on $\mathbb{R}^d$ with zero mean but different standard
+deviations $\sigma_q$ and $\sigma_p$.  The ratio of the unnormalised
+density to the proposal density satisfies
+\begin{equation}
+    \frac{\tilde{p}(\mathbf{x})}{q(\mathbf{x})}
+    = \Big(\frac{\sigma_q}{\sigma_p}\Big)^d \exp\Big(-\frac{\|\mathbf{x}\|^2}{2}
+      \big(\sigma_p^{-2} - \sigma_q^{-2}\big)\Big) \leq
+    \Big(\frac{\sigma_q}{\sigma_p}\Big)^d,
+\end{equation}
+so we may take $M=(\sigma_q/\sigma_p)^d$.  For MNIST, the dimensionality
+is $d=784$.  If we choose $\sigma_q = 1.01\,\sigma_p$, then $M = 1.01^{784}
+\approx \exp(784\times 0.00995) \approx \exp(7.8) \approx 2.44\times 10^3$.
+Thus the acceptance rate is roughly $1/M \approx 4\times 10^{-4}$—one in
+2,500 samples would be accepted on average.  This simple calculation
+illustrates that rejection sampling is impractical for high–dimensional
+problems like images.  In practice, gradient–based methods such as
+Langevin dynamics or Hamiltonian Monte Carlo are preferred.
+
+\subsection{Mixture of Gaussians and Score Independence from Mixing Weights}
+
+Another instructive example concerns a mixture of two Gaussian densities
+with disjoint supports.  Let $p_a(\mathbf{x})$ and $p_b(\mathbf{x})$ be
+Gaussian densities with means $\boldsymbol{\mu}_a$, $\boldsymbol{\mu}_b$ and
+covariances $\boldsymbol{\Sigma}_a$, $\boldsymbol{\Sigma}_b$, respectively,
+such that $\text{supp}(p_a) \cap \text{supp}(p_b)=\varnothing$.  Consider the
+mixture
+\begin{equation}
+    p(\mathbf{x}) = w_a p_a(\mathbf{x}) + w_b p_b(\mathbf{x}),
+    \quad w_a, w_b \geq 0,\; w_a + w_b = 1.
+\end{equation}
+The log–density within the support of component $a$ is
+\begin{equation}
+    \log p(\mathbf{x}) = \log\big(w_a p_a(\mathbf{x})\big)
+    = \log w_a + \log p_a(\mathbf{x}),
+\end{equation}
+and therefore
+\begin{equation}
+    \nabla_{\mathbf{x}} \log p(\mathbf{x}) = \nabla_{\mathbf{x}} \log p_a(\mathbf{x}),
+    \quad \mathbf{x}\in\text{supp}(p_a).
+\end{equation}
+An analogous expression holds in $\text{supp}(p_b)$.  The gradient of the
+log–density—\emph{the score function}—is thus independent of the mixing
+weights $w_a$ and $w_b$ on either component.  The score is determined
+solely by the local density and does not convey any information about the
+global mixture proportions.  Consequently, when one performs Langevin
+dynamics using the score, the chain will explore one component without
+ever moving to the other.  The sampler cannot traverse from region $A$ to
+region $B$ because the gradient vanishes on the boundary of the disjoint
+supports.  This insight highlights the limitations of using simple gradient–
+based dynamics for multimodal distributions.  In practise, one might
+mitigate the issue by adding noise, tempering the energy landscape, or
+employing non–local moves via importance resampling.
+
+\subsection{Score Function and Independence from Normalisation}
+
+It is often convenient to define the \emph{score function} of a model
+$p_\theta(\mathbf{x})$ as the gradient of the log–density with respect to
+$\mathbf{x}$:
+\begin{equation}
+    \mathbf{s}_\theta(\mathbf{x}) = \nabla_{\mathbf{x}} \log p_\theta(\mathbf{x})
+    = -\nabla_{\mathbf{x}} E_\theta(\mathbf{x}) - \nabla_{\mathbf{x}} \log
+    Z_\theta.
+\end{equation}
+Since $\log Z_\theta$ is constant with respect to $\mathbf{x}$, its gradient
+vanishes.  Therefore
+\begin{equation}
+    \mathbf{s}_\theta(\mathbf{x}) = -\nabla_{\mathbf{x}} E_\theta(\mathbf{x}),
+    \label{eq:score-from-energy}
+\end{equation}
+which shows that the score is independent of the partition function
+$Z_\theta$.  This independence is a core advantage of working with scores:
+one can learn gradients of log–densities without computing the normalising
+constant.  In later sections we will see how this idea underpins
+score–based generative models.
+
+\subsection{Problems with Naïve Score Matching on Raw Data}
+
+One might be tempted to directly match the model score function
+$\mathbf{s}_\theta(\mathbf{x})$ to the true data score $\nabla_{\mathbf{x}} \log
+p_{\text{data}}(\mathbf{x})$ by minimising the \emph{Fisher divergence},
+\begin{equation}
+    \mathcal{L}_{\text{SM}}(\theta) = \frac{1}{2}
+    \int p_{\text{data}}(\mathbf{x}) \big\| \mathbf{s}_\theta(\mathbf{x}) -
+    \nabla_{\mathbf{x}} \log p_{\text{data}}(\mathbf{x}) \big\|^2 \,
+    \mathrm{d}\mathbf{x}.
+\end{equation}
+However, this loss involves computing the divergence of the score,
+$\nabla\cdot\mathbf{s}_\theta(\mathbf{x})$, which is intractable in high
+dimensions because it requires evaluating second derivatives of the model
+output with respect to the input.  Moreover, the true data score
+$\nabla_{\mathbf{x}} \log p_{\text{data}}(\mathbf{x})$ is unknown except in
+simple parametric cases, making direct score matching impractical for
+realistic datasets such as images.  These issues motivate alternative
+training objectives, such as denoising score matching, which we discuss in
+Part~5.
+
+\subsection{Summary of Theoretical Insights}
+
+In this part we introduced the core theoretical concepts underpinning
+energy–based models.  We defined the energy function and its associated
+unnormalised density, derived the maximum–likelihood gradient and
+decomposed it into positive and negative phases, examined sampling via
+Langevin dynamics and rejection sampling, and analysed the failure of the
+score to incorporate mixture weights in multimodal settings.  We also
+highlighted the independence of the score from the partition function and
+discussed why naïvely matching scores on raw data is problematic in
+practice.  These insights motivate the training strategies and design
+decisions implemented in the next part of the report.

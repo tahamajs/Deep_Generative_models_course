@@ -1,0 +1,263 @@
+
+%%
+%% Part 2 – Theoretical Foundations of Diffusion Models
+%%
+%% This chapter revisits the core theory behind denoising diffusion
+%% probabilistic models (DDPMs) and related variants.  It begins with
+%% a derivation of the closed‑form marginal distribution in the forward
+%% process, explains why predicting noise is advantageous, analyses
+%% the variational objective, discusses DDIM sampling and introduces
+%% classifier‑free guidance.  Additional sections elaborate on the
+%% mathematical framework, network architectures, training objectives
+%% and sampling algorithms.  All content has been carefully preserved
+%% and reorganised from the original assignment.
+
+\section{Theoretical Foundations of Diffusion Models}
+
+Diffusion models are a family of generative techniques that learn to
+reverse a gradually applied corruption process.  By viewing
+generation as the solution to a stochastic or deterministic
+differential equation, these models are grounded in probability
+theory and admit closed‑form expressions for certain quantities.
+This section develops the key theoretical results and motivations.
+
+\subsection{Closed‑Form Expression for the Forward Process}
+
+Consider a Markov chain $\{x_t\}_{t=0}^T$ that progressively
+corrupts a clean sample $x_0$ by adding Gaussian noise at each step.
+The single‑step forward transition is defined as
+\begin{equation}
+  q(x_t \mid x_{t-1}) = \mathcal{N}(x_t; \sqrt{\alpha_t}\,x_{t-1}, (1-\alpha_t)I),
+\end{equation}
+where $\alpha_t \in (0,1]$ controls the variance schedule and $I$ is
+the identity matrix.  Expanding this recursion yields a closed‑form
+expression for the marginal at time $t$ given $x_0$.
+
+\begin{solutionbox}
+  To prove that $q(x_t\mid x_0) = \mathcal{N}(\sqrt{\bar{\alpha}_t} x_0,
+  (1 - \bar{\alpha}_t)I)$, where $\bar{\alpha}_t = \prod_{s=1}^t
+  \alpha_s$, we begin with the reparameterisation
+  \begin{equation}
+    x_t = \sqrt{\alpha_t}\,x_{t-1} + \sqrt{1-\alpha_t}\,\epsilon_{t-1},
+    \quad \epsilon_{t-1} \sim \mathcal{N}(0,I).
+  \end{equation}
+  Substituting the expression for $x_{t-1}$ recursively back to
+  $x_0$ accumulates products of square roots:
+  \begin{equation}
+    x_t = \sqrt{\alpha_t\alpha_{t-1}}\,x_{t-2} + \sqrt{\alpha_t(1-\alpha_{t-1})}
+    \epsilon_{t-2} + \sqrt{1-\alpha_t}\,\epsilon_{t-1}.
+  \end{equation}
+  Merging independent Gaussian terms results in a single Gaussian
+  noise term with variance $1 - \alpha_t\alpha_{t-1}$.  Induction
+  shows that
+  \begin{equation}
+    x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1 - \bar{\alpha}_t}\,\epsilon,
+    \quad \epsilon \sim \mathcal{N}(0,I),
+  \end{equation}
+  which implies the stated distribution.
+\end{solutionbox}
+
+The above proof reveals that the forward process admits a closed‑form
+solution for the marginal distribution at any timestep $t$.
+Therefore, the forward diffusion can be sampled directly without
+iterating through all intermediate states.
+
+\subsection{Why Predict Noise?}
+
+The reverse diffusion process aims to reconstruct $x_{t-1}$ from
+$x_t$.  One could train a neural network to predict the posterior
+mean $\mu_\theta(x_t, t)$ directly.  However, it is more stable to
+predict the noise component $\epsilon$ added during the forward step.
+Two key advantages of noise prediction are summarised below.
+
+\begin{solutionbox}
+  \begin{enumerate}[label=\arabic*., leftmargin=2em]
+    \item \textbf{Scale invariance and numerical stability.}  The
+      target noise $\epsilon \sim \mathcal{N}(0,I)$ has constant
+      variance across timesteps.  Predicting $\mu_\theta$ or $x_0$ would
+      require dealing with widely varying scales: at early timesteps
+      the data dominates, while at late timesteps the noise dominates.
+      Noise prediction decouples the signal magnitude from the noise
+      level, leading to more stable gradients.
+    \item \textbf{Improved sample quality via reweighted loss.}
+      Minimising the variational lower bound (VLB) yields a loss with
+      timestep‑dependent weights that emphasise easy early steps and
+      down‑weight difficult later steps.  By predicting noise and using
+      the simple MSE loss $\|\epsilon - \epsilon_\theta(x_t,t)\|^2$,
+      one effectively reweights the VLB, encouraging the model to
+      focus on the most challenging denoising tasks.  Empirically
+      this produces sharper and more realistic samples.
+  \end{enumerate}
+\end{solutionbox}
+
+\subsection{Variational Lower Bound and KL Terms}
+
+Training diffusion models can be viewed as maximising a variational
+lower bound (VLB) on the data log‑likelihood.  The VLB decomposes
+into three terms: a reconstruction term $L_0$, a sum of KL
+divergences $L_{1:T-1}$ that penalise mismatch between the learned
+reverse transitions and the true posteriors, and a prior matching
+term $L_T$.  The KL terms encourage the reverse process to match the
+forward process, ensuring that the model learns to invert the
+corruption correctly.  In practice these terms are ignored in
+favour of the simplified noise‑prediction loss; see the following box
+for details.
+
+\begin{solutionbox}
+  \textbf{(A) Role of KL terms.}  The KL divergences
+  \(D_{\text{KL}}\bigl(q(x_{t-1}\mid x_t, x_0)\,\|\,p_\theta(x_{t-1}\mid x_t)\bigr)\)
+  encourage the neural network to produce reverse transitions that
+  match the true forward posteriors.  This ensures that the learned
+  reverse diffusion is consistent with the forward corruption process.
+
+  \textbf{(B) Why ignore them?}  In practice the KL terms simplify to
+  a weighted squared error between the predicted noise and the true
+  noise.  The weights decrease for small $t$, rendering early terms
+  nearly negligible.  Ignoring the KL weights yields the simplified
+  MSE loss, which focuses learning on the more difficult denoising
+  steps and often improves perceptual quality despite a slight loss
+  in likelihood.
+\end{solutionbox}
+
+\subsection{DDIM Sampling}
+
+\emph{Denoising Diffusion Implicit Models} (DDIM) introduce a
+Deterministic sampling rule derived from the reverse SDE of diffusion.
+In the DDPM sampling rule, a small amount of noise $\eta$ is added
+at each step.  DDIM sets this noise scale to zero ($\eta=0$), making
+The sampling process deterministic and non‑Markovian.  The update
+Equation becomes
+\begin{equation}
+  x_{t-1} = \sqrt{\alpha_{t-1}}
+  \Bigg(
+    \frac{x_t - \sqrt{1-\bar{\alpha}_t}\,\epsilon_\theta(x_t,t)}{\sqrt{\bar{\alpha}_t}} +
+    \sqrt{1-\frac{\bar{\alpha}_t}{\bar{\alpha}_{t-1}}}\,\epsilon_\theta(x_t,t)
+  \Bigg).
+\end{equation}
+By skipping over timesteps (e.g. using 50 steps instead of 1000), one
+can sample much more quickly at minimal quality loss.  The
+following box summarises the mechanism and benefits.
+
+\begin{solutionbox}
+  \textbf{(A) How does DDIM make sampling deterministic?}  By
+  setting the noise scale $\eta$ to zero in the reverse SDE, the
+  random noise term disappears from the update rule.  As a result,
+  the mapping from $x_t$ to $x_{t-1}$ becomes a deterministic
+  function of $x_t$ and the predicted noise $\epsilon_\theta(x_t,t)$.
+  This transforms the random walk of DDPM into a deterministic
+  trajectory analogous to solving an ODE.
+
+  \textbf{(B) Why is it faster?}  Because the reverse process is
+  non‑Markovian, one can jump directly from timestep $t$ to $t-k$ by
+  chaining together the deterministic update rule.  In practice, one
+  selects a subset of timesteps (e.g. 50 out of 1000) and performs
+  updates only at those points.  This reduces computational cost by a
+  factor of twenty while preserving fidelity for moderate noise levels.
+\end{solutionbox}
+
+\subsection{Classifier‑Free Guidance}
+
+Guided generation traditionally uses a separate classifier to steer
+unconditional models toward desired attributes.  \emph{Classifier‑free
+Guidance} (CFG) eliminates the need for an external classifier by
+training a single model on both conditional and unconditional inputs.
+During training, conditioning information (e.g. a text prompt) is
+randomly dropped and replaced with a null token.  At inference time,
+the final noise prediction is a linear combination of the
+conditional prediction and the unconditional prediction:
+\begin{equation}
+  \tilde{\epsilon}_\theta(x_t,c) =
+  \epsilon_\theta(x_t,\emptyset) + w \bigl(
+    \epsilon_\theta(x_t,c) - \epsilon_\theta(x_t,\emptyset)
+  \bigr).
+\end{equation}
+Here $w$ is the guidance scale controlling the trade‑off between
+adherence to the conditioning and output diversity.  The next box
+summarises the idea.
+
+\begin{solutionbox}
+  \textbf{(A) Main idea of CFG.}  The model is trained to produce
+  both unconditional predictions $\epsilon_\theta(x_t,\emptyset)$ and
+  conditional predictions $\epsilon_\theta(x_t,c)$.  At inference,
+  these are combined: starting from the unconditional prediction, the
+  difference between the conditional and unconditional outputs is
+  scaled by $w$ and added back.  This mimics a classifier gradient
+  while requiring no separate classifier.
+
+  \textbf{(B) Effect of guidance scale.}  Increasing $w$ produces
+  images that adhere more closely to the conditioning (e.g. text
+  prompts) but at the expense of diversity.  Too small a value leads
+  to generic or off‑prompt outputs; too large a value results in
+  oversaturation, unnatural textures and diminished variation.  An
+  intermediate choice (e.g. $w\in[5,10]$ for images) often yields
+  the best balance between fidelity and diversity.
+\end{solutionbox}
+
+\subsection{Mathematical Foundations}
+
+Having introduced the key theoretical building blocks, we summarise
+The mathematical framework underpinning diffusion models.  The
+forward diffusion is a discrete‑time Markov chain defined by a
+variance schedule $\beta_1,\dots,\beta_T$.  Its marginal distribution
+admits a closed form as derived above.  The reverse process is
+parametrised by a neural network that learns to denoise.  Training
+amounts to minimising the expected squared error between predicted
+and true noise or, equivalently, maximising a variational lower
+Bound.  The probability flow ODE associated with the diffusion SDE
+provides a deterministic counterpart used in DDIM.
+
+\subsection{U‑Net Architecture for Diffusion Models}
+
+Although the theory of diffusion models is agnostic to the choice of
+neural architecture, U‑Nets have emerged as a powerful backbone for
+noise prediction.  The U‑Net used in this report features four
+Downsampling levels and four upsampling levels.  Each level contains
+residual blocks with group normalisation and SiLU activation,
+self‑attention modules, and 1×1 or transpose convolutional layers to
+adjust channel dimensions.  Time embeddings generated via
+sinusoidal encodings are injected into every residual block via
+learned affine transformations.  Skip connections concatenate
+feature maps from the encoder to the corresponding decoder blocks.
+
+\subsection{Training Objective}
+
+The simplified objective used throughout this report is
+\begin{equation}
+  \mathcal{L}_{\text{simple}}(\theta) =
+  \mathbb{E}_{x_0,\epsilon,t}\bigl[\|\epsilon -
+    \epsilon_\theta(x_t,t)\|_2^2\bigr].
+\end{equation}
+Here $t$ is sampled uniformly from $\{0,\dots,T-1\}$ for each
+training example, $\epsilon \sim \mathcal{N}(0,I)$ and $x_t$ is
+Generated from $x_0$ via the forward diffusion.  This loss focuses
+training on accurately predicting noise across all timesteps and
+implicitly emphasises harder denoising tasks.
+
+\subsection{Sampling Algorithms}
+
+Sampling from a trained diffusion model begins with pure Gaussian
+noise $x_T \sim \mathcal{N}(0,I)$ and applies the learned reverse
+transition repeatedly until reaching $x_0$.  The DDPM update rule
+uses the posterior mean and variance of the reverse transition
+Together with a noise term.  DDIM modifies this rule to remove
+stochasticity and enable step skipping.  The pseudo‑code for DDPM
+sampling is given below:
+\begin{lstlisting}[language=Python, caption=DDPM Sampling Pseudo‑code]
+for t in range(T, 0, -1):
+    z = torch.randn_like(x_t) if t > 1 else 0
+    eps = epsilon_theta(x_t, t)
+    x_{t-1} = (1/sqrt(alpha_t)) * (x_t - (1-alpha_t)/sqrt(1-alpha_bar_t) * eps) + sigma_t * z
+\end{lstlisting}
+
+For DDIM sampling, one constructs a custom timetable of timesteps
+$\{t_0=T, t_1, \dots, t_K=0\}$ (e.g. using a strided schedule) and
+applies the deterministic update derived earlier.
+
+\subsection{Conclusion of Part~2}
+
+This chapter has provided a thorough theoretical overview of
+Denoising diffusion models.  In addition to deriving the closed
+Forward distribution, we have argued for noise prediction, analysed
+The VLB, explained DDIM sampling and classifier‑free guidance, and
+Discussed architectural and training considerations.  The next
+chapter (Part~3) will implement these ideas in practice.

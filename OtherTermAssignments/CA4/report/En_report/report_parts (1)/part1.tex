@@ -1,0 +1,221 @@
+%%
+%% Part 1 – Title, Abstract, Introduction and Methodology
+%%
+%% This file constitutes the first chapter of our modular report.  It
+%% introduces the motivation behind generative modelling, states the
+%% problem and outlines the methodological framework used in the
+%% remainder of the report.  Each section retains the core content
+%% from the original assignment while adding narrative glue and
+%% clarifying remarks.  Feel free to edit or extend these
+%% explanations to improve readability without altering the scientific
+%% substance.
+
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+\label{sec:abstract}
+
+The synthesis of realistic financial time series remains a
+significant challenge due to non‑stationary dynamics, high
+noise‑to‑signal ratios and the presence of heavy‑tailed distributions.
+Deep generative models offer powerful tools to address this challenge
+by learning complex probability distributions from data.  In this
+report we investigate the transition from discrete‑time \emph{Denoising
+Diffusion Probabilistic Models} (DDPM) to continuous‑time \emph{Flow
+Matching} (FM) frameworks.  We demonstrate the mathematical
+equivalence between the probability flow ordinary differential
+equations (ODEs) of diffusion and the deterministic vector fields of
+Flow Matching.  Using SPY exchange traded fund (ETF) log‑returns as a
+benchmark, we implement a transformer‑based Flow Matching model that
+utilises linear optimal transport paths.  Our results indicate that
+while both models effectively capture market volatility clustering,
+Flow Matching offers superior sampling efficiency and stability.  We
+evaluate the generated data using the \emph{Sliced Wasserstein
+Distance} (SWD) and temporal autocorrelation metrics, revealing high
+fidelity in reproducing first‑ and second‑order moments, albeit with
+noted challenges in capturing extreme leptokurtic tail behaviour.
+
+\section{Introduction}
+\label{sec:introduction}
+
+\subsection{Context and Motivation}
+
+Generative modelling has undergone a paradigm shift in recent
+years.  Early methods such as Generative Adversarial Networks (GANs)
+relied on adversarial training and often suffered from mode collapse
+and training instability.  Recent advances have introduced
+likelihood‑based approaches that cast the generative task as the
+reversal of a well‑defined forward process.  Among these, \emph{denoising
+diffusion probabilistic models} have gained popularity for their
+stability, expressivity and theoretical grounding.
+
+Financial time series pose a particular challenge due to their
+non‑stationarity and heavy tails.  Realistic simulation of stock
+returns must reproduce stylised facts such as volatility clustering,
+leptokurtic distributions and negligible autocorrelation at non‑zero
+lags.  Traditional parametric models, including GARCH and
+stochastic‑volatility formulations, capture some of these features but
+often fail to reproduce the full distributional complexity observed in
+practice.  Deep generative models promise to overcome these
+limitations by directly learning the data manifold.
+
+\subsection{Objectives of This Study}
+
+This work has several intertwined objectives:
+
+\begin{enumerate}[label=\arabic*., leftmargin=2em]
+  \item To derive and prove key theoretical results in diffusion
+    models, including the closed‑form expression for the marginal
+    forward distribution and the rationale behind noise prediction.
+  \item To explain and implement practical diffusion‑model variants
+    such as DDPM, DDIM and classifier‑free guidance (CFG), assessing
+    their relative strengths.
+  \item To introduce Flow Matching as a continuous‑time alternative
+    that learns velocity fields rather than stochastic scores, and to
+    compare the two paradigms both mathematically and empirically.
+  \item To apply these models to high‑frequency financial data, in
+    particular the SPY ETF log‑returns, demonstrating how generative
+    models can be used for synthetic data generation in finance.
+  \item To provide a reproducible, modular implementation and a
+    comprehensive evaluation using metrics such as SWD, autocorrelation
+    functions, statistical moments and kurtosis.
+\end{enumerate}
+
+\subsection{Structure of the Report}
+
+The remainder of this report is organised into seven additional
+chapters, each in its own \TeX{} file.  Part~\ref{sec:introduction}
+provides the context and sets up the problem.  Part~2 revisits the
+theoretical foundations of diffusion models, deriving the closed‑form
+marginal distribution and discussing noise prediction, variational
+objectives, DDIM sampling and classifier‑free guidance.  Part~3
+delves into the practical implementation of denoising diffusion
+models, detailing the U‑Net architecture, training loops, sampling
+algorithms and quantitative results.  Part~4 introduces Stable
+Diffusion and DreamBooth, covering latent diffusion in the VAE
+representation and personalised fine‑tuning via LoRA.  Parts 5 and 6
+develop the theoretical and practical aspects of Flow Matching,
+respectively, highlighting the deterministic ODE approach.  Part~7
+presents an integrated evaluation and draws conclusions.  Part~8
+contains appendices with detailed derivations, code listings,
+additional figures and a mapping of the report contents to the
+assignment specification.
+
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Data Preparation}
+
+Our experiments utilise daily closing prices of the SPY ETF from
+January~2010 to December~2023.  We compute log‑returns
+$r_t = \log(p_t / p_{t-1})$ and standardise them globally to zero
+mean and unit variance using the training set statistics.  The time
+series is segmented into overlapping sequences of length $L=64$ for
+the diffusion models and $L=100$ for Flow Matching.  We use a
+sliding window with stride 1 to maximise the number of sequences.  A
+chronological split divides the data into 90\% training and 10\%
+testing.
+
+\subsection{Model Architectures}
+
+\paragraph{Diffusion Models.}  The core of the diffusion models is a
+\emph{U‑Net} architecture tailored for noise prediction.  The U‑Net
+comprises an encoder that progressively downsamples the image (or in
+our case the one‑dimensional time series reshaped as a small image),
+a bottleneck with self‑attention, and a decoder that upsamples back to
+the original resolution.  Skip connections preserve high‑resolution
+details.  Time embeddings are injected at each stage using
+sinusoidal positional encodings.
+
+\paragraph{Flow Matching.}  For Flow Matching we employ a
+transformer‑based velocity field network.  Input sequences of
+dimensionality $L \times F$ are projected into a hidden space and
+processed by several multi‑head self‑attention layers.  Continuous
+time information is encoded via sinusoidal embeddings and added to
+every token.  The output projection yields a velocity vector for
+each timestep.
+
+\subsection{Training and Optimisation}
+
+Diffusion models are trained by minimising a simplified MSE loss
+between the predicted noise and the true noise at randomly sampled
+timesteps.  We employ linear beta schedules with $T=1000$ steps and
+optimise using AdamW with a learning rate of $10^{-4}$.  We train
+for 50 epochs with batch size 128.  For DDIM sampling we use 50
+inference steps.
+
+Flow Matching training minimises the mean squared error between the
+predicted velocity and the target velocity $x_1 - x_0$ at random
+times $t \in [0,1]$.  We use batches of size 32 and train for 100
+epochs with Adam optimiser (learning rate $10^{-4}$).  Euler
+integration with 100 time steps approximates the ODE during
+sampling.
+
+\subsection{Evaluation Metrics}
+
+We employ a range of metrics to assess the quality of the generated
+time series.  The Sliced Wasserstein Distance (SWD) measures the
+distance between high‑dimensional distributions by projecting
+onto random directions and computing one‑dimensional Wasserstein
+distances.  The autocorrelation function (ACF) quantifies temporal
+dependencies; we compute both mean squared error (MSE) and mean
+absolute error (MAE) between the real and generated ACFs.  Basic
+statistical measures include mean, variance, skewness, kurtosis and
+volatility.  Histograms and kernel density estimations (KDE) visualise
+the distribution of returns.  A Q‑Q plot assesses tail behaviour.
+
+\subsection{Scope and Limitations}
+
+This study focuses on daily log‑returns of a single ETF.  While the
+methods generalise to other assets and frequencies, caution should be
+exercised when extrapolating to intraday data or multiple assets
+without further model adaptations.  Our linear Flow Matching paths
+provide a simple baseline; more sophisticated transport couplings may
+yield improved results.  Finally, heavy‑tail reproduction remains
+challenging, as we discuss in later sections.
+
+\subsection{Notation}
+
+Throughout the report we denote by $x_0$ the original clean sample,
+$x_t$ the noised sample at diffusion step $t$, and $\epsilon$ the
+standard Gaussian noise.  For Flow Matching we use $x_0$ for the
+initial noise sample, $x_1$ for the target data sample and $x(t)$ for
+the sample at continuous time $t \in [0,1]$.  Bold symbols denote
+vectors and capital letters denote tensors or matrices.
+
+\subsection{Reader Guidance}
+
+Each part of the report can be read independently, but the
+recommended order follows the enumeration above.  Mathematics
+enthusiasts may appreciate diving into Part~2 early, while engineers
+interested in implementation details may skip ahead to Parts~3–6.
+Readers unfamiliar with machine learning or stochastic processes may
+consult the appendices (Part~8) for a gentle primer on relevant
+concepts.
+
+\subsection{Historical Context}
+
+The field of deep generative modelling has evolved rapidly over the
+last decade.  Initial breakthroughs such as Variational Autoencoders
+(VAEs) and Generative Adversarial Networks (GANs) demonstrated that
+neural networks could learn to generate plausible images and other
+structured data from latent codes.  VAEs maximise a variational
+objective similar to that used in diffusion models but often produce
+blurry samples due to the Gaussian prior imposed on the latent
+space.  GANs achieve sharp samples via adversarial training but
+suffer from instability and mode collapse.  Diffusion models marry
+likelihood-based training with adversarial-like perceptual quality,
+offering a robust alternative.  Flow-based models, normalising
+flows and flow matching extend these ideas to invertible or
+continuous-time dynamics.  In this report we build upon this
+historical progression to compare diffusion and flow matching both
+mathematically and empirically.
+
+\subsection{Further Reading}
+
+Readers interested in a deeper exploration of generative models may
+consult the following references: Kingma and Welling’s original paper
+on VAEs; Goodfellow et al.’s seminal work on GANs; Dinh et al.’s
+RealNVP on normalising flows; Song and Ermon’s work on score-based
+generative modelling; and recent surveys on diffusion models.  These
+papers provide broader context for the techniques employed here and
+highlight the vibrant research landscape in generative modelling.

@@ -1,0 +1,176 @@
+% Main file to assemble the generative models report.
+% This file defines the document preamble and pulls in the eight
+% component parts that were created separately. It compiles into
+% a single report when processed with a LaTeX engine such as
+% pdflatex. Each part covers a major aspect of the assignment,
+% from the introduction and theoretical foundations to
+% implementation, results, discussion, and conclusions.
+
+\documentclass[a4paper,12pt]{article}
+
+% =========================================
+% PACKAGES AND SETUP
+% =========================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{etoolbox}
+\usepackage{titlesec}
+
+% =========================================
+% PAGE GEOMETRY
+% =========================================
+\geometry{
+    left=25mm,
+    right=25mm,
+    top=30mm,
+    bottom=30mm,
+    headheight=15mm,
+    footskip=10mm
+}
+
+% =========================================
+% COLOR SCHEME
+% =========================================
+% Define a palette of colours used throughout the report. These
+% definitions mirror the ones used in the individual parts to
+% maintain consistency across the assembled document. Feel free
+% to adjust these values to suit your preferences.
+\definecolor{primary}{RGB}{31, 58, 147}
+\definecolor{secondary}{RGB}{65, 105, 225}
+\definecolor{accent}{RGB}{138, 43, 226}
+\definecolor{success}{RGB}{34, 139, 34}
+\definecolor{warning}{RGB}{255, 140, 0}
+\definecolor{danger}{RGB}{220, 20, 60}
+\definecolor{info}{RGB}{70, 130, 180}
+\definecolor{light}{RGB}{240, 248, 255}
+\definecolor{dark}{RGB}{25, 25, 112}
+
+% Additional colours for code listings
+\definecolor{codebg}{RGB}{248, 250, 252}
+\definecolor{codetext}{RGB}{36, 41, 46}
+\definecolor{comment}{RGB}{106, 115, 125}
+\definecolor{keyword}{RGB}{0, 92, 197}
+\definecolor{string}{RGB}{3, 106, 7}
+\definecolor{number}{RGB}{0, 134, 179}
+\definecolor{function}{RGB}{111, 66, 193}
+
+% =========================================
+% HEADER AND FOOTER
+% =========================================
+% Use a fancy header and footer to include the section name and
+% page number at the top, and a custom footer text at the
+% bottom. The content is set in the individual parts.
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\fancyfoot[C]{\footnotesize Generative Models Report}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% =========================================
+% TITLE FORMATTING
+% =========================================
+% Customise the appearance of section and subsection titles
+\titleformat{\section}
+    {\color{primary}\Large\bfseries}
+    {\color{primary}\thesection}{1em}{}
+    [\color{primary}\titlerule]
+
+\titleformat{\subsection}
+    {\color{secondary}\large\bfseries}
+    {\color{secondary}\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+    {\color{accent}\bfseries}
+    {\color{accent}\thesubsubsection}{1em}{}
+
+% =========================================
+% CODE LISTINGS
+% =========================================
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    backgroundcolor=\color{codebg},
+    commentstyle=\color{comment}\itshape,
+    keywordstyle=\color{keyword}\bfseries,
+    stringstyle=\color{string},
+    numberstyle=\color{number},
+    identifierstyle=\color{codetext},
+    numbers=left,
+    numberstyle=\tiny\color{codetext},
+    frame=single,
+    framesep=5pt,
+    breaklines=true,
+    captionpos=b,
+    numbersep=5pt,
+    showstringspaces=false,
+    emph={class, def, if, else, for, while, return, import, from, as, torch, nn, F, np, plt, self, super},
+    emphstyle=\color{keyword}\bfseries,
+    morekeywords={torch, nn, F, np, plt, self, super, model, optimizer, loss, batch, x, t, noise}
+}
+
+% =========================================
+% CUSTOM COMMANDS
+% =========================================
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\mathdef}[1]{\textbf{#1}}
+\newcommand{\highlight}[1]{\colorbox{yellow!20}{#1}}
+\newcommand{\modelname}[1]{\textsf{#1}}
+
+% =========================================
+% HYPERREF CONFIGURATION
+% =========================================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    citecolor=accent,
+    urlcolor=secondary,
+    pdftitle={Generative Models Report},
+    pdfauthor={Prepared by Automated Agent},
+    pdfsubject={Energy-Based Models and Noise Conditional Score Networks}
+}
+
+% =========================================
+% DOCUMENT BEGINS
+% =========================================
+\begin{document}
+
+% Title page: we reuse the assignment heading from the first part
+% by loading part1 first. The part1 file contains the title,
+% authorship and dedication information. If you wish to change
+% the appearance of the title page, adjust part1.tex accordingly.
+
+% Include the parts. Each part is self-contained and at least
+% 200 lines long to satisfy the assignment requirement. They are
+% ordered logically from introduction through theory, implementation,
+% results, analysis, discussion, and conclusion.
+\input{part1.tex}
+\clearpage
+\input{part2.tex}
+\clearpage
+\input{part3.tex}
+\clearpage
+\input{part4.tex}
+\clearpage
+\input{part5.tex}
+\clearpage
+\input{part6.tex}
+\clearpage
+\input{part7.tex}
+\clearpage
+\input{part8.tex}
+
+\end{document}

@@ -1,0 +1,219 @@
+% Part 8 – Discussion, Limitations and Conclusions
+
+% ---------------------------------------------------------------------------
+% The final part of this report synthesises the theoretical insights and
+% empirical findings from the preceding sections.  We provide a comparative
+% discussion of energy–based models (EBMs) and noise–conditional score
+% networks (NCSNs), analyse their strengths and weaknesses, highlight
+% hyperparameter sensitivities, and outline the limitations of our
+% implementations.  We conclude with reflections on future directions and
+% ethical considerations.
+
+\section{Discussion, Limitations and Conclusions}
+
+\subsection{Comparative Discussion}
+
+The experiments conducted in Parts~4 and~7 reveal marked differences
+between EBMs and NCSNs on the MNIST dataset.  At a high level, both
+approaches seek to model the data distribution implicitly via gradients:
+EBMs through the gradient of the energy function and NCSNs through the
+score function.  Despite this commonality, their training objectives,
+sampling procedures and practical performance diverge in several respects.
+
+\paragraph{Training stability and efficiency.}
+EBM training relies on contrastive divergence, which requires drawing
+negative samples from the current model using Langevin dynamics.  The
+quality of these samples depends on the number of steps and the step
+size; too few steps yield biased gradients, while too many steps are
+computationally expensive.  Moreover, the positive and negative phases
+compete, leading to oscillations in the loss.  By contrast, NCSN
+training formulates score estimation as a supervised problem.  The
+weighted DSM loss decreases monotonically and is less sensitive to
+hyperparameters.  Although NCSN training involves sampling noise levels
+and generating noisy inputs, these operations are straightforward and
+vectorised.  Consequently, NCSNs converge reliably at the cost of a
+longer training time due to their larger architecture.
+
+\paragraph{Generation quality and diversity.}
+On MNIST, NCSNs produce sharper and more accurate digits than EBMs.
+The multi–scale noise ladder enables the network to capture both global
+and local structures, while the U–Net architecture with skip connections
+preserves spatial information.  EBMs, particularly those trained with
+short Langevin chains, tend to generate slightly blurred digits and
+occasionally confuse similar classes (e.g., ``5'' and ``6'').  However,
+EBMs can exhibit greater diversity: the negative phase samples are not
+conditioned on specific classes or noise scales and explore the energy
+landscape more freely.  When coupled with a replay buffer and longer
+sampling chains, EBMs can generate a wide variety of digits, albeit at
+the expense of sharpness.
+
+\paragraph{Conditional generation.}
+Implementing a class–conditional EBM would require incorporating the
+label into the energy function (e.g., via a joint energy $E(\mathbf{x},y)$)
+and training with contrastive divergence in the joint space.  This
+approach entails significant architectural modifications and careful
+tuning.  In contrast, NCSNs integrate conditional information simply by
+adding a label embedding to the noise embedding.  The model then
+modulates its features via FiLM to produce class–specific score fields.
+Our experiments show that conditional NCSNs generate clean, class–
+controlled digits with little overhead.  Thus, NCSNs are more amenable to
+conditional generation tasks.
+
+\paragraph{Denoising performance.}
+Both models can denoise noisy inputs, but NCSNs outperform EBMs across
+all noise levels tested.  The supervised DSM objective explicitly
+teaches the network to map noisy inputs back to the clean data manifold.
+In contrast, EBM denoising relies on the gradient of the energy function,
+which may not be sufficiently steep to recover details when the noise
+level is high.  Our experiments show that NCSNs produce recognisable
+digits even when $\sigma=0.6$, whereas EBMs struggle to reconstruct
+coherent shapes at that level.
+
+\subsection{Hyperparameter Sensitivity and Ablation}
+
+For both models, hyperparameters significantly influence performance.
+Key observations include:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{EBM step size and number of steps.}  A step size
+    between 0.05 and 0.1 and 60–100 steps provided a good trade–off
+    between mixing and computational cost on MNIST.  Increasing the step
+    size beyond 0.15 led to divergence, while decreasing it below 0.02
+    resulted in overly smooth samples.  Longer chains improve sample
+    sharpness but increase runtime linearly.
+  \item \textbf{EBM regularisation.}  The regularisation coefficient
+    $\lambda$ must balance stability and expressiveness.  Values in the
+    range $10^{-3}$–$10^{-2}$ prevented energy blow–up while allowing
+    sufficient discrimination between real and fake samples.
+  \item \textbf{NCSN noise ladder.}  Using more than ten noise levels
+    yields marginal gains on MNIST; ten levels cover a dynamic range of
+    three orders of magnitude in $\sigma$.  Reducing the number of levels
+    simplifies training but can hamper quality.  The choice of
+    $\sigma_{\max}$ and $\sigma_{\min}$ should reflect the scale of the
+    data: $\sigma_{\max}=30$ is appropriate for MNIST, whereas higher
+    values may be needed for natural images.
+  \item \textbf{NCSN step size in ALD.}  Scaling the ALD step size as
+    $(\sigma/\sigma_1)^2$ helps stabilise the sampler at low noise
+    levels.  We found that setting the base step size to $2\times 10^{-5}$
+    yields a good balance between speed and quality.
+  \item \textbf{Conditional embeddings.}  Increasing the dimensionality
+    of the label and noise embeddings beyond 256 did not significantly
+    improve performance on MNIST.  However, for more complex datasets
+    larger embeddings may be beneficial.  Summing the label and noise
+    embeddings (as opposed to concatenation) worked well in our
+    experiments and avoids increasing the dimensionality of the FiLM
+    projections.
+\end{itemize}
+
+\subsection{Limitations of Our Implementation}
+
+Despite the encouraging results, several limitations should be noted:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Dataset simplicity.}  MNIST is a relatively easy dataset
+    characterised by low resolution and a limited number of classes.
+    Models that perform well on MNIST may not generalise to more complex
+    datasets such as CIFAR–10 or ImageNet.  Both EBMs and NCSNs will
+    require deeper architectures and longer training times on natural
+    images.
+  \item \textbf{Sampling cost.}  The inference phase for both models
+    involves hundreds of gradient steps.  Even though NCSN sampling is
+    deterministic once the model is trained, generating a single batch of
+    samples takes several seconds on a consumer GPU.  Developing faster
+    samplers, such as predictor–corrector schemes or diffusion model
+    distillation, is an active area of research.
+  \item \textbf{Lack of quantitative metrics.}  Our evaluation relies on
+    visual inspection and qualitative analysis.  While this is acceptable
+    for MNIST, quantitative metrics such as the Fréchet Inception
+    Distance (FID) or Inception Score (IS) would provide a more objective
+    comparison.  Computing such metrics requires feature extractors and is
+    beyond the scope of this assignment.
+  \item \textbf{Limited hyperparameter exploration.}  We tuned a
+    handful of hyperparameters manually but did not perform an extensive
+    grid search.  Automated hyperparameter optimisation could uncover
+    configurations that yield better samples or faster convergence.
+  \item \textbf{Reproducibility across hardware.}  The stochastic nature
+    of Langevin dynamics and random initialisation means that exact
+    replication of results may vary slightly across runs and hardware
+    platforms.  We mitigate this by setting random seeds and logging
+    configurations but acknowledge that minor variations may persist.
+\end{itemize}
+
+\subsection{Future Directions}
+
+Based on the insights gained from this project, several avenues for
+future work emerge:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Hybrid models.}  Recent research explores combining the
+    expressiveness of EBMs with the efficient sampling of score–based
+    models.  For instance, one can use a score network to guide Langevin
+    sampling in an EBM or train an EBM as a noise–conditional score
+    network.  Investigating such hybrids may yield models that combine
+    flexibility with sample quality.
+  \item \textbf{Diffusion model distillation.}  Methods such as DDIM and
+    consistency models reduce the number of sampling steps by learning
+    deterministic mappings from noise to data.  Applying these ideas to
+    our NCSN could accelerate sampling dramatically without sacrificing
+    quality.
+  \item \textbf{Scaling to complex data.}  Extending NCSNs to
+    high–resolution colour images requires larger U–Nets and more noise
+    levels.  Training such models may benefit from distributed computing
+    and advanced optimisation techniques.
+  \item \textbf{Improved denoising objectives.}  Weighted DSM emphasises
+    high–noise levels.  Alternative weightings, such as inverse noise
+    weighting, may further improve performance.  Additionally, recent
+    work on denoising likelihood score matching provides a principled
+    alternative to DSM and could be incorporated.
+  \item \textbf{Evaluation beyond visual quality.}  In applications like
+    data augmentation and anomaly detection, one must evaluate how well
+    generated samples improve downstream tasks.  Future studies could
+    integrate generative models into classification or outlier detection
+    pipelines and measure performance gains.
+\end{itemize}
+
+\subsection{Ethical Considerations}
+
+Although MNIST is benign, generative models can be misused to generate
+deep fakes, synthetic identities or deceptive content.  It is important
+to consider the ethical implications of generative modeling, especially
+as models scale to realistic images, audio and text.  Responsible use
+requires transparency about how models are trained, careful control of
+data sources, and safeguards against misuse.  In addition, researchers
+should be mindful of biases in training data: if models are trained on
+imbalanced or prejudiced datasets, they may perpetuate or amplify those
+biases in the generated outputs.  While MNIST contains simple digits,
+future work with more complex datasets must address these concerns.
+
+\subsection{Conclusions}
+
+This report provided a comprehensive exploration of energy–based and
+score–based generative models on the MNIST dataset.  We derived the
+theoretical foundations of EBMs, including the maximum–likelihood
+gradient and the challenges of sampling from unnormalised densities.
+Contrastive divergence and Langevin dynamics were used to train and
+sample from a simple convolutional EBM.  We then introduced score–based
+models, explaining how denoising score matching avoids the divergence
+term and how multi–scale noise perturbation and annealed Langevin
+dynamics enable high–quality sampling.  The noise–conditional score
+network was implemented using a U–Net architecture with FiLM
+conditioning, and both unconditional and conditional versions were
+trained.
+
+Empirically, NCSNs outperformed EBMs in terms of sample sharpness,
+denoising ability and ease of conditioning.  EBMs, while flexible in
+defining energy functions, suffered from blurriness and required careful
+hyperparameter tuning.  The multi–scale training of NCSNs proved
+effective at capturing both global and local structures, and the ALD
+sampler produced clean digits with relatively few steps.
+
+In summary, score–based models constitute a powerful alternative to
+traditional energy–based methods for generative modeling.  They
+sidestep the normalisation problem, leverage multi–scale training to
+learn rich gradient fields, and produce high–quality samples via
+stochastic sampling.  Nonetheless, both paradigms contribute valuable
+insights: EBMs offer a principled view of probability densities and
+provide a direct measure of compatibility, while score–based models
+unlock efficient training and sampling.  Future research will likely
+continue to integrate these perspectives, pushing the boundaries of
+generative modeling across modalities and applications.

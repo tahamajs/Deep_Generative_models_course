@@ -1,0 +1,230 @@
+% Part 6 – Implementation of Noise Conditional Score Networks
+
+% ---------------------------------------------------------------------------
+% In this section we translate the theoretical insights from Part 5 into a
+% concrete implementation of noise conditional score networks (NCSNs) for
+% the MNIST dataset.  We describe the data preprocessing steps, noise
+% schedule, neural network architecture, loss function, training loop and
+% sampling algorithm.  We also discuss how to extend the model to
+% condition on class labels.  Throughout, we emphasise reproducibility and
+% clarity, providing code snippets where appropriate.
+
+\section{Noise--Conditional Score Networks: Implementation}
+
+\subsection{Data Preparation and Noise Ladder}
+
+As with the energy–based model, we begin by loading the MNIST dataset.
+However, to stabilise score estimation we normalise the pixel values to
+the range $[-1,1]$ using the transformation $\tilde{\mathbf{x}} = 2\mathbf{x}
+- 1$, where $\mathbf{x}$ is the original image scaled to $[0,1]$.  We
+employ the same \texttt{DataLoader} configuration as before but
+optionally drop the labels if training the unconditional model.  For the
+conditional model we retain the digit labels $y\in\{0,\dots,9\}$.
+
+A key component of NCSNs is the \emph{noise ladder}.  We choose a
+geometric sequence of $L=10$ noise levels defined by
+\begin{equation}
+    \sigma_i = \sigma_{\max} \left(\frac{\sigma_{\min}}{\sigma_{\max}}\right)^{i/L},
+    \quad i=1,\dots,L,
+    \label{eq:sigma-schedule}
+\end{equation}
+with $\sigma_{\max}=30.0$ and $\sigma_{\min}=0.01$.  Sampling uniformly
+from this ladder ensures that each scale is used equally often during
+training.  We cache the noise levels on the GPU for efficiency.
+
+\subsection{Architecture: U--Net with Adaptive ResBlocks and FiLM}
+
+The score network must map a noisy image $\tilde{\mathbf{x}}$ and a noise
+level $\sigma$ to a tensor of the same shape as the input, representing
+the estimated score.  Following the assignment, we implement a U–Net
+style architecture with skip connections and noise conditioning via
+feature–wise linear modulation (FiLM).  The network comprises three
+encoder blocks, a bottleneck, and two decoder blocks.  Each block is an
+\emph{AdaptiveResBlock} that consists of a convolution, group
+normalisation, an activation, and FiLM modulation.
+
+\paragraph{Gaussian Fourier embeddings.}  To embed the noise level
+$\sigma$ into a high–dimensional vector, we apply a Gaussian Fourier
+projection.  Specifically, we sample a fixed random matrix $\mathbf{B}
+\in\mathbb{R}^{m\times 1}$ from a Gaussian distribution and compute
+\begin{equation}
+    \phi(\sigma) = \big[ \cos(\mathbf{B}\sigma),\, \sin(\mathbf{B}\sigma)\big],
+\end{equation}
+yielding a $2m$–dimensional embedding.  A small multilayer perceptron
+(MLP) then projects $\phi(\sigma)$ to a 256–dimensional vector.  This
+embedding captures periodic structure across different noise levels and
+serves as the conditioning signal for FiLM.
+
+\paragraph{FiLM modulation.}  Given a feature map $\mathbf{h}\in
+\mathbb{R}^{C\times H\times W}$ at a particular layer and the projected
+noise embedding $\mathbf{e}$, we compute scale and shift vectors
+$\gamma,\beta\in\mathbb{R}^C$ using a linear transformation of
+$\mathbf{e}$ and apply
+\begin{equation}
+    \text{FiLM}(\mathbf{h},\gamma,\beta) = \gamma \odot \mathbf{h} + \beta,
+\end{equation}
+where $\odot$ denotes element–wise multiplication.  In the
+class–conditional model we further add a class embedding to the noise
+embedding before computing $\gamma$ and $\beta$.
+
+\paragraph{Encoder and decoder.}  The network begins with a $3\times 3$
+convolution that maps the single–channel input to 64 channels.  Two
+encoder blocks follow, each downsampling the spatial resolution by a
+factor of two via average pooling.  At the bottleneck, the channel
+dimension is 256.  The decoder mirrors the encoder: each decoder block
+upsamples via nearest–neighbour interpolation, concatenates the
+corresponding encoder features (skip connection), and applies an
+AdaptiveResBlock to reduce the channels.  A final $3\times 3$ convolution
+with a single output channel produces the score estimate.
+
+\paragraph{Group normalisation and SiLU.}  Within each block we use
+group normalisation with 32 groups and the SiLU activation function
+(\texttt{torch.nn.SiLU}) rather than BatchNorm or ReLU.  Group norm is
+preferable when batch sizes are small because it normalises across
+channels instead of examples.  The SiLU activation is smooth and
+differentiable everywhere, which aids gradient–based training.
+
+\paragraph{Class conditioning.}  To extend the network to generate
+digits of a specific class, we introduce an \texttt{nn.Embedding} layer
+that maps each label $y\in\{0,\dots,9\}$ to a 256–dimensional vector.
+This embedding is added to the noise embedding before FiLM projection in
+each block.  During training we provide the correct label alongside the
+image and noise level; during sampling we select the desired label and
+freeze it throughout the annealing process.
+
+\subsection{Loss Function: Weighted Denoising Score Matching}
+
+The training objective follows the weighted DSM formulation described in
+Part~5.  Given a mini–batch of images, we randomly select a noise level
+$\sigma_i$ from the ladder and corrupt the images according to
+Eq.~\eqref{eq:sigma-schedule}.  We then compute the score network's output
+and compare it to the target $-\boldsymbol{\epsilon}/\sigma_i$.  The
+weighted DSM loss is
+\begin{equation}
+    \mathcal{L}(\theta) = \frac{1}{2} \sigma_i^2 \Big\| \mathbf{s}_\theta(\tilde{\mathbf{x}},\sigma_i) + \frac{\boldsymbol{\epsilon}}{\sigma_i} \Big\|_2^2.
+\end{equation}
+In code this becomes:
+\begin{lstlisting}[language=Python]
+def weighted_dsm_loss(model, x, sigmas):
+    batch_size = x.size(0)
+    # Sample a noise level per example
+    idx = torch.randint(0, len(sigmas), (batch_size,), device=x.device)
+    sigma = sigmas[idx].view(-1, 1, 1, 1)
+    # Corrupt the input
+    noise = torch.randn_like(x)
+    x_noisy = x + sigma * noise
+    # Predict the score
+    score = model(x_noisy, sigma)
+    target = -noise / sigma
+    loss = 0.5 * (sigma.squeeze() ** 2) * (score - target).pow(2).reshape(batch_size, -1).mean(dim=1)
+    return loss.mean()
+\end{lstlisting}
+We optimise this loss using the Adam optimiser with a learning rate of
+$2\times 10^{-4}$ and train for 30 epochs.  We use a batch size of 64
+and shuffle the training data each epoch.  The learning rate, number of
+noise levels, and number of epochs can be adjusted; our choices balance
+training time and sample quality.
+
+\subsection{Training Loop and Logging}
+
+The training loop for NCSN parallels that of the EBM but with notable
+differences:
+
+\begin{enumerate}[leftmargin=*,label=\arabic*.]
+  \item \textbf{Noise sampling.}  For each mini–batch we draw a noise
+    level index and create noisy inputs using Eq.~\eqref{eq:dsm-perturb}.
+  \item \textbf{Forward pass.}  We pass the noisy images and the noise
+    level (and optionally the label) through the network to obtain the
+    predicted scores.
+  \item \textbf{Loss computation.}  We compute the weighted DSM loss
+    described above.  Because the model outputs a tensor of shape
+    $(B,1,28,28)$, we reshape it into vectors and average over pixels.
+  \item \textbf{Optimiser step.}  We call \texttt{loss.backward()} and
+    update the network parameters using Adam.
+  \item \textbf{Logging and sample generation.}  After each epoch we
+    record the average loss and perform annealed Langevin dynamics to
+    generate a batch of samples from pure noise.  These samples allow us
+    to monitor the evolution of sample quality during training.  We
+    normalise the generated images back to $[0,1]$ for visualisation.
+\end{enumerate}
+
+In the conditional setting the labels are provided alongside each image
+and used to look up a class embedding.  The rest of the training loop
+remains unchanged.
+
+\subsection{Annealed Langevin Dynamics Sampler}
+
+Once the network has been trained, we generate samples by running ALD
+starting from a Gaussian distribution with variance $\sigma_L^2$.  The
+procedure is summarised in the following pseudocode:
+\begin{lstlisting}[language=Python]
+def annealed_langevin_sampler(model, sigmas, shape, y=None, steps_per_level=150):
+    # Initialise from a high-noise Gaussian
+    x = torch.randn(*shape, device=sigmas.device) * sigmas[-1]
+    for sigma in reversed(sigmas):
+        step_size = 2e-5 * (sigma / sigmas[0])**2
+        for _ in range(steps_per_level):
+            grad = model(x, torch.tensor([sigma], device=x.device), y)
+            noise = torch.randn_like(x)
+            x = x + step_size * grad + (2 * step_size)**0.5 * noise
+        x = x.clamp(-1.0, 1.0)
+    return x
+\end{lstlisting}
+Here \texttt{shape} specifies the batch size and image dimensions
+(e.g., \texttt{(16,1,28,28)}).  The step size is scaled by $(\sigma/\sigma_1)^2$
+to ensure stability across noise levels.  The function returns images in
+the normalised space $[-1,1]$; we map them back to $[0,1]$ when saving.
+
+\subsection{Conditional Generation and Label Embeddings}
+
+To enable class–conditional generation we augment the score network with
+an embedding layer \texttt{nn.Embedding(10,256)}.  At each noise level
+the label embedding is added to the projected noise embedding before the
+FiLM transformation.  During training we sample labels uniformly and
+train the network to predict the score conditioned on the true label.  At
+inference time we set $y$ to the desired digit class and run ALD as
+before.  By varying the random seed one obtains diverse samples within
+the specified class.  In Part~7 we visualise the result by producing a
+$10\times10$ grid in which each row corresponds to a digit class.
+
+\subsection{Hyperparameters and Practical Tips}
+
+Table~\ref{tab:hyperparams-ncsn} summarises the hyperparameters used in
+our implementation.  As with the EBM, hyperparameters influence sample
+quality and training stability.  Increasing the number of noise levels or
+steps per level improves fidelity at the cost of runtime.  Larger batch
+sizes stabilise the loss but require more memory.
+
+\begin{table}[H]
+    \centering
+    \caption{Key hyperparameters for the MNIST NCSN.}
+    \label{tab:hyperparams-ncsn}
+    \begin{tabular}{lll}
+        \toprule
+        Parameter & Value & Description \\
+        \midrule
+        $\sigma_{\max}$ & 30.0 & Largest noise level \\
+        $\sigma_{\min}$ & 0.01 & Smallest noise level \\
+        Number of levels $L$ & 10 & Noise scales in ladder \\
+        Epochs & 30 & Training duration \\
+        Batch size & 64 & Images per mini–batch \\
+        Learning rate & $2\times 10^{-4}$ & Adam step size \\
+        Steps per level & 150 & ALD iterations per noise level \\
+        Step size scaling $\eta_0$ & $2\times 10^{-5}$ & Base step size for ALD \\
+        Embedding dimension & 256 & Size of noise and label embeddings \\
+        Conditional & Yes/No & If labels are used \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Implementation Summary}
+
+In this part we described how to implement a noise–conditional score
+network for MNIST.  We normalised the data to $[-1,1]$, defined a
+geometric noise ladder, designed a U–Net architecture with FiLM
+conditioning, and employed weighted denoising score matching as the loss.
+We presented a training loop that samples noise levels and updates the
+network via Adam, and provided a sampling algorithm based on annealed
+Langevin dynamics.  A class–conditional extension was implemented by
+adding a label embedding.  These details prepare the ground for the
+results and analysis presented in the next part.
