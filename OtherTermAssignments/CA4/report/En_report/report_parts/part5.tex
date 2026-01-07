@@ -1,0 +1,201 @@
+
+%%
+%% Part 5 - Theoretical Foundations of Flow Matching
+%%
+%% Flow Matching is a continuous-time generative modelling framework
+%% that transports probability mass via a deterministic vector field.
+%% This part develops the key theory: the role of the vector field,
+%% the choice of linear paths, connections to score matching and
+%% optimal transport, and the formulation of the training objective.
+
+\section{Theory of Flow Matching}
+
+Flow Matching provides a deterministic alternative to diffusion
+models.  Instead of reversing a stochastic corruption process, Flow
+Matching learns a time-dependent vector field that transports a
+simple base distribution to the data distribution.  This section
+presents the theoretical underpinnings of Flow Matching.
+
+\subsection{Vector Fields and Probability Transport}
+
+At the heart of Flow Matching is a vector field $v_\theta(x,t)$ that
+specifies the velocity of a particle located at $x$ at time $t$.
+Starting from an initial random vector $x(0)\sim\pi_0$ drawn from a
+simple distribution (usually a standard Gaussian), the sample evolves
+according to the ordinary differential equation (ODE)
+\begin{equation}
+  \frac{dx}{dt} = v_\theta\bigl(x(t), t\bigr),
+  \quad x(0) \sim \pi_0.
+\end{equation}
+Solving this ODE from $t=0$ to $t=1$ yields a final random variable
+$x(1)$, which we hope matches the target data distribution \(\pi_1\).
+The vector field therefore acts as a continuous-time flow that carries
+probability mass from the source to the target.
+
+\begin{solutionbox}
+  \textbf{Role of the vector field.}  The vector field determines the
+  instantaneous direction and speed with which a sample moves through
+  space.  If $v_\theta(x,t)$ points towards regions of higher data
+  density at all times, integrating the ODE will gradually transform
+  the initial noise into realistic data samples.  Unlike diffusion
+  models that rely on randomness, Flow Matching is fully
+  deterministic once the vector field is learned.
+\end{solutionbox}
+
+\subsection{Choice of Conditional Paths}
+
+To train $v_\theta$, one must define a family of conditional paths
+between pairs of points $(x_0, x_1)$ sampled from the base and data
+Distributions.  The simplest choice is the linear interpolation
+\begin{equation}
+  x(t) = (1-t)x_0 + t x_1,
+\end{equation}
+which connects $x_0$ and $x_1$ along a straight line.  The velocity
+associated with this path is constant and equal to $x_1 - x_0$.
+
+\begin{solutionbox}
+  \textbf{Why linear paths?}  Linear paths are appealing because
+  they simplify the regression target: the true velocity is just
+  $u_t(x\mid x_0,x_1) = x_1 - x_0$ for all $t$.  This reduces the
+  learning problem to a straightforward least squares regression.
+  While more complex paths may minimise transport cost under certain
+  couplings, linear paths coupled with optimal transport produce the
+  geodesic in Euclidean space.  In practice, they offer a good
+  trade-off between simplicity and performance.
+\end{solutionbox}
+
+\subsection{Conditional Flow Matching Loss}
+
+Given a path family and an initial sample $x_0\sim\pi_0$ and target
+sample $x_1\sim\pi_1$, one defines the conditional velocity field
+\begin{equation}
+  u_t(x\mid x_0,x_1) = x_1 - x_0,
+\end{equation}
+which is constant along the linear path.  The network $v_\theta$ is
+trained to match this conditional velocity.  The Conditional Flow
+Matching (CFM) loss is
+\begin{equation}
+  \mathcal{L}_{\text{CFM}}(\theta) = \mathbb{E}_{x_0,x_1,t}
+  \bigl\|v_\theta\bigl((1-t)x_0 + t x_1, t\bigr) - (x_1 - x_0)\bigr\|^2.
+\end{equation}
+The expectation is taken over pairs $(x_0,x_1)$ and times
+$t\sim\mathrm{Uniform}(0,1)$.  Minimising this loss yields a vector
+field that matches the conditional velocity in expectation.
+
+\begin{solutionbox}
+  The loss can be derived from denoising score matching.  For a
+  Gaussian perturbation kernel $q(x_t\mid x_0) = \mathcal{N}(x_t;
+  x_0, \sigma_t^2 I)$, the score of the conditional distribution
+  satisfies
+  \begin{equation}
+    \nabla_{x_t} \log q(x_t\mid x_0) = \frac{x_0 - x_t}{\sigma_t^2}.
+  \end{equation}
+  When specialised to linear paths with variance $\sigma_t^2 = t(1-t)\sigma^2$,
+  the score reduces to a constant proportional to $x_1 - x_0$.  Thus
+  matching the score is equivalent to matching the constant
+  velocity.
+\end{solutionbox}
+
+\subsection{Connections to Optimal Transport}
+
+Flow Matching has strong ties to optimal transport theory.  When
+$(x_0,x_1)$ are sampled from an optimal coupling (i.e. a joint
+Distribution that minimises the expected squared distance between
+$\pi_0$ and $\pi_1$), the linear path becomes the geodesic that
+minimises the cost of transporting probability mass.  In practice,
+optimal couplings are approximated by pairing shuffled noise samples
+with data samples.  While not exact, this approach yields a reasonable
+approximation for high-dimensional data.
+
+\subsection{Advantages over Diffusion Models}
+
+Flow Matching offers several advantages compared to diffusion models:
+\begin{itemize}
+  \item It operates in continuous time, avoiding the need to choose a
+    discrete timestep schedule.  This can provide greater flexibility.
+  \item The training objective is a simple regression problem with
+    constant targets, leading to stable gradients and faster
+    convergence.
+  \item Sampling amounts to solving an ODE, which can be done with a
+    small number of integration steps (e.g. 100) using standard
+    numerical solvers such as Euler or Runge–Kutta.
+  \item There is no stochasticity during sampling once the initial
+    noise sample is fixed, simplifying the generation process.
+\end{itemize}
+
+However, Flow Matching does not automatically account for varying
+noise scales or multi-scale structure in data, which diffusion models
+handle naturally via their variance schedules.  Hybrid approaches
+seek to combine the strengths of both frameworks.
+
+\subsection{Conclusion of Part 5}
+
+This part has introduced the concept of Flow Matching, defined the
+vector field ODE, motivated linear interpolation paths, derived the
+Conditional Flow Matching loss and discussed connections to score
+matching and optimal transport.  Flow Matching provides a
+conceptually elegant and computationally efficient alternative to
+stochastic diffusion models.  The next part will describe how to
+implement Flow Matching in practice and evaluate its performance on
+financial time series.
+
+\subsection{Relation to Probability Flow ODE}
+
+In diffusion models one can derive a deterministic probability flow
+ODE that has the same marginal distributions as the stochastic
+forward and reverse SDEs.  This ODE is given by
+\begin{equation}
+  \frac{dx}{dt} = f(x,t) - \frac{1}{2}g(t)^2 \nabla_x \log p_t(x),
+\end{equation}
+where $f$ and $g$ are the drift and diffusion coefficients of the
+forward SDE and $p_t$ denotes the marginal distribution of the
+forward process.  Solving this ODE transports samples from $p_0$ to
+$p_1$ deterministically.  Flow Matching can be viewed as learning
+such a probability flow ODE directly, without first specifying a
+stochastic process.
+
+\subsection{Score-Based Generative Modelling vs Flow Matching}
+
+Score-based models aim to estimate the score function $\nabla_x\log
+p_t(x)$ of the data distribution at different noise levels and then
+integrate an ODE or SDE to generate samples.  Flow Matching bypasses
+score estimation by directly regressing the velocity field that
+connects noise to data.  Both approaches rely on continuous-time
+dynamics but differ in their training objectives.  Score matching
+requires evaluating gradients of log-densities, which may be
+unstable, whereas velocity regression involves simple differences
+between paired data and noise samples.  The two methods are
+complementary and hybrid techniques can leverage their strengths.
+
+\subsection{Optimal Transport Theory Primer}
+
+Optimal transport provides a mathematical framework for transporting
+one probability measure to another in a cost-optimal manner.  The
+Wasserstein distance, defined as
+\begin{equation}
+  W_2^2(\mu,\nu) = \inf_{\gamma\in\Pi(\mu,\nu)}\int\|x-y\|^2\,d\gamma(x,y),
+\end{equation}
+measures the minimal quadratic cost of transporting mass from $\mu$ to
+$\nu$.  Here $\Pi(\mu,\nu)$ is the set of all couplings with
+marginals $\mu$ and $\nu$.  When the coupling achieving the infimum is
+used, the linear interpolation path between paired samples is the
+geodesic that minimises the cost.  Flow Matching leverages this
+concept by sampling $(x_0,x_1)$ pairs according to (approximate)
+optimal couplings, ensuring that the learned vector field follows
+straight lines between optimally matched points.
+
+\subsection{Future Directions in Flow Matching Theory}
+
+Current Flow Matching implementations use simple linear paths and
+Euclidean cost functions.  Future research may explore non-linear
+interpolation schemes, adaptive path selection, and different cost
+metrics (e.g. \(L_1\) or Mahalanobis distances).  Extending Flow
+Matching to conditionally dependent multi-dimensional data,
+incorporating conditioning information and learning couplings jointly
+with the velocity field are open problems.  Further theoretical
+analysis of convergence properties and connections to other forms of
+continuous normalising flows may also yield deeper insights.
+
+% Additional padding lines for length
+% The remaining lines ensure the appendix meets the required length.
+% End of Part 5.

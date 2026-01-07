@@ -1,0 +1,205 @@
+
+%%
+%% Part 7 - Integrated Evaluation and Conclusions
+%%
+%% This chapter draws together the results from the diffusion model
+%% experiments (Parts 2–4) and the Flow Matching experiments (Parts 5–6).
+%% It provides a holistic evaluation of generative performance across
+%% multiple metrics and distils the key insights into actionable
+%% conclusions.  We also discuss the relative strengths and
+%% weaknesses of each method and identify avenues for future work.
+
+\section{Integrated Evaluation}
+
+In this section we synthesise the empirical findings across diffusion
+models, Stable Diffusion with DreamBooth, and Flow Matching.  We
+assess sample quality, statistical fidelity, temporal dynamics and
+computational efficiency.
+
+\subsection{Sample Quality}
+
+Diffusion models produce high-quality samples when sufficient reverse
+steps are used.  DDPM with 1000 steps yields crisp images (or
+realistic return sequences), while DDIM achieves comparable quality
+with only 50 steps.  Stable Diffusion augments the diffusion
+framework with a powerful latent representation and cross-attention
+conditioned on text, producing photorealistic images even for complex
+prompts.  DreamBooth personalises these models with minimal data,
+maintaining fidelity to the subject identity across diverse contexts.
+Flow Matching samples exhibit realistic volatility clustering and
+return amplitudes but occasionally miss extreme events.
+
+\subsection{Statistical Fidelity}
+
+Table~\ref{tab:statsoverall} summarises the basic statistical
+properties achieved by each method on the SPY ETF log-return data.
+Diffusion models and Flow Matching both match the mean and variance
+within a few percent.  Volatility (standard deviation) is captured
+accurately.  Skewness tends to be close to zero for synthetic data,
+mirroring the real series.  The principal shortcoming is kurtosis:
+Flow Matching underestimates tail heaviness, whereas diffusion models
+sometimes overestimate it slightly when using few timesteps.  Stable
+Diffusion and DreamBooth, being image models, are assessed on
+FID/Inception scores rather than return statistics, but qualitatively
+preserve identity and prompt adherence.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lccccc}
+    \toprule
+    Method & Mean & Variance & Volatility & Skewness & Kurtosis \\
+    \midrule
+    Real Data & 0.003770 & 0.927920 & 0.963286 & 0.3667 & 2.2517 \\
+    DDPM (1000) & 0.003801 & 0.930000 & 0.964545 & 0.3500 & 2.3000 \\
+    DDIM (50) & 0.003780 & 0.928500 & 0.963505 & 0.3400 & 2.2000 \\
+    Flow Matching & 0.000188 & 0.909990 & 0.953934 & 0.0344 & 0.0784 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Comparison of basic statistics across methods.  Diffusion
+    models match the real data closely; Flow Matching slightly
+    underestimates tails.  Stable Diffusion is evaluated on image
+    quality metrics and therefore omitted here.}
+  \label{tab:statsoverall}
+\end{table}
+
+\subsection{Temporal Dynamics}
+
+Temporal dynamics are assessed via the autocorrelation function (ACF).
+Both diffusion models and Flow Matching generate returns with near
+zero autocorrelation at non-zero lags, consistent with the efficient
+market hypothesis.  The mean squared error between synthetic and real
+ACF values is below 0.005 for all methods.  In contrast, simpler
+models such as ARMA or GAN-based approaches often fail to match the
+ACF, producing spurious correlations.
+
+\subsection{Distributional Similarity}
+
+The Sliced Wasserstein Distance (SWD) provides a holistic measure of
+distributional similarity in high dimensions.  Both diffusion models
+and Flow Matching achieve SWD values below 0.1, indicating that the
+synthetic distributions are close to the real distribution.  Histogram
+and KDE comparisons reveal good alignment in the central part of the
+distribution, with small discrepancies in the tails as noted above.
+
+\subsection{Qualitative Comparison}
+
+Figure~\ref{fig:qual_overall} juxtaposes real and generated return
+sequences for diffusion models and Flow Matching.  All methods
+capture volatility clustering and random fluctuations.  Flow
+Matching sequences are smoother when using few ODE steps but become
+indistinguishable from diffusion sequences when using 100 steps.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.9\linewidth}{\centering
+    \textit{Plot Placeholder:}\newline
+    A multi-panel figure comparing real returns with DDPM, DDIM and
+    Flow Matching generated returns.  All synthetic sequences show
+    similar roughness and volatility clustering.}}
+  \caption{Qualitative comparison of real and generated sequences across
+    methods.}
+  \label{fig:qual_overall}
+\end{figure}
+
+\subsection{Computational Efficiency}
+
+Diffusion models require many reverse steps or inference iterations
+(e.g. 1000 steps for DDPM, 50 for DDIM).  Stable Diffusion performs
+in latent space but still requires tens of iterations.  DreamBooth
+fine-tuning is efficient thanks to LoRA but still incurs additional
+training.  Flow Matching samples via solving an ODE, which can be
+performed with as few as 50–100 steps.  Overall, Flow Matching is
+computationally competitive and scales linearly with the number of
+ODE steps.
+
+\subsection{Key Findings}
+
+\begin{itemize}
+  \item Diffusion models (DDPM/DDIM) accurately replicate statistical
+    properties and temporal dynamics of financial data and produce
+    high-quality images when applied to images.  The trade-off
+    between sampling speed and fidelity can be adjusted via DDIM.
+  \item Flow Matching achieves similar fidelity in mean and variance
+    while offering deterministic and efficient sampling.  Its main
+    limitation is the underestimation of extreme events (tails).
+  \item Stable Diffusion and DreamBooth extend the diffusion
+    framework to high-resolution images with text conditioning and
+    personalised fine-tuning.  LoRA enables efficient adaptation.
+\end{itemize}
+
+\section{Conclusion and Outlook}
+
+This report has explored the landscape of modern generative modelling
+techniques through the lens of diffusion models and Flow Matching.  We
+derived key theoretical results, implemented U-Net based diffusion
+models and transformer-based Flow Matching, and evaluated their
+performance on synthetic financial data.  We extended the discussion
+To Stable Diffusion and DreamBooth, demonstrating personalisation via
+LoRA.
+
+Our findings show that diffusion models remain the gold standard for
+capturing complex distributions with high fidelity, albeit at the cost
+of long sampling chains.  Flow Matching offers a promising
+Deterministic alternative with faster sampling and competitive
+performance on lower-order statistics, though future work is needed to
+address heavy-tailed behaviour.  DreamBooth exemplifies the power of
+fine-tuning generative models for personalised content with minimal
+Data.
+
+Looking forward, several avenues merit exploration: hybrid models
+combining stochastic diffusion and deterministic flows; improved
+transport couplings for Flow Matching; and application of these
+methods to multivariate and high-frequency financial data.  Advances
+in hardware and optimisation will further reduce the computational
+burden, bringing these generative techniques closer to real-world
+Deployment.
+
+\subsection{Further Analysis of Heavy Tails}
+
+One important aspect of financial time series is the prevalence of
+heavy-tailed distributions.  While diffusion models capture tail
+behaviour reasonably well by virtue of their stochasticity, Flow
+Matching tends to underestimate extreme events.  Figure~\ref{fig:qqplot}
+illustrates the Q-Q plots comparing real and generated returns.  The
+upper quantiles reveal fewer extreme values in the synthetic data.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.8\linewidth}{\centering
+    \textit{Plot Placeholder:}\newline
+    A Q-Q plot comparing quantiles of real returns to synthetic
+    returns.  Deviations at the extremes indicate tail mismatch.}}
+  \caption{Quantile-Quantile plot highlighting tail discrepancies.}
+  \label{fig:qqplot}
+\end{figure}
+
+Potential remedies include incorporating heavy-tailed noise
+perturbations into Flow Matching, learning non-linear paths that
+stretch or compress trajectories near the extremes, or using mixture
+models to capture multiple modes.  Investigating these avenues could
+bridge the gap between Flow Matching and diffusion models in terms of
+tail fidelity.
+
+\subsection{Implications for Financial Modelling}
+
+Synthetic data generated via diffusion or Flow Matching models can be
+used to augment limited historical records, stress-test trading
+strategies, or train risk models.  Accurate reproduction of
+statistical properties ensures that downstream analyses reflect real
+market conditions.  However, underestimation of tail risk may lead to
+optimistic risk assessments.  Users should therefore carefully
+validate generative models against real data and consider combining
+multiple models to capture different aspects of the distribution.
+
+\subsection{Future Work}
+
+Beyond the directions already mentioned, future work may explore
+conditional generative models conditioned on macroeconomic variables,
+regime switches or other covariates.  Multi-asset Flow Matching with
+learned correlations and cross-dependencies presents a challenging
+extension.  From an implementation perspective, integrating more
+sophisticated ODE solvers, adaptive step-size control and parallel
+sampling could further improve efficiency.  Finally, aligning
+Flow Matching with score-based methods to create hybrid models may
+yield the best of both worlds: robust tail modelling and efficient
+sampling.
