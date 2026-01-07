@@ -1,0 +1,17 @@
+# Math Reasoning Diffusion Model - Requirements
+# Install with: pip install -r requirements.txt
+
+# Core ML
+torch>=2.0.0
+transformers>=4.30.0
+datasets>=2.14.0
+
+# Training utilities
+tqdm>=4.65.0
+numpy>=1.24.0
+
+# Optional: Weights & Biases for logging
+# wandb>=0.15.0
+
+# Optional: Accelerate for easier distributed training
+# accelerate>=0.21.0
