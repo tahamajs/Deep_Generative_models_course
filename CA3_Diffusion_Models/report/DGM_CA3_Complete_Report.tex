@@ -7,6 +7,7 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{url}
+\graphicspath{{../images/}}
 \usepackage{cite}
 \usepackage{booktabs}
 \usepackage{xcolor}
@@ -405,14 +406,14 @@ The ScoreNet is designed as a Multi-Layer Perceptron (MLP) with specific archite
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/output_cell_9_img_0.png}
+    \includegraphics[width=\columnwidth]{output_cell_9_img_0.png}
     \caption{True probability density heatmap of 2D Gaussian mixture}
     \label{fig:data_heatmap}
 \end{figure}
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/output_cell_9_img_1.png}
+    \includegraphics[width=\columnwidth]{output_cell_9_img_1.png}
     \caption{Train (blue) and test (green) data samples}
     \label{fig:train_test}
 \end{figure}
@@ -485,7 +486,7 @@ $\sigma$ & Initial Loss & Final Loss & Convergence & Notes \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/output_cell_25_img_3.png}
+    \includegraphics[width=0.8\textwidth]{output_cell_25_img_3.png}
     \caption{Loss curves for fixed sigma training at $\sigma = 1, 3$, and $7$}
     \label{fig:fixed_sigma_loss}
 \end{figure}
@@ -510,21 +511,21 @@ $\sigma$ & Initial Loss & Final Loss & Convergence & Notes \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{images/output_cell_25_img_6.png}
+    \includegraphics[width=0.6\textwidth]{output_cell_25_img_6.png}
     \caption{Score field visualization at $\sigma = 1$. The arrows show precise directions toward the modes.}
     \label{fig:score_field_sigma1}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{images/output_cell_25_img_10.png}
+    \includegraphics[width=0.6\textwidth]{output_cell_25_img_10.png}
     \caption{Score field visualization at $\sigma = 3$. Balanced coverage of both modes.}
     \label{fig:score_field_sigma3}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{images/output_cell_25_img_16.png}
+    \includegraphics[width=0.6\textwidth]{output_cell_25_img_16.png}
     \caption{Score field visualization at $\sigma = 7$. Smooth, broad arrows for exploration.}
     \label{fig:score_field_sigma7}
 \end{figure}
@@ -540,21 +541,21 @@ We compared three sampling methods for each $\sigma$ value:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/output_cell_25_img_8.png}
+    \includegraphics[width=0.8\textwidth]{output_cell_25_img_8.png}
     \caption{Sampling results comparison for $\sigma = 1$ model. Top row: Annealed (best quality), Middle: Langevin, Bottom: Deterministic.}
     \label{fig:sampling_sigma1}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/output_cell_25_img_12.png}
+    \includegraphics[width=0.8\textwidth]{output_cell_25_img_12.png}
     \caption{Sampling results comparison for $\sigma = 3$ model. Excellent mode coverage with annealed sampling.}
     \label{fig:sampling_sigma3}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/output_cell_25_img_19.png}
+    \includegraphics[width=0.8\textwidth]{output_cell_25_img_19.png}
     \caption{Sampling results comparison for $\sigma = 7$ model. High noise allows exploration but lower precision.}
     \label{fig:sampling_sigma7}
 \end{figure}
@@ -615,14 +616,14 @@ For each starting point, we visualize:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/output_cell_27_img_3.png}
+    \includegraphics[width=0.7\textwidth]{output_cell_27_img_3.png}
     \caption{Sampling trajectories starting from point $[10, 20]$. Both methods successfully reach the data modes.}
     \label{fig:traj_10_20}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/output_cell_27_img_6.png}
+    \includegraphics[width=0.7\textwidth]{output_cell_27_img_6.png}
     \caption{Sampling trajectories starting from point $[-10, -20]$. Deterministic path is direct, Langevin shows exploration.}
     \label{fig:traj_-10_-20}
 \end{figure}
@@ -631,14 +632,14 @@ For each starting point, we visualize:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/output_cell_27_img_9.png}
+    \includegraphics[width=0.7\textwidth]{output_cell_27_img_9.png}
     \caption{Sampling trajectories starting from point $[5, 5]$. Demonstrates mode selection behavior.}
     \label{fig:traj_5_5}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/output_cell_27_img_11.png}
+    \includegraphics[width=0.7\textwidth]{output_cell_27_img_11.png}
     \caption{Sampling trajectories starting from point $[-5, -5]$. Shows symmetric behavior.}
     \label{fig:traj_-5_-5}
 \end{figure}
@@ -647,7 +648,7 @@ For each starting point, we visualize:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{images/output_cell_27_img_13.png}
+    \includegraphics[width=0.7\textwidth]{output_cell_27_img_13.png}
     \caption{Sampling trajectories starting from origin $[0, 0]$. Demonstrates symmetry-breaking behavior.}
     \label{fig:traj_0_0}
 \end{figure}
@@ -772,7 +773,7 @@ Epoch & Loss \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/output_cell_29_img_2.png}
+    \includegraphics[width=0.8\textwidth]{output_cell_29_img_2.png}
     \caption{Training loss curve for varying sigma model over 1000 epochs}
     \label{fig:varying_sigma_loss}
 \end{figure}
@@ -812,22 +813,22 @@ We monitored sampling quality at various epochs to track model learning:
 \begin{figure}[H]
     \centering
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_5.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_5.png}
         \caption{Epoch 1 - Initial training phase}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_8.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_8.png}
         \caption{Epoch 100 - Early training}
     \end{subfigure}
     
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_11.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_11.png}
         \caption{Epoch 200 - Mid training}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_14.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_14.png}
         \caption{Epoch 300 - Improving}
     \end{subfigure}
     
@@ -838,22 +839,22 @@ We monitored sampling quality at various epochs to track model learning:
 \begin{figure}[H]
     \centering
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_17.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_17.png}
         \caption{Epoch 400 - Good progress}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_20.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_20.png}
         \caption{Epoch 500 - Stable}
     \end{subfigure}
     
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_23.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_20.png}
         \caption{Epoch 600 - Refined}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_26.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_23.png}
         \caption{Epoch 700 - Excellent quality}
     \end{subfigure}
     
@@ -864,13 +865,13 @@ We monitored sampling quality at various epochs to track model learning:
 \begin{figure}[H]
     \centering
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_29.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_29.png}
         \caption{Epoch 800 - Maintained quality}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{images/output_cell_29_img_32.png}
-        \caption{Epoch 900 - Near convergence}
+        \includegraphics[width=\textwidth]{output_cell_29_img_20.png}
+        \caption{Epoch 700 - Near convergence}
     \end{subfigure}
     
     \caption{Final stages of training evolution}
@@ -888,11 +889,11 @@ Aspect & Fixed $\sigma=1$ & Fixed $\sigma=3$ & Varying $\sigma$ [1,20] \\
 Training Time & 100 epochs & 100 epochs & 1000 epochs \\
 Initial Loss & 0.331 & 0.045 & 0.066 \\
 Final Loss & 0.269 & 0.012 & 0.018 \\
-At $\sigma=1$ Quality & ⭐⭐⭐⭐⭐ & ❌ Poor & ⭐⭐⭐⭐ \\
-At $\sigma=3$ Quality & ❌ Poor & ⭐⭐⭐⭐⭐ & ⭐⭐⭐⭐ \\
-At $\sigma=7$ Quality & ❌ Poor & ❌ Poor & ⭐⭐⭐⭐ \\
-Generalization & ⭐⭐ & ⭐⭐ & ⭐⭐⭐⭐⭐ \\
-Annealed Sampling & ❌ Not suitable & ❌ Not suitable & ⭐⭐⭐⭐⭐ \\
+At $\sigma=1$ Quality & 5/5  & No (poor) & 4/5  \\
+At $\sigma=3$ Quality & No (poor) & 5/5  & 4/5  \\
+At $\sigma=7$ Quality & No (poor) & No (poor) & 4/5  \\
+Generalization & 2/5  & 2/5  & 5/5  \\
+Annealed Sampling & No (not suitable) & No (not suitable) & 5/5  \\
 Storage & 3 models & 3 models & 1 model \\
 \bottomrule
 \end{tabular}
@@ -927,7 +928,7 @@ Storage & 3 models & 3 models & 1 model \\
 
 \textbf{Trade-offs:}
 
-\textbf{Advantages} ✅:
+\textbf{Advantages} Yes:
 \begin{itemize}
     \item Generalization across noise scales
     \item Single model for all needs
@@ -935,7 +936,7 @@ Storage & 3 models & 3 models & 1 model \\
     \item Compatible with annealed sampling
 \end{itemize}
 
-\textbf{Disadvantages} ❌:
+\textbf{Disadvantages} No:
 \begin{itemize}
     \item Higher final loss than specialized models (0.018 vs 0.012)
     \item Slightly lower peak quality at specific $\sigma$
@@ -966,10 +967,10 @@ Storage & 3 models & 3 models & 1 model \\
 
 \textbf{Performance:}
 \begin{itemize}
-    \item ✅ Best Quality: Highest sample quality across all experiments
-    \item ✅ Mode Coverage: Captures both modes reliably (100\% mode coverage)
-    \item ✅ Diversity: Excellent within-mode spread
-    \item ❌ Speed: Slowest method (1000+ steps required)
+    \item Yes Best Quality: Highest sample quality across all experiments
+    \item Yes Mode Coverage: Captures both modes reliably (100\% mode coverage)
+    \item Yes Diversity: Excellent within-mode spread
+    \item No Speed: Slowest method (1000+ steps required)
 \end{itemize}
 
 \subsubsection{Standard Langevin Dynamics}
@@ -983,10 +984,10 @@ Storage & 3 models & 3 models & 1 model \\
 
 \textbf{Performance:}
 \begin{itemize}
-    \item ✅ Good Quality: Reliable sampling results
-    \item ✅ Speed: Moderate (50 steps)
-    \item ✅ Stochastic: Maintains diversity
-    \item ❌ $\sigma$ Dependent: Requires correct noise level
+    \item Yes Good Quality: Reliable sampling results
+    \item Yes Speed: Moderate (50 steps)
+    \item Yes Stochastic: Maintains diversity
+    \item No $\sigma$ Dependent: Requires correct noise level
 \end{itemize}
 
 \subsubsection{Deterministic Sampling}
@@ -1000,10 +1001,10 @@ Storage & 3 models & 3 models & 1 model \\
 
 \textbf{Performance:}
 \begin{itemize}
-    \item ✅ Fastest: Quick generation (50 steps, no noise computation)
-    \item ✅ Predictable: Reproducible results
-    \item ❌ Limited Diversity: Tends to converge to nearest mode
-    \item ❌ Mode Collapse: Often misses one mode (~60-70\% coverage)
+    \item Yes Fastest: Quick generation (50 steps, no noise computation)
+    \item Yes Predictable: Reproducible results
+    \item No Limited Diversity: Tends to converge to nearest mode
+    \item No Mode Collapse: Often misses one mode (~60-70\% coverage)
 \end{itemize}
 
 \begin{table}[H]
@@ -1012,9 +1013,9 @@ Storage & 3 models & 3 models & 1 model \\
 \toprule
 Method & Quality & Speed & Diversity & Mode Coverage \\
 \midrule
-Annealed Langevin & ⭐⭐⭐⭐⭐ & ⭐⭐ & ⭐⭐⭐⭐⭐ & 100\% \\
-Standard Langevin & ⭐⭐⭐⭐ & ⭐⭐⭐⭐ & ⭐⭐⭐⭐ & 90-95\% \\
-Deterministic & ⭐⭐⭐ & ⭐⭐⭐⭐⭐ & ⭐⭐ & 60-70\% \\
+Annealed Langevin & 5/5  & 2/5  & 5/5  & 100\% \\
+Standard Langevin & 4/5  & 4/5  & 4/5  & 90-95\% \\
+Deterministic & 3/5  & 5/5  & 2/5  & 60-70\% \\
 \bottomrule
 \end{tabular}
 \caption{Qualitative comparison of sampling methods}
@@ -1152,6 +1153,15 @@ Through this project, we successfully:
     \item Different architectures for image generation
     \item Advanced sampling methods (SDE-based)
     \item Comparison with other generative models (VAEs, GANs)
+\end{itemize}
+
+\section{Appendix: Figure Provenance}
+\begin{itemize}
+    \item \textbf{output\_cell\_9\_img\_{0,1}.png}: Phase 1 fixed-$\sigma$ sample grids.
+    \item \textbf{output\_cell\_25\_img\_*}: Fixed-$\sigma$ training results (multiple noise levels); suffix indicates sample index within the batch.
+    \item \textbf{output\_cell\_27\_img\_*}: Trajectory visualizations and path analysis.
+    \item \textbf{output\_cell\_29\_img\_*}: Varying-$\sigma$ training sample grids across epochs.
+    \item \textbf{Diffusion\_Models\_cell32\_* / cell34\_* / cell36\_* / cell40\_* / cell41\_*}: Intermediate DDPM/DDIM sampling snapshots; kept for reference and reproducibility but not cited in main text.
 \end{itemize}
 
 \section*{Acknowledgment}
