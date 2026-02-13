@@ -9,6 +9,7 @@ from typing import Any, Dict
 from asset_lib import (
     build_metrics_summary,
     build_metrics_table_tex,
+    ensure_plot_tools,
     ensure_output_dirs,
     expected_output_files,
     load_config,
@@ -24,6 +25,7 @@ from asset_lib import (
 def generate_from_config(config_path: str | Path) -> Dict[str, Any]:
     """Generate all report assets from a config path."""
     config = load_config(config_path)
+    ensure_plot_tools()
     ensure_output_dirs(config)
 
     summary = build_metrics_summary(config)

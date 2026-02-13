@@ -5,13 +5,11 @@ from __future__ import annotations
 import json
 import math
 import re
+import shutil
+import subprocess
+from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional
-
-import matplotlib.pyplot as plt
-import numpy as np
-from PIL import Image
-from rouge_score import rouge_scorer
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
 NUMERIC_PATTERN = re.compile(r"\d+")
 REQUIRED_CONFIG_KEYS = [
@@ -55,14 +53,17 @@ def load_config(config_path: str | Path) -> Dict[str, Any]:
 
     root = repo_root()
     style = {
-        "dpi": 200,
-        "font_size": 11,
-        "title_size": 13,
-        "color_finetuned": "#1f77b4",
-        "color_base": "#ff7f0e",
-        "color_correct": "#2ca02c",
-        "color_incorrect": "#d62728",
-        "color_non_numeric": "#7f7f7f",
+        "width": 1400,
+        "height": 900,
+        "dpi": 220,
+        "font": "Helvetica",
+        "color_finetuned": "#2E6F95",
+        "color_base": "#E67E22",
+        "color_correct": "#2A9D8F",
+        "color_incorrect": "#E76F51",
+        "color_non_numeric": "#7F8C8D",
+        "color_axis": "#222222",
+        "color_grid": "#D9D9D9",
     }
     style.update(payload.get("style", {}))
 
@@ -98,23 +99,75 @@ def extract_first_number(text: Any) -> Optional[int]:
     return int(match.group(0))
 
 
+def _tokenize(text: Any) -> List[str]:
+    return str(text).lower().split()
+
+
+def _ngram_counts(tokens: Sequence[str], n: int) -> Counter[tuple[str, ...]]:
+    if len(tokens) < n:
+        return Counter()
+    return Counter(tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1))
+
+
+def _f1_from_overlap(pred_count: Counter[Any], ref_count: Counter[Any]) -> float:
+    overlap = sum((pred_count & ref_count).values())
+    pred_total = sum(pred_count.values())
+    ref_total = sum(ref_count.values())
+    if pred_total == 0 or ref_total == 0 or overlap == 0:
+        return 0.0
+    precision = overlap / pred_total
+    recall = overlap / ref_total
+    return (2.0 * precision * recall) / (precision + recall)
+
+
+def _lcs_length(a: Sequence[str], b: Sequence[str]) -> int:
+    if not a or not b:
+        return 0
+    prev = [0] * (len(b) + 1)
+    for token_a in a:
+        curr = [0]
+        for idx, token_b in enumerate(b, start=1):
+            if token_a == token_b:
+                curr.append(prev[idx - 1] + 1)
+            else:
+                curr.append(max(curr[idx - 1], prev[idx]))
+        prev = curr
+    return prev[-1]
+
+
 def compute_rouge(records: Iterable[Mapping[str, Any]], prediction_key: str) -> Dict[str, float]:
-    """Compute mean ROUGE F1 metrics for records."""
-    scorer = rouge_scorer.RougeScorer(ROUGE_KEYS, use_stemmer=False)
-    totals = {key: 0.0 for key in ROUGE_KEYS}
-    count = 0
+    """Compute deterministic mean ROUGE-F1 style metrics (rouge1/2/L)."""
+    total = 0
+    rouge1_sum = 0.0
+    rouge2_sum = 0.0
+    rouge_l_sum = 0.0
 
     for record in records:
-        prediction = str(record.get(prediction_key, ""))
-        reference = str(record.get("ground_truth", ""))
-        scores = scorer.score(reference, prediction)
-        for key in ROUGE_KEYS:
-            totals[key] += float(scores[key].fmeasure)
-        count += 1
+        pred_tokens = _tokenize(record.get(prediction_key, ""))
+        ref_tokens = _tokenize(record.get("ground_truth", ""))
 
-    if count == 0:
+        rouge1_sum += _f1_from_overlap(_ngram_counts(pred_tokens, 1), _ngram_counts(ref_tokens, 1))
+        rouge2_sum += _f1_from_overlap(_ngram_counts(pred_tokens, 2), _ngram_counts(ref_tokens, 2))
+
+        lcs = _lcs_length(pred_tokens, ref_tokens)
+        if pred_tokens and ref_tokens and lcs > 0:
+            precision = lcs / len(pred_tokens)
+            recall = lcs / len(ref_tokens)
+            rouge_l = (2.0 * precision * recall) / (precision + recall)
+        else:
+            rouge_l = 0.0
+        rouge_l_sum += rouge_l
+
+        total += 1
+
+    if total == 0:
         return {key: 0.0 for key in ROUGE_KEYS}
-    return {key: totals[key] / count for key in ROUGE_KEYS}
+
+    return {
+        "rouge1": rouge1_sum / total,
+        "rouge2": rouge2_sum / total,
+        "rougeL": rouge_l_sum / total,
+    }
 
 
 def compute_numeric_metrics(
@@ -233,6 +286,7 @@ def build_metrics_summary(config: Dict[str, Any]) -> Dict[str, Any]:
             "p1_json": config["p1_json"],
             "p2_json": config["p2_json"],
             "numeric_regex": NUMERIC_PATTERN.pattern,
+            "rouge_definition": "Deterministic ROUGE-style F1 over tokenized text (rouge1, rouge2, rougeL).",
         },
         "datasets": {
             "p1": compute_dataset_metrics(p1_records),
@@ -241,15 +295,217 @@ def build_metrics_summary(config: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _set_matplotlib_style(style: Dict[str, Any]) -> None:
-    plt.rcParams.update(
-        {
-            "font.size": style["font_size"],
-            "axes.titlesize": style["title_size"],
-            "axes.labelsize": style["font_size"],
-            "legend.fontsize": style["font_size"] - 1,
-        }
+def _escape_draw_text(label: str) -> str:
+    return label.replace("\\", "\\\\").replace("'", "\\'")
+
+
+def _run_command(command: List[str]) -> None:
+    completed = subprocess.run(command, capture_output=True, text=True)
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"Command failed ({completed.returncode}): {' '.join(command)}\n"
+            f"STDOUT:\n{completed.stdout}\nSTDERR:\n{completed.stderr}"
+        )
+
+
+def ensure_plot_tools() -> None:
+    """Ensure required external plotting tools are available."""
+    if shutil.which("magick") is None:
+        raise RuntimeError(
+            "ImageMagick 'magick' command is required for report plot generation."
+        )
+
+
+def _draw_grouped_bar_chart(
+    title: str,
+    categories: Sequence[str],
+    series_names: Sequence[str],
+    series_values: Sequence[Sequence[float]],
+    series_colors: Sequence[str],
+    output_path: str | Path,
+    style: Dict[str, Any],
+    y_max: Optional[float] = None,
+    value_suffix: str = "",
+) -> None:
+    width = int(style["width"])
+    height = int(style["height"])
+
+    left = 120
+    right = width - 80
+    top = 120
+    bottom = height - 150
+
+    plot_w = right - left
+    plot_h = bottom - top
+    values = [value for row in series_values for value in row]
+    max_value = y_max if y_max is not None else (max(values) if values else 1.0)
+    max_value = max(max_value, 1e-6)
+
+    draws: List[str] = []
+    axis_color = style["color_axis"]
+    grid_color = style["color_grid"]
+
+    draws.append(
+        f"stroke {axis_color} stroke-width 2 fill none line {left},{top} {left},{bottom}"
     )
+    draws.append(
+        f"stroke {axis_color} stroke-width 2 fill none line {left},{bottom} {right},{bottom}"
+    )
+
+    for idx in range(6):
+        tick_value = max_value * idx / 5.0
+        y = int(bottom - (plot_h * idx / 5.0))
+        draws.append(f"stroke {grid_color} stroke-width 1 line {left},{y} {right},{y}")
+        draws.append(
+            f"fill {axis_color} font-size 20 text {left - 95},{y + 7} '{tick_value:.2f}{value_suffix}'"
+        )
+
+    group_count = len(categories)
+    series_count = len(series_names)
+    group_w = plot_w / max(group_count, 1)
+    bar_gap = 8
+    bar_w = max(20.0, (group_w - 40 - bar_gap * (series_count - 1)) / max(series_count, 1))
+
+    for group_idx, category in enumerate(categories):
+        group_start = left + group_w * group_idx + 20
+        for series_idx, series_name in enumerate(series_names):
+            value = series_values[series_idx][group_idx]
+            x1 = int(group_start + series_idx * (bar_w + bar_gap))
+            x2 = int(x1 + bar_w)
+            bar_h = int((value / max_value) * plot_h) if max_value else 0
+            y1 = bottom - bar_h
+            y2 = bottom
+            color = series_colors[series_idx]
+
+            draws.append(f"fill {color} stroke none rectangle {x1},{y1} {x2},{y2}")
+            draws.append(
+                f"fill {axis_color} font-size 18 text {x1},{max(y1 - 8, top + 18)} '{value:.2f}{value_suffix}'"
+            )
+
+        label_x = int(group_start + (series_count * bar_w + (series_count - 1) * bar_gap) / 2 - 30)
+        draws.append(
+            f"fill {axis_color} font-size 22 text {label_x},{bottom + 40} '{_escape_draw_text(category)}'"
+        )
+
+    legend_x = right - 260
+    legend_y = top - 40
+    for idx, series_name in enumerate(series_names):
+        y = legend_y + idx * 35
+        color = series_colors[idx]
+        draws.append(f"fill {color} rectangle {legend_x},{y - 15} {legend_x + 20},{y + 5}")
+        draws.append(
+            f"fill {axis_color} font-size 20 text {legend_x + 30},{y} '{_escape_draw_text(series_name)}'"
+        )
+
+    draws.append(f"fill {axis_color} font-size 36 text 60,70 '{_escape_draw_text(title)}'")
+
+    command = [
+        "magick",
+        "-size",
+        f"{width}x{height}",
+        "xc:white",
+        "-font",
+        style["font"],
+    ]
+    for draw in draws:
+        command.extend(["-draw", draw])
+    command.append(str(output_path))
+    _run_command(command)
+
+
+def _draw_stacked_bar_chart(
+    title: str,
+    labels: Sequence[str],
+    stacks: Sequence[Dict[str, float]],
+    stack_order: Sequence[str],
+    stack_colors: Dict[str, str],
+    output_path: str | Path,
+    style: Dict[str, Any],
+) -> None:
+    width = int(style["width"])
+    height = int(style["height"])
+
+    left = 120
+    right = width - 80
+    top = 120
+    bottom = height - 150
+    plot_w = right - left
+    plot_h = bottom - top
+
+    totals = [sum(stack[key] for key in stack_order) for stack in stacks]
+    max_total = max(totals) if totals else 1
+    max_total = max(max_total, 1)
+
+    draws: List[str] = []
+    axis_color = style["color_axis"]
+    grid_color = style["color_grid"]
+
+    draws.append(
+        f"stroke {axis_color} stroke-width 2 fill none line {left},{top} {left},{bottom}"
+    )
+    draws.append(
+        f"stroke {axis_color} stroke-width 2 fill none line {left},{bottom} {right},{bottom}"
+    )
+
+    for idx in range(6):
+        tick = max_total * idx / 5.0
+        y = int(bottom - (plot_h * idx / 5.0))
+        draws.append(f"stroke {grid_color} stroke-width 1 line {left},{y} {right},{y}")
+        draws.append(f"fill {axis_color} font-size 20 text {left - 70},{y + 7} '{tick:.0f}'")
+
+    group_count = len(labels)
+    group_w = plot_w / max(group_count, 1)
+    bar_w = max(80, int(group_w * 0.45))
+
+    for idx, label in enumerate(labels):
+        x_center = left + group_w * idx + group_w / 2
+        x1 = int(x_center - bar_w / 2)
+        x2 = int(x_center + bar_w / 2)
+        current_bottom = bottom
+
+        for key in stack_order:
+            value = stacks[idx][key]
+            segment_h = int((value / max_total) * plot_h)
+            y1 = current_bottom - segment_h
+            y2 = current_bottom
+            draws.append(
+                f"fill {stack_colors[key]} stroke none rectangle {x1},{y1} {x2},{y2}"
+            )
+            if segment_h > 18:
+                draws.append(
+                    f"fill white font-size 18 text {x1 + 10},{y1 + segment_h // 2 + 7} '{int(value)}'"
+                )
+            current_bottom = y1
+
+        draws.append(
+            f"fill {axis_color} font-size 22 text {int(x_center - 55)},{bottom + 40} '{_escape_draw_text(label)}'"
+        )
+
+    legend_x = right - 350
+    legend_y = top - 35
+    for legend_idx, key in enumerate(stack_order):
+        y = legend_y + legend_idx * 35
+        draws.append(
+            f"fill {stack_colors[key]} rectangle {legend_x},{y - 15} {legend_x + 20},{y + 5}"
+        )
+        draws.append(
+            f"fill {axis_color} font-size 20 text {legend_x + 30},{y} '{_escape_draw_text(key.replace('_', ' '))}'"
+        )
+
+    draws.append(f"fill {axis_color} font-size 36 text 60,70 '{_escape_draw_text(title)}'")
+
+    command = [
+        "magick",
+        "-size",
+        f"{width}x{height}",
+        "xc:white",
+        "-font",
+        style["font"],
+    ]
+    for draw in draws:
+        command.extend(["-draw", draw])
+    command.append(str(output_path))
+    _run_command(command)
 
 
 def plot_rouge_comparison(
@@ -258,136 +514,56 @@ def plot_rouge_comparison(
     output_path: str | Path,
     style: Dict[str, Any],
 ) -> None:
-    """Plot ROUGE comparison chart for one dataset."""
-    _set_matplotlib_style(style)
+    """Render ROUGE comparison chart for one dataset."""
+    categories = ["ROUGE-1", "ROUGE-2", "ROUGE-L"]
+    finetuned = [
+        dataset_metrics["finetuned"]["rouge"]["rouge1"],
+        dataset_metrics["finetuned"]["rouge"]["rouge2"],
+        dataset_metrics["finetuned"]["rouge"]["rougeL"],
+    ]
+    base = [
+        dataset_metrics["base"]["rouge"]["rouge1"],
+        dataset_metrics["base"]["rouge"]["rouge2"],
+        dataset_metrics["base"]["rouge"]["rougeL"],
+    ]
 
-    metric_labels = ["ROUGE-1", "ROUGE-2", "ROUGE-L"]
-    metric_keys = ["rouge1", "rouge2", "rougeL"]
-    x = np.arange(len(metric_labels))
-    width = 0.35
-
-    finetuned_values = [dataset_metrics["finetuned"]["rouge"][key] for key in metric_keys]
-    base_values = [dataset_metrics["base"]["rouge"][key] for key in metric_keys]
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    bars_ft = ax.bar(
-        x - width / 2,
-        finetuned_values,
-        width,
-        label="Fine-Tuned",
-        color=style["color_finetuned"],
+    _draw_grouped_bar_chart(
+        title=f"ROUGE Comparison ({dataset_label})",
+        categories=categories,
+        series_names=["Fine-Tuned", "Base"],
+        series_values=[finetuned, base],
+        series_colors=[style["color_finetuned"], style["color_base"]],
+        output_path=output_path,
+        style=style,
+        y_max=max(max(finetuned + base) * 1.2, 0.1),
     )
-    bars_base = ax.bar(
-        x + width / 2,
-        base_values,
-        width,
-        label="Base",
-        color=style["color_base"],
-    )
-
-    ax.set_ylabel("Score")
-    ax.set_title(f"ROUGE Comparison ({dataset_label})")
-    ax.set_xticks(x)
-    ax.set_xticklabels(metric_labels)
-    ax.set_ylim(0, max(0.1, max(finetuned_values + base_values) * 1.25))
-    ax.legend()
-    ax.grid(axis="y", linestyle="--", alpha=0.3)
-
-    for bars in (bars_ft, bars_base):
-        for bar in bars:
-            height = bar.get_height()
-            ax.annotate(
-                f"{height:.3f}",
-                xy=(bar.get_x() + bar.get_width() / 2, height),
-                xytext=(0, 3),
-                textcoords="offset points",
-                ha="center",
-                va="bottom",
-            )
-
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=style["dpi"], bbox_inches="tight")
-    plt.close(fig)
 
 
 def plot_accuracy_comparison(
     summary: Dict[str, Any], output_path: str | Path, style: Dict[str, Any]
 ) -> None:
-    """Plot overall numeric accuracy comparison for p1 and p2."""
-    _set_matplotlib_style(style)
-
-    datasets = ["p1", "p2"]
-    labels = ["Part 1 (3%)", "Part 2 (20%)"]
-    x = np.arange(len(datasets))
-    width = 0.35
-
-    ft_acc = [
-        summary["datasets"][dataset]["finetuned"]["numeric"]["accuracy_overall_pct"]
-        for dataset in datasets
+    """Render overall numeric accuracy comparison for p1 and p2."""
+    categories = ["Part 1 (3%)", "Part 2 (20%)"]
+    finetuned = [
+        summary["datasets"]["p1"]["finetuned"]["numeric"]["accuracy_overall_pct"],
+        summary["datasets"]["p2"]["finetuned"]["numeric"]["accuracy_overall_pct"],
     ]
-    base_acc = [
-        summary["datasets"][dataset]["base"]["numeric"]["accuracy_overall_pct"]
-        for dataset in datasets
+    base = [
+        summary["datasets"]["p1"]["base"]["numeric"]["accuracy_overall_pct"],
+        summary["datasets"]["p2"]["base"]["numeric"]["accuracy_overall_pct"],
     ]
 
-    ft_cov = [
-        summary["datasets"][dataset]["finetuned"]["numeric"]["numeric_coverage_pct"]
-        for dataset in datasets
-    ]
-    base_cov = [
-        summary["datasets"][dataset]["base"]["numeric"]["numeric_coverage_pct"]
-        for dataset in datasets
-    ]
-
-    fig, ax = plt.subplots(figsize=(9, 5))
-    bars_ft = ax.bar(
-        x - width / 2,
-        ft_acc,
-        width,
-        label="Fine-Tuned",
-        color=style["color_finetuned"],
+    _draw_grouped_bar_chart(
+        title="Numeric Exact-Match Accuracy (Overall)",
+        categories=categories,
+        series_names=["Fine-Tuned", "Base"],
+        series_values=[finetuned, base],
+        series_colors=[style["color_finetuned"], style["color_base"]],
+        output_path=output_path,
+        style=style,
+        y_max=100.0,
+        value_suffix="%",
     )
-    bars_base = ax.bar(
-        x + width / 2,
-        base_acc,
-        width,
-        label="Base",
-        color=style["color_base"],
-    )
-
-    ax.set_ylabel("Accuracy (%)")
-    ax.set_title("Numeric Exact-Match Accuracy (Overall)")
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels)
-    ax.set_ylim(0, 100)
-    ax.legend()
-    ax.grid(axis="y", linestyle="--", alpha=0.3)
-
-    for idx, bar in enumerate(bars_ft):
-        ax.annotate(
-            f"{bar.get_height():.2f}%\nCov {ft_cov[idx]:.1f}%",
-            xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
-            xytext=(0, 4),
-            textcoords="offset points",
-            ha="center",
-            va="bottom",
-            fontsize=9,
-        )
-
-    for idx, bar in enumerate(bars_base):
-        ax.annotate(
-            f"{bar.get_height():.2f}%\nCov {base_cov[idx]:.1f}%",
-            xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
-            xytext=(0, 4),
-            textcoords="offset points",
-            ha="center",
-            va="bottom",
-            fontsize=9,
-        )
-
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=style["dpi"], bbox_inches="tight")
-    plt.close(fig)
 
 
 def plot_prediction_pattern_breakdown(
@@ -396,115 +572,71 @@ def plot_prediction_pattern_breakdown(
     output_path: str | Path,
     style: Dict[str, Any],
 ) -> None:
-    """Plot stacked breakdown of prediction patterns per model."""
-    _set_matplotlib_style(style)
-
-    models = ["finetuned", "base"]
-    labels = ["Fine-Tuned", "Base"]
-
-    correct = [
-        dataset_metrics[model]["prediction_breakdown"]["correct_numeric"]
-        for model in models
-    ]
-    incorrect = [
-        dataset_metrics[model]["prediction_breakdown"]["incorrect_numeric"]
-        for model in models
-    ]
-    non_numeric = [
-        dataset_metrics[model]["prediction_breakdown"]["non_numeric"] for model in models
+    """Render stacked breakdown of prediction patterns per model."""
+    stacks = [
+        dataset_metrics["finetuned"]["prediction_breakdown"],
+        dataset_metrics["base"]["prediction_breakdown"],
     ]
 
-    x = np.arange(len(models))
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    ax.bar(x, correct, color=style["color_correct"], label="Correct numeric")
-    ax.bar(
-        x,
-        incorrect,
-        bottom=correct,
-        color=style["color_incorrect"],
-        label="Incorrect numeric",
+    _draw_stacked_bar_chart(
+        title=f"Prediction Pattern Breakdown ({dataset_label})",
+        labels=["Fine-Tuned", "Base"],
+        stacks=stacks,
+        stack_order=["correct_numeric", "incorrect_numeric", "non_numeric"],
+        stack_colors={
+            "correct_numeric": style["color_correct"],
+            "incorrect_numeric": style["color_incorrect"],
+            "non_numeric": style["color_non_numeric"],
+        },
+        output_path=output_path,
+        style=style,
     )
-
-    stacked = [c + i for c, i in zip(correct, incorrect)]
-    ax.bar(
-        x,
-        non_numeric,
-        bottom=stacked,
-        color=style["color_non_numeric"],
-        label="Non-numeric",
-    )
-
-    total = dataset_metrics["sample_count"]
-    ax.set_title(f"Prediction Pattern Breakdown ({dataset_label})")
-    ax.set_ylabel("Sample Count")
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels)
-    ax.set_ylim(0, max(total, 1) * 1.05)
-    ax.legend(loc="upper right")
-    ax.grid(axis="y", linestyle="--", alpha=0.3)
-
-    for idx in range(len(models)):
-        ax.annotate(
-            str(correct[idx]),
-            xy=(x[idx], correct[idx] / 2 if correct[idx] else 1),
-            ha="center",
-            va="center",
-            color="white",
-            fontsize=9,
-        )
-        ax.annotate(
-            str(incorrect[idx]),
-            xy=(x[idx], correct[idx] + (incorrect[idx] / 2 if incorrect[idx] else 1)),
-            ha="center",
-            va="center",
-            color="white",
-            fontsize=9,
-        )
-        ax.annotate(
-            str(non_numeric[idx]),
-            xy=(x[idx], stacked[idx] + (non_numeric[idx] / 2 if non_numeric[idx] else 1)),
-            ha="center",
-            va="center",
-            color="white",
-            fontsize=9,
-        )
-
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=style["dpi"], bbox_inches="tight")
-    plt.close(fig)
 
 
 def make_qualitative_grid(
     image_paths: List[str], output_path: str | Path, style: Dict[str, Any]
 ) -> None:
     """Build deterministic qualitative image grid from selected samples."""
-    _set_matplotlib_style(style)
+    temp = Path(output_path).with_suffix(".tmp.png")
 
-    images = [Image.open(path).convert("RGB") for path in image_paths]
-    cols = 3
-    rows = math.ceil(len(images) / cols)
+    montage_cmd = [
+        "magick",
+        "montage",
+        *image_paths,
+        "-tile",
+        "3x",
+        "-geometry",
+        "320x240+10+10",
+        "-background",
+        "white",
+        str(temp),
+    ]
+    _run_command(montage_cmd)
 
-    fig, axes = plt.subplots(rows, cols, figsize=(cols * 4.2, rows * 4.2))
-    if rows == 1:
-        axes = np.array([axes])
+    annotate_cmd = [
+        "magick",
+        str(temp),
+        "-background",
+        "white",
+        "-splice",
+        "0x80",
+        "-gravity",
+        "north",
+        "-font",
+        style["font"],
+        "-pointsize",
+        "34",
+        "-fill",
+        "black",
+        "-annotate",
+        "+0+46",
+        "Selected Qualitative Examples (Deterministic Grid)",
+        str(output_path),
+    ]
+    _run_command(annotate_cmd)
 
-    flat_axes = axes.flatten()
-    for idx, ax in enumerate(flat_axes):
-        if idx >= len(images):
-            ax.axis("off")
-            continue
-
-        image = images[idx]
-        filename = Path(image_paths[idx]).name
-        ax.imshow(image)
-        ax.set_title(filename.replace("_", r"\_"), fontsize=9)
-        ax.axis("off")
-
-    fig.suptitle("Selected Qualitative Examples (Deterministic Grid)")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=style["dpi"], bbox_inches="tight")
-    plt.close(fig)
+    if temp.exists():
+        temp.unlink()
 
 
 def format_diff(value: float) -> str:
@@ -535,7 +667,8 @@ def build_metrics_table_tex(summary: Dict[str, Any]) -> str:
         dataset = summary["datasets"][key]
         if idx > 0:
             lines.append("\\midrule")
-        lines.append(f"\\multicolumn{{5}}{{c}}{{\\textit{{{label}, {dataset['sample_count']} samples}}}} \\")
+        lines.append(
+            f"\\multicolumn{{5}}{{c}}{{\\textit{{{label}, {dataset['sample_count']} samples}}}} \\")
         lines.append("\\midrule")
 
         for rouge_key, rouge_name in [

@@ -42,7 +42,7 @@ Use this path when you want report-ready plots/tables from existing notebook res
 
 ```bash
 cd CA4_Vision_Language_Model
-python3 -m pip install -r requirements-report.txt
+magick -version
 python3 code/report_assets/generate_report_assets.py --config report/report_assets_config.json
 python3 code/report_assets/validate_report_assets.py --config report/report_assets_config.json
 ```

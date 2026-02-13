@@ -19,7 +19,7 @@ class TestNumericParser(unittest.TestCase):
         self.assertEqual(extract_first_number("<answer> 14 </answer>"), 14)
 
     def test_malformed_text_with_number(self) -> None:
-        self.assertEqual(extract_first_number("value=00>") , 0)
+        self.assertEqual(extract_first_number("value=00>"), 0)
 
     def test_non_numeric_text(self) -> None:
         self.assertIsNone(extract_first_number("answering does not require reading text"))

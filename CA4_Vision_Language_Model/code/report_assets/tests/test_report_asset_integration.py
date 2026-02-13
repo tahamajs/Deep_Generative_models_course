@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import sys
 import unittest
 from pathlib import Path
@@ -14,6 +15,7 @@ import generate_report_assets  # noqa: E402
 import validate_report_assets  # noqa: E402
 
 
+@unittest.skipUnless(shutil.which("magick"), "ImageMagick is required for integration test")
 class TestReportAssetIntegration(unittest.TestCase):
     def test_generation_validation_and_determinism(self) -> None:
         config_path = ROOT / "report" / "report_assets_config.json"

@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 from asset_lib import expected_output_files, load_config, repo_root
 
 INCLUDEGRAPHICS_PATTERN = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}")
-GRAPHICSPATH_PATTERN = re.compile(r"\\graphicspath\{([^}]*)\}")
+GRAPHICSPATH_PATTERN = re.compile(r"\\graphicspath\{((?:\{[^}]*\})+)\}")
 GRAPHICSPATH_ITEM_PATTERN = re.compile(r"\{([^}]*)\}")
 
 

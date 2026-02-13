@@ -1,0 +1,108 @@
+{
+  "datasets": {
+    "p1": {
+      "base": {
+        "numeric": {
+          "accuracy_conditional_pct": 56.19047619047619,
+          "accuracy_overall_pct": 56.19047619047619,
+          "correct_numeric_predictions": 118,
+          "numeric_comparable_samples": 210,
+          "numeric_coverage_pct": 100.0,
+          "total_samples": 210
+        },
+        "prediction_breakdown": {
+          "correct_numeric": 118,
+          "incorrect_numeric": 92,
+          "non_numeric": 0
+        },
+        "rouge": {
+          "rouge1": 0.09365079365079365,
+          "rouge2": 0.0,
+          "rougeL": 0.09365079365079365
+        }
+      },
+      "finetuned": {
+        "numeric": {
+          "accuracy_conditional_pct": 77.77777777777777,
+          "accuracy_overall_pct": 33.333333333333336,
+          "correct_numeric_predictions": 70,
+          "numeric_comparable_samples": 90,
+          "numeric_coverage_pct": 42.857142857142854,
+          "total_samples": 210
+        },
+        "prediction_breakdown": {
+          "correct_numeric": 70,
+          "incorrect_numeric": 20,
+          "non_numeric": 120
+        },
+        "rouge": {
+          "rouge1": 0.05555555555555552,
+          "rouge2": 0.0,
+          "rougeL": 0.05555555555555552
+        }
+      },
+      "pairwise_outcomes": {
+        "base_only_correct": 91,
+        "both_correct": 27,
+        "both_wrong": 49,
+        "finetuned_only_correct": 43
+      },
+      "sample_count": 210
+    },
+    "p2": {
+      "base": {
+        "numeric": {
+          "accuracy_conditional_pct": 52.142857142857146,
+          "accuracy_overall_pct": 52.142857142857146,
+          "correct_numeric_predictions": 730,
+          "numeric_comparable_samples": 1400,
+          "numeric_coverage_pct": 100.0,
+          "total_samples": 1400
+        },
+        "prediction_breakdown": {
+          "correct_numeric": 730,
+          "incorrect_numeric": 670,
+          "non_numeric": 0
+        },
+        "rouge": {
+          "rouge1": 0.08690476190476282,
+          "rouge2": 0.0,
+          "rougeL": 0.08690476190476282
+        }
+      },
+      "finetuned": {
+        "numeric": {
+          "accuracy_conditional_pct": 70.13651877133105,
+          "accuracy_overall_pct": 29.357142857142858,
+          "correct_numeric_predictions": 411,
+          "numeric_comparable_samples": 586,
+          "numeric_coverage_pct": 41.857142857142854,
+          "total_samples": 1400
+        },
+        "prediction_breakdown": {
+          "correct_numeric": 411,
+          "incorrect_numeric": 175,
+          "non_numeric": 814
+        },
+        "rouge": {
+          "rouge1": 0.04773809523809503,
+          "rouge2": 0.0,
+          "rougeL": 0.04773809523809503
+        }
+      },
+      "pairwise_outcomes": {
+        "base_only_correct": 587,
+        "both_correct": 143,
+        "both_wrong": 402,
+        "finetuned_only_correct": 268
+      },
+      "sample_count": 1400
+    }
+  },
+  "inputs": {
+    "numeric_regex": "\\d+",
+    "p1_json": "/Users/tahamajs/Documents/uni/DGM/CA4_Vision_Language_Model/code/eval_p1/full_evaluation_results_comparison.json",
+    "p2_json": "/Users/tahamajs/Documents/uni/DGM/CA4_Vision_Language_Model/code/eval_p2/full_evaluation_results_comparison.json",
+    "rouge_definition": "Deterministic ROUGE-style F1 over tokenized text (rouge1, rouge2, rougeL)."
+  }
+}
