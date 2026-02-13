@@ -1,0 +1,51 @@
+{
+  "gan_fid": {
+    "best_epoch": 8,
+    "best_fid": 171.66586564761022,
+    "final_epoch": 10,
+    "final_fid": 208.15105861728108,
+    "improvement_initial_to_best_abs": 98.87933770917445,
+    "improvement_initial_to_best_pct": 36.54817623167252,
+    "improvement_initial_to_final_abs": 62.39414473950359,
+    "improvement_initial_to_final_pct": 23.062373298565035,
+    "initial_epoch": 1,
+    "initial_fid": 270.54520335678467,
+    "per_epoch": {
+      "1": 270.54520335678467,
+      "10": 208.15105861728108,
+      "2": 260.5658067341474,
+      "3": 214.4482496699177,
+      "4": 219.04745538243736,
+      "5": 201.78452480051783,
+      "6": 245.01084823855183,
+      "7": 246.9888497391417,
+      "8": 171.66586564761022,
+      "9": 203.21771845425891
+    }
+  },
+  "generated_at_utc": "2026-02-13T22:16:43.002498+00:00",
+  "realnvp_latent": {
+    "kmnist": -66.17415,
+    "mnist": 2.3912132,
+    "test_fashionmnist": 151.63997,
+    "train_fashionmnist": 166.30286
+  },
+  "realnvp_pixel": {
+    "kmnist": -1850.9489,
+    "mnist": 890.0156,
+    "test_fashionmnist": 1621.3966,
+    "train_fashionmnist": 1706.9332
+  },
+  "source": {
+    "execution_policy": "frozen_outputs_only_no_notebook_rerun",
+    "main_notebook": {
+      "latent_metrics_cell": 50,
+      "path": "code/CA2_GANs_and_NormalizingFlows_main.ipynb",
+      "pixel_metrics_cell": 36
+    },
+    "q2_notebook": {
+      "fid_cell": 57,
+      "path": "code/CA2_question2_results.ipynb"
+    }
+  }
+}

@@ -31,6 +31,41 @@ Run notebook:
 jupyter lab code/CA2_GANs_and_NormalizingFlows_main.ipynb
 ```
 
+## Frozen Results (No Re-Run)
+
+This repository now supports a **frozen-results** workflow:
+
+- No notebook execution
+- No retraining
+- Uses only saved `.ipynb` outputs and existing files in `images/`
+
+Generate frozen metrics, figure manifest, and report include files:
+
+```bash
+python3 scripts/freeze_notebook_results.py
+```
+
+Verify report consistency and asset completeness:
+
+```bash
+python3 scripts/verify_frozen_results.py
+```
+
+Rebuild report PDFs (LaTeX only):
+
+```bash
+cd report
+latexmk -pdf -interaction=nonstopmode CA2_Complete_Solutions.tex
+cp -f CA2_Complete_Solutions.pdf DGM_CA2_final_EN.pdf
+```
+
+Frozen artifacts are written to:
+
+- `artifacts/frozen_results/metrics.json`
+- `artifacts/frozen_results/figure_manifest.json`
+- `report/generated_metrics.tex`
+- `report/generated_fid_table.tex`
+
 ## Methods Used (Explained)
 
 ### 1) RealNVP in Pixel Space

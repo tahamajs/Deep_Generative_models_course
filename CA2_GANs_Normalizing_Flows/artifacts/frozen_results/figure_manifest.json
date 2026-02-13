@@ -1,0 +1,112 @@
+{
+  "figure_count": 13,
+  "figures": [
+    {
+      "caption": "Training and validation loss curves for RealNVP model. The negative log-likelihood decreases over epochs, indicating successful learning of the data distribution.",
+      "exists": true,
+      "include_path": "images/CA2_DGM_cell4_out20.png",
+      "index": 1,
+      "label": "fig:realnvp_loss",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/CA2_DGM_cell4_out20.png"
+    },
+    {
+      "caption": "Generated FashionMNIST samples from RealNVP model after training. The model learns to generate diverse fashion items with reasonable quality.",
+      "exists": true,
+      "include_path": "images/CA2_DGM_cell11_out1.png",
+      "index": 2,
+      "label": "fig:realnvp_samples",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/CA2_DGM_cell11_out1.png"
+    },
+    {
+      "caption": "Log-likelihood distributions for FashionMNIST test, MNIST, and KMNIST datasets. FashionMNIST has the highest likelihood as expected, while MNIST and KMNIST show lower likelihoods, enabling OOD detection.",
+      "exists": true,
+      "include_path": "images/CA2_DGM_cell10_out0.png",
+      "index": 3,
+      "label": "fig:ood_detection",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/CA2_DGM_cell10_out0.png"
+    },
+    {
+      "caption": "Visualization of transposed convolution operation: a 3\u00d73 input is upsampled to 5\u00d75 output using kernel size 3, stride 1, and padding 1.",
+      "exists": true,
+      "include_path": "images/CA2_DGM_cell6_out1.png",
+      "index": 4,
+      "label": "fig:transposed_conv",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/CA2_DGM_cell6_out1.png"
+    },
+    {
+      "caption": "Generated samples at Epoch 1 (FID: \\FIDEpochOne). The model produces blurry, low-quality images with poorly defined structures as it begins learning.",
+      "exists": true,
+      "include_path": "images/generated_sample_epoch_1.png",
+      "index": 5,
+      "label": "fig:epoch1",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/generated_sample_epoch_1.png"
+    },
+    {
+      "caption": "Generated samples at Epoch 3 (FID: \\FIDEpochThree). Significant improvement in image quality with better structure definition and recognizable fashion item shapes.",
+      "exists": true,
+      "include_path": "images/generated_sample_epoch_3.png",
+      "index": 6,
+      "label": "fig:epoch3",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/generated_sample_epoch_3.png"
+    },
+    {
+      "caption": "Generated samples at Epoch 5 (FID: \\FIDEpochFive). Further improvement in detail and realism with clearer separation between different fashion items.",
+      "exists": true,
+      "include_path": "images/generated_sample_epoch_5.png",
+      "index": 7,
+      "label": "fig:epoch5",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/generated_sample_epoch_5.png"
+    },
+    {
+      "caption": "Generated samples at Epoch 8 (FID: \\BestFID{",
+      "exists": true,
+      "include_path": "images/generated_sample_epoch_8.png",
+      "index": 8,
+      "label": "fig:epoch8",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/generated_sample_epoch_8.png"
+    },
+    {
+      "caption": "Generated samples at Epoch 10 (FID: \\FIDEpochTen). Final samples showing slight quality degradation from best epoch, possibly indicating overfitting or training instability.",
+      "exists": true,
+      "include_path": "images/generated_sample_epoch_10.png",
+      "index": 9,
+      "label": "fig:epoch10",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/generated_sample_epoch_10.png"
+    },
+    {
+      "caption": "Real FashionMNIST samples from the dataset. These represent the target distribution that the generator learns to approximate.",
+      "exists": true,
+      "include_path": "images/CA2_DGM_cell4_out1.png",
+      "index": 10,
+      "label": "fig:real_samples",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/CA2_DGM_cell4_out1.png"
+    },
+    {
+      "caption": "Generator and Discriminator loss curves throughout training. The losses oscillate as the networks compete, with discriminator generally stabilizing while generator shows more variance.",
+      "exists": true,
+      "include_path": "images/Q2_final_res_cell53_out40.png",
+      "index": 11,
+      "label": "fig:loss_curves",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/Q2_final_res_cell53_out40.png"
+    },
+    {
+      "caption": "Average loss per epoch for Generator and Discriminator. The trend shows overall stability with some fluctuations during mid-training epochs.",
+      "exists": true,
+      "include_path": "images/Q2_final_res_cell53_out19.png",
+      "index": 12,
+      "label": "fig:epoch_loss",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/Q2_final_res_cell53_out19.png"
+    },
+    {
+      "caption": "FID Score progression over 10 epochs. The curve shows overall improvement with best performance at Epoch \\BestFIDEpoch, followed by slight degradation.",
+      "exists": true,
+      "include_path": "images/Q2_final_res_cell53_out31.png",
+      "index": 13,
+      "label": "fig:fid_progression",
+      "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/Q2_final_res_cell53_out31.png"
+    }
+  ],
+  "generated_at_utc": "2026-02-13T22:16:43.003800+00:00",
+  "missing_count": 0,
+  "report_source": "report/CA2_Complete_Solutions.tex"
+}

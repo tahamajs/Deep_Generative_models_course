@@ -293,7 +293,7 @@ def write_generated_fid_table_tex(path: Path, metrics: dict) -> None:
     lines.append("\\centering")
     lines.append("\\begin{tabular}{|c|c|c|p{3.5cm}|}")
     lines.append("\\hline")
-    lines.append("Epoch & FID Score & Change & Notes \\\")
+    lines.append("Epoch & FID Score & Change & Notes \\\\")
     lines.append("\\hline")
 
     prev = None
@@ -321,7 +321,7 @@ def write_generated_fid_table_tex(path: Path, metrics: dict) -> None:
             if change_text != "Baseline":
                 change_text = f"\\textbf{{{change_text}}}"
 
-        lines.append(f"{epoch} & {score_text} & {change_text} & {note} \\\")
+        lines.append(f"{epoch} & {score_text} & {change_text} & {note} \\\\")
         prev = score
 
     lines.append("\\hline")
