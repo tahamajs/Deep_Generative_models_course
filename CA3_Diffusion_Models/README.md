@@ -19,6 +19,21 @@ jupyter lab CA3_Score_Based_Models.ipynb
 
 Run cells in order; the notebook is sequential and phase-based.
 
+## No-Run report build (use embedded notebook outputs)
+
+Use this workflow when you want report figures and PDF regenerated **without** re-running model training.
+The plots are extracted from the outputs already embedded inside `codes/CA3_Score_Based_Models.ipynb`.
+
+```bash
+source /Users/tahamajs/Documents/uni/venv/bin/activate
+bash tools/build_report_from_notebook_outputs.sh
+```
+
+What this does:
+- exports the required legacy figure files (`output_cell_*`) into `images/`
+- validates all `\includegraphics` references in `report/DGM_CA3_Complete_Report.tex`
+- rebuilds `report/DGM_CA3_Complete_Report.pdf`
+
 ## Methods Used (Complete Map)
 
 ### 1) Data Generation and Density Methods
