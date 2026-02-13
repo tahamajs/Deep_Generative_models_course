@@ -23,7 +23,7 @@ Both notebook and script pipelines are provided.
 
 ```bash
 cd CA4_Vision_Language_Model
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install transformers datasets peft evaluate bitsandbytes rouge_score huggingface_hub torch torchvision
@@ -34,6 +34,34 @@ Authenticate and (optionally) pre-download model files:
 ```bash
 cd code
 bash run.sh
+```
+
+## Report-Only Regeneration (No Training/Eval Run)
+
+Use this path when you want report-ready plots/tables from existing notebook result artifacts only.
+
+```bash
+cd CA4_Vision_Language_Model
+python3 -m pip install -r requirements-report.txt
+python3 code/report_assets/generate_report_assets.py --config report/report_assets_config.json
+python3 code/report_assets/validate_report_assets.py --config report/report_assets_config.json
+```
+
+Generated outputs:
+
+- `images/generated/rouge_comparison_p1.png`
+- `images/generated/rouge_comparison_p2.png`
+- `images/generated/accuracy_comparison_p1_p2.png`
+- `images/generated/prediction_pattern_breakdown_p1.png`
+- `images/generated/prediction_pattern_breakdown_p2.png`
+- `images/generated/qualitative_examples_grid.png`
+- `report/generated/metrics_summary.json`
+- `report/generated/metrics_table.tex`
+
+Run tests for the report-asset pipeline:
+
+```bash
+python3 -m unittest discover -s code/report_assets/tests -p 'test_*.py'
 ```
 
 ## Training Methods Used
@@ -178,7 +206,7 @@ python eval_pipeline.py \
 
 - Training outputs/checkpoints: `code/paligemma-clevr-finetuned/` (default).
 - Evaluation images: `code/evaluation_images_comparison*/`.
-- Evaluation JSON: `code/full_evaluation_results_comparison*.json`.
+- Evaluation JSON: `code/eval_p1/full_evaluation_results_comparison.json`, `code/eval_p2/full_evaluation_results_comparison.json`.
 - Report figures: `images/`.
 
 ## Notes
