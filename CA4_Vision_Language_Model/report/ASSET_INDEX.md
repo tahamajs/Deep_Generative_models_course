@@ -11,7 +11,8 @@
 | Script | `code/eval_pipeline.py` | Pipeline/utility execution | Present |
 | Script | `code/training_pipeline.py` | Pipeline/utility execution | Present |
 | Report Source | `report/CA4_Full_Report.tex` | LaTeX build source of final report(s) | Present |
-| Report PDF | `report/DGM_CA4_fainal_EN_report.pdf` | Final deliverable artifact | Present |
+| Report PDF | `report/DGM_CA4_final_EN_report.pdf` | Final deliverable artifact (normalized name) | Present |
+| Report PDF | `report/DGM_CA4_fainal_EN_report.pdf` | Final deliverable artifact (legacy name kept for compatibility) | Present |
 | Report PDF | `report/DGM_CA4_report.pdf` | Final deliverable artifact | Present |
 
 ## Figure Asset Coverage

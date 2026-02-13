@@ -1,13 +1,13 @@
 # CA4_Vision_Language_Model — Claude Code Guidance
 
 **Technology**: Python, Jupyter, PyTorch/Transformers, PEFT/LoRA  
-**Primary Notebook**: `code/final_CA4_training.ipynb` (plus evaluation notebooks under `code/eval_*`)  
+**Primary Notebook**: `code/CA4_VLM_training.ipynb` (plus evaluation notebooks under `code/eval_*`)  
 **Reports**: `.tex` in `report/` → PDF (IEEE format, keep synchronized)  
 **Parent Context**: Extends root `../CLAUDE.md`
 
 ## Development & Commands
 
-- Start via `jupyter lab` → open `code/final_CA4_training.ipynb`.
+- Start via `jupyter lab` → open `code/CA4_VLM_training.ipynb`.
 - Environment: `transformers`, `peft`, `accelerate`, `datasets`, `evaluate`, `bitsandbytes` (if quantization), PyTorch with CUDA if available.
 - Syntax check (if `.py` helpers appear later): `python -m py_compile CA4_Vision_Language_Model/**/*.py`.
 - Render report: build `.tex` in `report/` to IEEE PDF after updating experiments.
@@ -25,8 +25,8 @@
 
 ## Key Files
 
-- `code/final_CA4_training.ipynb` — main fine-tuning workflow.
-- `code/eval_p1/final_CA4_results1.ipynb`, `code/eval_p2/final_CA4_results2.ipynb` — evaluation notebooks.
+- `code/CA4_VLM_training.ipynb` — main fine-tuning workflow.
+- `code/eval_p1/CA4_VLM_evaluation_part1.ipynb`, `code/eval_p2/CA4_VLM_evaluation_part2.ipynb` — evaluation notebooks.
 - `images/` — generated visualizations; keep representative outputs only.
 - `report/` — LaTeX sources and PDFs; maintain IEEE formatting.
 

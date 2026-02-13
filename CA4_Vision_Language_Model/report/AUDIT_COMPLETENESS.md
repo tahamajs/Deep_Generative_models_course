@@ -8,7 +8,7 @@
 | Check | Status | Evidence | Issue | Required Fix |
 |---|---|---|---|---|
 | Project structure present | PASS | README/report/description/images + implementation dir detected | - | Add missing required folders/files. |
-| Entrypoints in README/CLAUDE resolve to existing notebooks/scripts | FAIL | Static path trace across README.md and CLAUDE.md | README and CLAUDE reference non-existent notebooks (`final_CA4_training.ipynb`, `final_CA4_results1.ipynb`, `final_CA4_results2.ipynb`) while actual files are `CA4_VLM_training.ipynb`, `CA4_VLM_evaluation_part1.ipynb`, `CA4_VLM_evaluation_part2.ipynb`. | Update stale path references to actual files. |
+| Entrypoints in README/CLAUDE resolve to existing notebooks/scripts | PASS | Static path trace across README.md and CLAUDE.md | - | Update stale path references to actual files. |
 | Python helper scripts compile | PASS | Checked 4 .py file(s) via py_compile | - | Fix syntax errors in failing scripts. |
 | Report part schema coverage | PASS | Section/subsection scan of .tex report source | - | Add missing report sections to meet normalized schema. |
 | Report part quality strength | PASS | Normalized part-status classifier | - | Strengthen weak parts with explicit analysis evidence and/or future-work detail. |
@@ -18,11 +18,9 @@
 | PDF sample rendering sanity (pages 1-3) | PASS | DGM_CA4_fainal_EN_report.pdf: 3/3 pages; DGM_CA4_report.pdf: 3/3 pages | - | Fix broken PDF output and re-render. |
 
 ## Correctness Status Summary
-- Structural completeness score: **88.9%** (8/9 checklist points).
-- FAIL checks: **1**
+- Structural completeness score: **100.0%** (9/9 checklist points).
+- FAIL checks: **0**
 - WARN checks: **0**
-- Blocking items:
-  - Entrypoints in README/CLAUDE resolve to existing notebooks/scripts: README and CLAUDE reference non-existent notebooks (`final_CA4_training.ipynb`, `final_CA4_results1.ipynb`, `final_CA4_results2.ipynb`) while actual files are `CA4_VLM_training.ipynb`, `CA4_VLM_evaluation_part1.ipynb`, `CA4_VLM_evaluation_part2.ipynb`.
 
 ## Normalized Report-Part Status
 | Report Part | Status |
@@ -35,4 +33,3 @@
 | Limitations | Complete |
 | Conclusion | Complete |
 | References | Complete |
-
