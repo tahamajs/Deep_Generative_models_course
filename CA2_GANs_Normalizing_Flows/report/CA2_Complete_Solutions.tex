@@ -1522,37 +1522,68 @@ The DCGAN implementation achieves a Fréchet Inception Distance of \BestFID{} at
 Key findings include: (1) normalizing flows excel in density estimation and OOD detection, providing interpretable likelihood scores, (2) GANs produce higher-quality visual samples through adversarial training but lack explicit density estimation, (3) learned latent representations significantly enhance normalizing flow performance, and (4) training stability is critical for GAN convergence, with best results achieved when generator and discriminator maintain balanced losses.
 
 \section{Limitations and Future Work}
-\subsection{Known Limitations}
+\subsection{Reproducibility and Traceability}
+To ensure this report is reproducible without retraining, all quantitative values are synchronized from frozen notebook outputs:
 \begin{itemize}
-    \item \textbf{Training duration}: Only 10 epochs for GAN and limited flow steps; FID likely improves with longer training.
-    \item \textbf{Stability}: DCGAN shows expected oscillations; no spectral norm or gradient penalty applied.
-    \item \textbf{Resolution}: Experiments fixed to $64\times64$ upsampled FashionMNIST; higher-res data untested.
-    \item \textbf{Metrics breadth}: Only FID reported for GAN; no precision/recall or density/coverage metrics.
-    \item \textbf{OOD evaluation scale}: Flow OOD tested on MNIST/KMNIST subsets; broader OOD sets not covered.
+    \item Pixel-space flow likelihoods are parsed from `CA2\_GANs\_and\_NormalizingFlows\_main.ipynb` (cell 36 output).
+    \item Latent-space flow likelihoods are parsed from `CA2\_GANs\_and\_NormalizingFlows\_main.ipynb` (cell 50 output).
+    \item GAN FID progression is parsed from `CA2\_question2\_results.ipynb` (cell 57 output stream).
+    \item Report macros/tables are generated automatically into `generated\_metrics.tex` and `generated\_fid\_table.tex`.
 \end{itemize}
+This protocol prevents manual transcription drift between notebook outputs and report claims.
+
+\subsection{Evidence-Backed Limitations}
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.2}
+\caption{Limitations with Direct Evidence from Frozen Results}
+\label{tab:limitations_evidence}
+\centering
+\begin{tabular}{|p{1.7cm}|p{2.7cm}|p{2.7cm}|}
+\hline
+\textbf{Area} & \textbf{Observed Evidence} & \textbf{Impact} \\
+\hline
+GAN training horizon & Best FID occurs at epoch \BestFIDEpoch{} (\BestFID), but final epoch is worse (\FinalFID). & Model has not stably converged by epoch 10; checkpoint selection is critical. \\
+\hline
+GAN stability & FID rises from \FIDEpochFive{} to \FIDEpochSix{} and remains high at epoch 7 before recovery. & Indicates adversarial imbalance and susceptibility to oscillation/mode instability. \\
+\hline
+Metric breadth & GAN evaluation reports FID only; no precision/recall or density/coverage metrics. & Sample quality is partially characterized; diversity/fidelity trade-offs remain under-measured. \\
+\hline
+OOD scope & Flow OOD comparison is limited to MNIST/KMNIST against FashionMNIST. & OOD conclusions may not generalize to broader or natural-image shifts. \\
+\hline
+Resolution scale & Experiments are based on 28x28 FashionMNIST (GAN uses resized 64x64). & Findings may not transfer to higher-resolution image generation settings. \\
+\hline
+\end{tabular}
+\end{table}
+
 \subsection{Future Directions}
-\begin{itemize}
-    \item Add WGAN-GP or spectral normalization to reduce mode collapse risk and stabilize GAN training.
-    \item Train longer with learning-rate scheduling and EMA of generator weights to improve FID.
-    \item Evaluate flows and GANs on higher-resolution datasets and report precision/recall and density/coverage.
-    \item Explore hybrid approaches (flow prior for GANs or flow-based discriminators) to combine density estimation and sample quality.
-    \item Expand OOD detection to additional datasets (e.g., CIFAR-10/100) and report ROC-AUC across multiple corruptions.
-\end{itemize}
+\begin{enumerate}
+    \item \textbf{Stability-first GAN upgrade}: Add WGAN-GP or spectral normalization, then compare FID variance across epochs.
+    \item \textbf{Longer controlled training}: Extend epochs with learning-rate scheduling and EMA, while retaining early-stopping by best FID.
+    \item \textbf{Broader evaluation metrics}: Add precision/recall and density/coverage to separate fidelity and diversity effects.
+    \item \textbf{Expanded OOD study}: Evaluate additional OOD datasets/corruptions and report thresholded ROC-style detection metrics.
+    \item \textbf{Cross-model hybridization}: Explore flow priors with GAN generators/discriminators to combine likelihood and sample sharpness.
+\end{enumerate}
 
 \section{Appendix: Figure Provenance}
-\begin{itemize}
-    \item \textbf{CA2\_DGM\_cell4\_out20.png}: RealNVP samples (training snapshot).
-    \item \textbf{CA2\_DGM\_cell11\_out1.png}: RealNVP log-likelihood/round-trip check.
-    \item \textbf{CA2\_DGM\_cell10\_out0.png}: RealNVP inverse consistency example.
-    \item \textbf{CA2\_DGM\_cell6\_out1.png}: GAN training loss curves.
-    \item \textbf{generated\_sample\_epoch\_1,3,5,8,10.png}: GAN sample grids at noted epochs.
-    \item \textbf{CA2\_DGM\_cell4\_out1.png}: Early RealNVP reconstruction grid.
-    \item \textbf{Q2\_final\_res\_cell53\_out40.png}: GAN evaluation sample (epoch 8 best).
-    \item \textbf{Q2\_final\_res\_cell53\_out19.png}: Replacement sample for missing out20 reference.
-    \item \textbf{Q2\_final\_res\_cell53\_out31.png}: GAN evaluation sample (later epoch comparison).
-\end{itemize}
+\subsection{Figure Selection Rationale}
+The report intentionally includes 13 core figures out of a larger generated pool, selecting artifacts that directly support: (i) flow training and OOD behavior, (ii) GAN quality progression, and (iii) GAN dynamics/metric analysis. Exploratory images not tied to claims are omitted to keep evidence traceable.
 
-Future work could explore extending training to more epochs, implementing advanced techniques like spectral normalization and gradient penalties, and comparing performance on higher-resolution datasets. The complementary nature of these approaches suggests hybrid models could leverage advantages from both paradigms.
+\subsection{Figure-to-Claim Mapping}
+\begin{itemize}
+    \item \textbf{CA2\_DGM\_cell4\_out20.png}: RealNVP train/validation loss trend (Sec. RealNVP implementation).
+    \item \textbf{CA2\_DGM\_cell11\_out1.png}: RealNVP generated sample quality snapshot.
+    \item \textbf{CA2\_DGM\_cell10\_out0.png}: OOD likelihood distribution comparison (FashionMNIST vs MNIST vs KMNIST).
+    \item \textbf{CA2\_DGM\_cell6\_out1.png}: Transposed-convolution behavior illustration for GAN architecture explanation.
+    \item \textbf{generated\_sample\_epoch\_1.png}: Early GAN output quality reference.
+    \item \textbf{generated\_sample\_epoch\_3.png}: Early-to-mid GAN quality improvement reference.
+    \item \textbf{generated\_sample\_epoch\_5.png}: Mid-training GAN quality reference.
+    \item \textbf{generated\_sample\_epoch\_8.png}: Best-epoch GAN quality reference (\BestFID).
+    \item \textbf{generated\_sample\_epoch\_10.png}: Final-epoch GAN quality reference (\FinalFID).
+    \item \textbf{CA2\_DGM\_cell4\_out1.png}: Real dataset sample baseline for qualitative comparison.
+    \item \textbf{Q2\_final\_res\_cell53\_out40.png}: Generator/discriminator loss dynamics.
+    \item \textbf{Q2\_final\_res\_cell53\_out19.png}: Per-epoch average loss comparison.
+    \item \textbf{Q2\_final\_res\_cell53\_out31.png}: FID progression curve used in quantitative GAN evaluation.
+\end{itemize}
 
 \begin{thebibliography}{1}
 
