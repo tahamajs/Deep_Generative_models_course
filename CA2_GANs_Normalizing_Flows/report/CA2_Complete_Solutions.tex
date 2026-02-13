@@ -14,6 +14,7 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{url}
+\graphicspath{{../images/}}
 
 % Code listing style
 \lstset{
@@ -1369,7 +1370,8 @@ Using non-saturating loss for generator to avoid vanishing gradients.
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/Q2_final_res_cell53_out20.png}
+    % TODO: Missing in repo; replace with closest available sample.
+    \includegraphics[width=\columnwidth]{images/Q2_final_res_cell53_out19.png}
     \caption{Average loss per epoch for Generator and Discriminator. The trend shows overall stability with some fluctuations during mid-training epochs.}
     \label{fig:epoch_loss}
 \end{figure}
@@ -1458,20 +1460,20 @@ Epoch & FID Score & Change & Notes \\
         \item Generated samples nearly indistinguishable from real data
         \item Requires extended training (50-100 epochs) or advanced techniques
     \end{itemize}
-    \item \textbf{50 ≤ FID < 100}: Good quality
+    \item \textbf{50 $\leq$ FID < 100}: Good quality
     \begin{itemize}
         \item High-quality generation with minor artifacts
         \item Suitable for most applications
         \item Representative of well-trained GANs
     \end{itemize}
-    \item \textbf{100 ≤ FID < 200}: Moderate quality (our range: 171-208)
+    \item \textbf{100 $\leq$ FID < 200}: Moderate quality (our range: 171-208)
     \begin{itemize}
         \item Reasonable generation but visible differences from real data
         \item May have some artifacts or slight blurriness
         \item Our best FID (171.67) approaches upper bound of this range
         \item Indicates model is learning but needs more training/optimization
     \end{itemize}
-    \item \textbf{FID ≥ 200}: Needs improvement (our initial epochs)
+    \item \textbf{FID $\geq$ 200}: Needs improvement (our initial epochs)
     \begin{itemize}
         \item Poor generation quality, easily distinguishable from real data
         \item Typical of early training stages or poorly configured models
@@ -1540,6 +1542,37 @@ The DCGAN implementation achieves a Fréchet Inception Distance of 171.67 at the
 
 Key findings include: (1) normalizing flows excel in density estimation and OOD detection, providing interpretable likelihood scores, (2) GANs produce higher-quality visual samples through adversarial training but lack explicit density estimation, (3) learned latent representations significantly enhance normalizing flow performance, and (4) training stability is critical for GAN convergence, with best results achieved when generator and discriminator maintain balanced losses.
 
+\section{Limitations and Future Work}
+\subsection{Known Limitations}
+\begin{itemize}
+    \item \textbf{Training duration}: Only 10 epochs for GAN and limited flow steps; FID likely improves with longer training.
+    \item \textbf{Stability}: DCGAN shows expected oscillations; no spectral norm or gradient penalty applied.
+    \item \textbf{Resolution}: Experiments fixed to $64\times64$ upsampled FashionMNIST; higher-res data untested.
+    \item \textbf{Metrics breadth}: Only FID reported for GAN; no precision/recall or density/coverage metrics.
+    \item \textbf{OOD evaluation scale}: Flow OOD tested on MNIST/KMNIST subsets; broader OOD sets not covered.
+\end{itemize}
+\subsection{Future Directions}
+\begin{itemize}
+    \item Add WGAN-GP or spectral normalization to reduce mode collapse risk and stabilize GAN training.
+    \item Train longer with learning-rate scheduling and EMA of generator weights to improve FID.
+    \item Evaluate flows and GANs on higher-resolution datasets and report precision/recall and density/coverage.
+    \item Explore hybrid approaches (flow prior for GANs or flow-based discriminators) to combine density estimation and sample quality.
+    \item Expand OOD detection to additional datasets (e.g., CIFAR-10/100) and report ROC-AUC across multiple corruptions.
+\end{itemize}
+
+\section{Appendix: Figure Provenance}
+\begin{itemize}
+    \item \textbf{CA2\_DGM\_cell4\_out20.png}: RealNVP samples (training snapshot).
+    \item \textbf{CA2\_DGM\_cell11\_out1.png}: RealNVP log-likelihood/round-trip check.
+    \item \textbf{CA2\_DGM\_cell10\_out0.png}: RealNVP inverse consistency example.
+    \item \textbf{CA2\_DGM\_cell6\_out1.png}: GAN training loss curves.
+    \item \textbf{generated\_sample\_epoch\_1,3,5,8,10.png}: GAN sample grids at noted epochs.
+    \item \textbf{CA2\_DGM\_cell4\_out1.png}: Early RealNVP reconstruction grid.
+    \item \textbf{Q2\_final\_res\_cell53\_out40.png}: GAN evaluation sample (epoch 8 best).
+    \item \textbf{Q2\_final\_res\_cell53\_out19.png}: Replacement sample for missing out20 reference.
+    \item \textbf{Q2\_final\_res\_cell53\_out31.png}: GAN evaluation sample (later epoch comparison).
+\end{itemize}
+
 Future work could explore extending training to more epochs, implementing advanced techniques like spectral normalization and gradient penalties, and comparing performance on higher-resolution datasets. The complementary nature of these approaches suggests hybrid models could leverage advantages from both paradigms.
 
 \begin{thebibliography}{1}
@@ -1569,4 +1602,3 @@ H. Xiao, K. Rasul, and R. Vollgraf, ``Fashion-MNIST: a novel image dataset for b
 
 
 \end{document}
-
