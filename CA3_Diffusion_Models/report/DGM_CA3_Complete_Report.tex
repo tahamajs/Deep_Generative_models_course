@@ -54,6 +54,7 @@ This paper presents a comprehensive implementation and experimental analysis of 
     \item Analysis of three sampling methods: annealed Langevin, standard Langevin, and deterministic sampling
     \item Trajectory visualization to validate score function learning
     \item Comprehensive experimental results with visualizations and quantitative comparisons
+    \item Deterministic no-run report reconstruction pipeline for artifact traceability
 \end{enumerate}
 
 The rest of this paper is organized as follows: Section~II presents the theoretical background. Section~III details the implementation methodology. Section~IV presents experimental results and analysis. Section~V provides conclusions and future work directions.
@@ -986,6 +987,43 @@ Storage & 3 models & 3 models & 1 model \\
 
 \section{Experimental Results and Analysis}
 
+\subsection{Consolidated Findings Matrix}
+
+To provide a decision-oriented summary, Table~\ref{tab:decision_matrix} consolidates the strongest training and sampling choices for common usage scenarios.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.25\textwidth}p{0.20\textwidth}p{0.20\textwidth}p{0.28\textwidth}}
+\toprule
+Scenario & Training Strategy & Sampling Strategy & Rationale \\
+\midrule
+Highest final sample quality &
+Varying $\sigma$ [1,20] &
+Annealed Langevin &
+Best multi-scale robustness and most reliable mode coverage \\
+\midrule
+Fast prototyping / debugging &
+Fixed $\sigma=3$ &
+Deterministic &
+Short path length and reproducible trajectories with low overhead \\
+\midrule
+Balanced quality/speed &
+Varying $\sigma$ [1,20] &
+Standard Langevin &
+Good diversity with far fewer updates than annealed sampling \\
+\midrule
+Specialized single-noise deployment &
+Fixed target $\sigma$ &
+Langevin at same $\sigma$ &
+Maximizes specialization at one operating noise level \\
+\bottomrule
+\end{tabular}
+\caption{Decision matrix for selecting training and sampling configurations}
+\label{tab:decision_matrix}
+\end{table}
+
+Across all experiments, the central pattern is consistent: fixed-$\sigma$ models can be excellent specialists, while varying-$\sigma$ training is the most practical default for robust and reusable generation.
+
 \subsection{Sampling Method Comparison}
 
 \subsubsection{Annealed Langevin Dynamics}
@@ -1122,31 +1160,31 @@ Use Case & High precision & Best single $\sigma$ & Exploration & Production \\
 To keep this report reproducible without rerunning expensive training, all report figures are reconstructed from notebook-embedded outputs. The workflow is deterministic and script-driven:
 
 \begin{enumerate}
-    \item Extract required `image/png` outputs from `codes/CA3\_Score\_Based\_Models.ipynb`.
-    \item Write canonical figure files (`output\_cell\_*`) under `images/`.
-    \item Generate `report/asset\_manifest.json` with per-asset SHA-256 hashes and provenance metadata.
-    \item Validate every `\textbackslash includegraphics` reference in `report/DGM\_CA3\_Complete\_Report.tex`.
+    \item Extract required \texttt{image/png} outputs from \texttt{codes/CA3\_Score\_Based\_Models.ipynb}.
+    \item Write canonical figure files (\texttt{output\_cell\_*}) under \texttt{images/}.
+    \item Generate \texttt{report/asset\_manifest.json} with per-asset SHA-256 hashes and provenance metadata.
+    \item Validate every \texttt{\textbackslash includegraphics} reference in \texttt{report/DGM\_CA3\_Complete\_Report.tex}.
     \item Compile the PDF from LaTeX sources.
 \end{enumerate}
 
 This is implemented via:
 \begin{itemize}
-    \item `tools/export\_notebook\_results.py`
-    \item `tools/verify\_report\_assets.py`
-    \item `tools/build\_report\_from\_notebook\_outputs.sh`
+    \item \texttt{tools/export\_notebook\_results.py}
+    \item \texttt{tools/verify\_report\_assets.py}
+    \item \texttt{tools/build\_report\_from\_notebook\_outputs.sh}
 \end{itemize}
 
 \subsection{Limitations and Validity Considerations}
 
 The reported conclusions are supported by strong visual and convergence evidence, but several limitations remain:
 \begin{itemize}
-    \item Primary quantitative metric is training loss; no FID-style metric is reported for the 2D setting.
-    \item Sampling quality assessment is mostly qualitative (coverage/diversity judged from plots).
-    \item Results depend on random Gaussian-mixture parameter draws; broader seed sweeps would improve robustness claims.
-    \item Runtime trade-offs are characterized comparatively, not by standardized benchmark hardware timing.
+    \item \textbf{Metric limitation:} The primary quantitative metric is training loss; no FID-style or precision/recall-style metric is reported for the 2D setting.
+    \item \textbf{Qualitative bias:} Sampling quality is partly judged from plots (coverage/diversity/trajectory shape), which can introduce observer bias.
+    \item \textbf{Stochastic sensitivity:} Results depend on random Gaussian-mixture parameter draws and stochastic training/sampling trajectories.
+    \item \textbf{Benchmarking gap:} Runtime trade-offs are comparative but not normalized under a fixed hardware benchmark protocol.
 \end{itemize}
 
-These constraints do not invalidate the core findings, but they define the boundary of claims made in this assignment.
+These constraints do not invalidate the core findings, but they bound the scope of claims to this assignment's controlled 2D experimental setting.
 
 \section{Conclusions}
 
@@ -1197,6 +1235,17 @@ Through this project, we successfully:
     \item \textbf{Validated} theoretical concepts through practical implementation
 \end{enumerate}
 
+\subsection{Practical Deployment Checklist}
+
+For practical use beyond this assignment, the following checklist captures the recommended operating path:
+\begin{enumerate}
+    \item Train a varying-$\sigma$ model first as the default robust baseline.
+    \item Validate mode coverage with trajectory and overlap diagnostics before deployment.
+    \item Select sampler by objective: annealed (quality), Langevin (balance), deterministic (speed/reproducibility).
+    \item Lock seeds and export an asset manifest for report and audit reproducibility.
+    \item Re-run evaluation after any architecture or schedule change to prevent silent regressions.
+\end{enumerate}
+
 \subsection{Future Work and Extensions}
 
 \textbf{Potential Improvements:}
@@ -1228,8 +1277,8 @@ Through this project, we successfully:
 
 \section{Appendix: Reproducibility Commands}
 \begin{itemize}
-    \item `source /Users/tahamajs/Documents/uni/venv/bin/activate`
-    \item `bash tools/build\_report\_from\_notebook\_outputs.sh`
+    \item \texttt{source /Users/tahamajs/Documents/uni/venv/bin/activate}
+    \item \texttt{bash tools/build\_report\_from\_notebook\_outputs.sh}
 \end{itemize}
 
 \section*{Acknowledgment}
