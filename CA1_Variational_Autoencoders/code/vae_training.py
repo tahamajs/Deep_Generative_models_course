@@ -20,7 +20,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 import torch
 import torch.nn as nn
@@ -29,6 +29,9 @@ from sklearn.manifold import TSNE
 from torch.utils.data import DataLoader, Dataset, Subset, random_split
 from torchvision import datasets, transforms
 from torchvision.utils import make_grid, save_image
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 
 def set_seed(seed: int) -> None:
