@@ -311,6 +311,38 @@ There is a deep mathematical connection between diffusion models and score-based
 
 This section details our implementation approach, including data preparation, model architecture design choices, and the rationale behind key implementation decisions.
 
+\subsection{Experiment Roadmap and Evaluation Protocol}
+
+To make the study reproducible and easier to follow, the implementation is organized into three explicit phases, each with a clear objective and artifact set:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.12\textwidth}p{0.30\textwidth}p{0.28\textwidth}p{0.20\textwidth}}
+\toprule
+Phase & Objective & Main Outputs & Primary Criteria \\
+\midrule
+Phase 1 (Fixed $\sigma$) &
+Train specialized score models at $\sigma \in \{1,3,7\}$ and isolate noise-scale effects &
+Loss curves, score fields, and method-wise sampling panels &
+Convergence stability and single-scale sample quality \\
+\midrule
+Phase 2 (Trajectories) &
+Analyze path dynamics from diverse initial points &
+Deterministic vs Langevin trajectory visualizations &
+Mode reachability and exploration behavior \\
+\midrule
+Phase 3 (Varying $\sigma$) &
+Train one multi-scale model over $\sigma \in [1,20]$ &
+Long-horizon training curve and epoch-wise sampling evolution &
+Cross-scale robustness and annealed-sampling compatibility \\
+\bottomrule
+\end{tabular}
+\caption{Structured experiment roadmap used throughout this report}
+\label{tab:roadmap}
+\end{table}
+
+Evaluation combines quantitative signals (training loss trends and convergence behavior) with qualitative diagnostics (mode coverage, diversity, trajectory geometry, and alignment with the ground-truth density).
+
 \subsection{Data Generation}
 
 \subsubsection{Why Gaussian Mixtures?}
@@ -849,12 +881,12 @@ We monitored sampling quality at various epochs to track model learning:
     \end{subfigure}
     
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_20.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_23.png}
         \caption{Epoch 600 - Refined}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_23.png}
+        \includegraphics[width=\textwidth]{output_cell_29_img_26.png}
         \caption{Epoch 700 - Excellent quality}
     \end{subfigure}
     
@@ -870,8 +902,8 @@ We monitored sampling quality at various epochs to track model learning:
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_20.png}
-        \caption{Epoch 700 - Near convergence}
+        \includegraphics[width=\textwidth]{output_cell_29_img_32.png}
+        \caption{Epoch 1000 - Near convergence}
     \end{subfigure}
     
     \caption{Final stages of training evolution}
@@ -889,11 +921,11 @@ Aspect & Fixed $\sigma=1$ & Fixed $\sigma=3$ & Varying $\sigma$ [1,20] \\
 Training Time & 100 epochs & 100 epochs & 1000 epochs \\
 Initial Loss & 0.331 & 0.045 & 0.066 \\
 Final Loss & 0.269 & 0.012 & 0.018 \\
-At $\sigma=1$ Quality & 5/5  & No (poor) & 4/5  \\
-At $\sigma=3$ Quality & No (poor) & 5/5  & 4/5  \\
-At $\sigma=7$ Quality & No (poor) & No (poor) & 4/5  \\
+At $\sigma=1$ Quality & 5/5 (specialized) & 1/5 (mismatch) & 4/5 (robust) \\
+At $\sigma=3$ Quality & 2/5 (mismatch) & 5/5 (specialized) & 4/5 (robust) \\
+At $\sigma=7$ Quality & 1/5 (mismatch) & 2/5 (mismatch) & 4/5 (robust) \\
 Generalization & 2/5  & 2/5  & 5/5  \\
-Annealed Sampling & No (not suitable) & No (not suitable) & 5/5  \\
+Annealed Sampling Compatibility & Limited & Limited & 5/5  \\
 Storage & 3 models & 3 models & 1 model \\
 \bottomrule
 \end{tabular}
@@ -928,7 +960,7 @@ Storage & 3 models & 3 models & 1 model \\
 
 \textbf{Trade-offs:}
 
-\textbf{Advantages} Yes:
+\textbf{Advantages:}
 \begin{itemize}
     \item Generalization across noise scales
     \item Single model for all needs
@@ -936,7 +968,7 @@ Storage & 3 models & 3 models & 1 model \\
     \item Compatible with annealed sampling
 \end{itemize}
 
-\textbf{Disadvantages} No:
+\textbf{Trade-offs / Disadvantages:}
 \begin{itemize}
     \item Higher final loss than specialized models (0.018 vs 0.012)
     \item Slightly lower peak quality at specific $\sigma$
@@ -965,12 +997,11 @@ Storage & 3 models & 3 models & 1 model \\
     \item Step size: 0.1
 \end{itemize}
 
-\textbf{Performance:}
+\textbf{Performance Summary:}
 \begin{itemize}
-    \item Yes Best Quality: Highest sample quality across all experiments
-    \item Yes Mode Coverage: Captures both modes reliably (100\% mode coverage)
-    \item Yes Diversity: Excellent within-mode spread
-    \item No Speed: Slowest method (1000+ steps required)
+    \item Best quality in this study, with the most consistent mode coverage
+    \item Excellent diversity and strong refinement in later steps
+    \item Slowest runtime due to multi-scale schedule (1000+ updates)
 \end{itemize}
 
 \subsubsection{Standard Langevin Dynamics}
@@ -982,12 +1013,11 @@ Storage & 3 models & 3 models & 1 model \\
     \item Stochastic with noise injection
 \end{itemize}
 
-\textbf{Performance:}
+\textbf{Performance Summary:}
 \begin{itemize}
-    \item Yes Good Quality: Reliable sampling results
-    \item Yes Speed: Moderate (50 steps)
-    \item Yes Stochastic: Maintains diversity
-    \item No $\sigma$ Dependent: Requires correct noise level
+    \item Reliable quality with moderate cost (50 steps)
+    \item Stochastic noise improves exploration over deterministic paths
+    \item Sensitive to correct noise-level conditioning during use
 \end{itemize}
 
 \subsubsection{Deterministic Sampling}
@@ -999,12 +1029,11 @@ Storage & 3 models & 3 models & 1 model \\
     \item Reproducible results
 \end{itemize}
 
-\textbf{Performance:}
+\textbf{Performance Summary:}
 \begin{itemize}
-    \item Yes Fastest: Quick generation (50 steps, no noise computation)
-    \item Yes Predictable: Reproducible results
-    \item No Limited Diversity: Tends to converge to nearest mode
-    \item No Mode Collapse: Often misses one mode (~60-70\% coverage)
+    \item Fastest method with fully reproducible trajectories
+    \item Limited diversity; tends to follow nearest high-density direction
+    \item Lower multimodal coverage than stochastic alternatives
 \end{itemize}
 
 \begin{table}[H]
@@ -1086,6 +1115,39 @@ Use Case & High precision & Best single $\sigma$ & Exploration & Production \\
     \item Score fields correctly point toward high-density regions
 \end{itemize}
 
+\section{Reproducibility and Artifact Traceability}
+
+\subsection{No-Run Artifact Reconstruction Workflow}
+
+To keep this report reproducible without rerunning expensive training, all report figures are reconstructed from notebook-embedded outputs. The workflow is deterministic and script-driven:
+
+\begin{enumerate}
+    \item Extract required `image/png` outputs from `codes/CA3\_Score\_Based\_Models.ipynb`.
+    \item Write canonical figure files (`output\_cell\_*`) under `images/`.
+    \item Generate `report/asset\_manifest.json` with per-asset SHA-256 hashes and provenance metadata.
+    \item Validate every `\textbackslash includegraphics` reference in `report/DGM\_CA3\_Complete\_Report.tex`.
+    \item Compile the PDF from LaTeX sources.
+\end{enumerate}
+
+This is implemented via:
+\begin{itemize}
+    \item `tools/export\_notebook\_results.py`
+    \item `tools/verify\_report\_assets.py`
+    \item `tools/build\_report\_from\_notebook\_outputs.sh`
+\end{itemize}
+
+\subsection{Limitations and Validity Considerations}
+
+The reported conclusions are supported by strong visual and convergence evidence, but several limitations remain:
+\begin{itemize}
+    \item Primary quantitative metric is training loss; no FID-style metric is reported for the 2D setting.
+    \item Sampling quality assessment is mostly qualitative (coverage/diversity judged from plots).
+    \item Results depend on random Gaussian-mixture parameter draws; broader seed sweeps would improve robustness claims.
+    \item Runtime trade-offs are characterized comparatively, not by standardized benchmark hardware timing.
+\end{itemize}
+
+These constraints do not invalidate the core findings, but they define the boundary of claims made in this assignment.
+
 \section{Conclusions}
 
 \subsection{Summary of Contributions}
@@ -1162,6 +1224,12 @@ Through this project, we successfully:
     \item \textbf{output\_cell\_27\_img\_*}: Trajectory visualizations and path analysis.
     \item \textbf{output\_cell\_29\_img\_*}: Varying-$\sigma$ training sample grids across epochs.
     \item \textbf{Diffusion\_Models\_cell32\_* / cell34\_* / cell36\_* / cell40\_* / cell41\_*}: Intermediate DDPM/DDIM sampling snapshots; kept for reference and reproducibility but not cited in main text.
+\end{itemize}
+
+\section{Appendix: Reproducibility Commands}
+\begin{itemize}
+    \item `source /Users/tahamajs/Documents/uni/venv/bin/activate`
+    \item `bash tools/build\_report\_from\_notebook\_outputs.sh`
 \end{itemize}
 
 \section*{Acknowledgment}
