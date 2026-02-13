@@ -1,0 +1,66 @@
+{
+  "CA1_Variational_Autoencoders": [
+    {
+      "file": "DGM_CA1_final_EN.pdf",
+      "pages": 24,
+      "sample_expected": 3,
+      "sample_rendered": 3,
+      "sample_render_ok": true
+    },
+    {
+      "file": "report.pdf",
+      "pages": 43,
+      "sample_expected": 3,
+      "sample_rendered": 3,
+      "sample_render_ok": true
+    }
+  ],
+  "CA2_GANs_Normalizing_Flows": [
+    {
+      "file": "DGM_CA2_final_EN.pdf",
+      "pages": 31,
+      "sample_expected": 3,
+      "sample_rendered": 3,
+      "sample_render_ok": true
+    },
+    {
+      "file": "report.pdf",
+      "pages": 70,
+      "sample_expected": 3,
+      "sample_rendered": 3,
+      "sample_render_ok": true
+    }
+  ],
+  "CA3_Diffusion_Models": [
+    {
+      "file": "DGM_CA3.pdf",
+      "pages": 64,
+      "sample_expected": 3,
+      "sample_rendered": 3,
+      "sample_render_ok": true
+    },
+    {
+      "file": "DGM_CA3_EN_final.pdf",
+      "pages": 31,
+      "sample_expected": 3,
+      "sample_rendered": 3,
+      "sample_render_ok": true
+    }
+  ],
+  "CA4_Vision_Language_Model": [
+    {
+      "file": "DGM_CA4_fainal_EN_report.pdf",
+      "pages": 54,
+      "sample_expected": 3,
+      "sample_rendered": 3,
+      "sample_render_ok": true
+    },
+    {
+      "file": "DGM_CA4_report.pdf",
+      "pages": 95,
+      "sample_expected": 3,
+      "sample_rendered": 3,
+      "sample_render_ok": true
+    }
+  ]
+}

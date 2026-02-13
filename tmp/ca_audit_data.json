@@ -1,0 +1,971 @@
+{
+  "CA1_Variational_Autoencoders": {
+    "paths": {
+      "README.md": true,
+      "report": true,
+      "description": true,
+      "images": true,
+      "implementation_dir": true
+    },
+    "doc_references": [
+      {
+        "source_doc": "README.md",
+        "reference": "CA1_Variational_Autoencoders/code/vae_training.py",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "code.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "code/CA1_VAE_training_and_evaluation.ipynb",
+        "exists": true,
+        "resolved_path": "code/CA1_VAE_training_and_evaluation.ipynb"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "CA1_Variational_Autoencoders/code/code.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "DGM_CA1_final_EN.pdf",
+        "exists": true,
+        "resolved_path": "report/DGM_CA1_final_EN.pdf"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "code/code.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "python -m py_compile CA1_Variational_Autoencoders/**/*.py",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "report/DGM_CA1_Exercise_Solutions.tex",
+        "exists": true,
+        "resolved_path": "report/DGM_CA1_Exercise_Solutions.tex"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "report/DGM_CA1_final_EN.pdf",
+        "exists": true,
+        "resolved_path": "report/DGM_CA1_final_EN.pdf"
+      }
+    ],
+    "tex_files": [
+      "DGM_CA1_Exercise_Solutions.tex"
+    ],
+    "tex_info": [
+      {
+        "file": "DGM_CA1_Exercise_Solutions.tex",
+        "has_abstract": true,
+        "sections": [
+          "Introduction",
+          "Theoretical Background",
+          "Methodology",
+          "Implementation Details and Code Analysis",
+          "Experimental Results",
+          "Discussion",
+          "Conclusion"
+        ],
+        "subsections": [
+          "Variational Autoencoders Framework",
+          "Key Concepts",
+          "Dataset",
+          "Architecture Implementation",
+          "Training Configuration",
+          "Exercise 1: Data Loading and Preprocessing",
+          "Exercise 2: VAE Model Implementation",
+          "Exercise 3: Loss Function Implementation",
+          "Exercise 4: Training Loop",
+          "Image Reconstruction",
+          "Image Generation",
+          "Latent Space Interpolation",
+          "Latent Space Visualization",
+          "Latent Dimension Analysis",
+          "Reconstruction Quality Analysis",
+          "Generative Performance Evaluation",
+          "Latent Space Structure",
+          "Limitations and Future Work"
+        ],
+        "figure_refs": [
+          {
+            "reference": "../images/output_cell_11_img_0.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA1_Variational_Autoencoders/images/output_cell_11_img_0.png"
+          },
+          {
+            "reference": "../images/output_cell_21_img_0.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA1_Variational_Autoencoders/images/output_cell_21_img_0.png"
+          },
+          {
+            "reference": "../images/output_cell_19_img_0.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA1_Variational_Autoencoders/images/output_cell_19_img_0.png"
+          },
+          {
+            "reference": "../images/output_cell_19_img_1.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA1_Variational_Autoencoders/images/output_cell_19_img_1.png"
+          },
+          {
+            "reference": "../images/output_cell_19_img_2.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA1_Variational_Autoencoders/images/output_cell_19_img_2.png"
+          },
+          {
+            "reference": "../images/output_cell_23_img_0.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA1_Variational_Autoencoders/images/output_cell_23_img_0.png"
+          },
+          {
+            "reference": "../images/output_cell_25_img_0.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA1_Variational_Autoencoders/images/output_cell_25_img_0.png"
+          },
+          {
+            "reference": "../images/output_cell_27_img_0.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA1_Variational_Autoencoders/images/output_cell_27_img_0.png"
+          },
+          {
+            "reference": "../images/output_cell_29_img_0.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA1_Variational_Autoencoders/images/output_cell_29_img_0.png"
+          }
+        ],
+        "has_bibliography": true
+      }
+    ],
+    "report_part_schema": {
+      "problem and objective": "Complete",
+      "method and setup": "Complete",
+      "experiments": "Complete",
+      "results": "Complete",
+      "analysis and interpretation": "Complete",
+      "limitations": "Complete",
+      "conclusion": "Complete",
+      "references": "Complete"
+    },
+    "pdf_info": [
+      {
+        "file": "DGM_CA1_final_EN.pdf",
+        "pdfinfo_ok": true,
+        "pages": 24,
+        "render_sample_ok": true,
+        "rendered_sample_png_count": 24,
+        "sample_pages_rendered": "1-3"
+      },
+      {
+        "file": "report.pdf",
+        "pdfinfo_ok": true,
+        "pages": 43,
+        "render_sample_ok": true,
+        "rendered_sample_png_count": 43,
+        "sample_pages_rendered": "1-3"
+      }
+    ],
+    "image_counts": {
+      "total_in_images_dir": 18,
+      "referenced_in_tex_by_name": 9,
+      "orphans_by_name_count": 9,
+      "orphans_sample": [
+        "image_11_0.png",
+        "image_19_0.png",
+        "image_19_1.png",
+        "image_19_2.png",
+        "image_21_0.png",
+        "image_23_0.png",
+        "image_25_0.png",
+        "image_27_0.png",
+        "image_29_0.png"
+      ]
+    },
+    "py_compile": [
+      {
+        "file": "code/vae_training.py",
+        "ok": true,
+        "error": []
+      }
+    ]
+  },
+  "CA2_GANs_Normalizing_Flows": {
+    "paths": {
+      "README.md": true,
+      "report": true,
+      "description": true,
+      "images": true,
+      "implementation_dir": true
+    },
+    "doc_references": [
+      {
+        "source_doc": "README.md",
+        "reference": "CA2_Complete_Solutions.tex",
+        "exists": true,
+        "resolved_path": "report/CA2_Complete_Solutions.tex"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "CA2_GANs_and_NormalizingFlows_main.ipynb",
+        "exists": true,
+        "resolved_path": "code/CA2_GANs_and_NormalizingFlows_main.ipynb"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "CA2_question2_results.ipynb",
+        "exists": true,
+        "resolved_path": "code/CA2_question2_results.ipynb"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "DGM_CA2_final_EN.pdf",
+        "exists": true,
+        "resolved_path": "report/DGM_CA2_final_EN.pdf"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "DGM_HW2.pdf",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "code/CA2_GANs_and_NormalizingFlows_main.ipynb",
+        "exists": true,
+        "resolved_path": "code/CA2_GANs_and_NormalizingFlows_main.ipynb"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "code/CA2_question2_results.ipynb",
+        "exists": true,
+        "resolved_path": "code/CA2_question2_results.ipynb"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "jupyter lab code/CA2_GANs_and_NormalizingFlows_main.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "report.pdf",
+        "exists": true,
+        "resolved_path": "report/report.pdf"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "DGM_CA2_final_EN.pdf",
+        "exists": true,
+        "resolved_path": "report/DGM_CA2_final_EN.pdf"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "code/CA2_GANs_and_NormalizingFlows_main.ipynb",
+        "exists": true,
+        "resolved_path": "code/CA2_GANs_and_NormalizingFlows_main.ipynb"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "code/CA2_question2_results.ipynb",
+        "exists": true,
+        "resolved_path": "code/CA2_question2_results.ipynb"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "python -m py_compile CA2_GANs_Normalizing_Flows/**/*.py",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "report/CA2_Complete_Solutions.tex",
+        "exists": true,
+        "resolved_path": "report/CA2_Complete_Solutions.tex"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "report/DGM_CA2_final_EN.pdf",
+        "exists": true,
+        "resolved_path": "report/DGM_CA2_final_EN.pdf"
+      }
+    ],
+    "tex_files": [
+      "CA2_Complete_Solutions.tex"
+    ],
+    "tex_info": [
+      {
+        "file": "CA2_Complete_Solutions.tex",
+        "has_abstract": true,
+        "sections": [
+          "Introduction",
+          "Normalizing Flows: RealNVP Implementation",
+          "Generative Adversarial Networks: Theory and Implementation",
+          "DCGAN Implementation and Results",
+          "Conclusion"
+        ],
+        "subsections": [
+          "Dataset and Experimental Setup",
+          "RealNVP Architecture and Theory",
+          "RealNVP Implementation on FashionMNIST",
+          "Out-of-Distribution Detection",
+          "Likelihood Evaluation: Pixel Space vs. Latent Space",
+          "Latent Space Analysis",
+          "GAN Training Objectives and Vanishing Gradients",
+          "Optimal Discriminator Analysis",
+          "Discriminator Logit Interpretation",
+          "Wasserstein GANs: Theory and Benefits",
+          "Evaluation Metrics for GANs",
+          "Model Architecture",
+          "Transposed Convolution: Mathematical Analysis",
+          "Generated Image Analysis",
+          "Training Dynamics and Loss Analysis",
+          "Fr\u00e9chet Inception Distance Evaluation"
+        ],
+        "figure_refs": [
+          {
+            "reference": "images/CA2_DGM_cell4_out20.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/CA2_DGM_cell4_out20.png"
+          },
+          {
+            "reference": "images/CA2_DGM_cell11_out1.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/CA2_DGM_cell11_out1.png"
+          },
+          {
+            "reference": "images/CA2_DGM_cell10_out0.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/CA2_DGM_cell10_out0.png"
+          },
+          {
+            "reference": "images/CA2_DGM_cell6_out1.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/CA2_DGM_cell6_out1.png"
+          },
+          {
+            "reference": "images/generated_sample_epoch_1.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/generated_sample_epoch_1.png"
+          },
+          {
+            "reference": "images/generated_sample_epoch_3.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/generated_sample_epoch_3.png"
+          },
+          {
+            "reference": "images/generated_sample_epoch_5.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/generated_sample_epoch_5.png"
+          },
+          {
+            "reference": "images/generated_sample_epoch_8.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/generated_sample_epoch_8.png"
+          },
+          {
+            "reference": "images/generated_sample_epoch_10.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/generated_sample_epoch_10.png"
+          },
+          {
+            "reference": "images/CA2_DGM_cell4_out1.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/CA2_DGM_cell4_out1.png"
+          },
+          {
+            "reference": "images/Q2_final_res_cell53_out40.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/Q2_final_res_cell53_out40.png"
+          },
+          {
+            "reference": "images/Q2_final_res_cell53_out20.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/Q2_final_res_cell53_out20.png"
+          },
+          {
+            "reference": "images/Q2_final_res_cell53_out31.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/report/images/Q2_final_res_cell53_out31.png"
+          }
+        ],
+        "has_bibliography": true
+      }
+    ],
+    "report_part_schema": {
+      "problem and objective": "Complete",
+      "method and setup": "Complete",
+      "experiments": "Complete",
+      "results": "Complete",
+      "analysis and interpretation": "Complete",
+      "limitations": "Present but weak",
+      "conclusion": "Complete",
+      "references": "Complete"
+    },
+    "pdf_info": [
+      {
+        "file": "DGM_CA2_final_EN.pdf",
+        "pdfinfo_ok": true,
+        "pages": 31,
+        "render_sample_ok": true,
+        "rendered_sample_png_count": 31,
+        "sample_pages_rendered": "1-3"
+      },
+      {
+        "file": "report.pdf",
+        "pdfinfo_ok": true,
+        "pages": 70,
+        "render_sample_ok": true,
+        "rendered_sample_png_count": 70,
+        "sample_pages_rendered": "1-3"
+      }
+    ],
+    "image_counts": {
+      "total_in_images_dir": 47,
+      "referenced_in_tex_by_name": 13,
+      "orphans_by_name_count": 35,
+      "orphans_sample": [
+        "CA2_DGM_cell21_out1.png",
+        "CA2_DGM_cell21_out11.png",
+        "CA2_DGM_cell21_out13.png",
+        "CA2_DGM_cell21_out15.png",
+        "CA2_DGM_cell21_out17.png",
+        "CA2_DGM_cell21_out19.png",
+        "CA2_DGM_cell21_out20.png",
+        "CA2_DGM_cell21_out3.png",
+        "CA2_DGM_cell21_out5.png",
+        "CA2_DGM_cell21_out7.png",
+        "CA2_DGM_cell21_out9.png",
+        "CA2_DGM_cell4_out11.png",
+        "CA2_DGM_cell4_out13.png",
+        "CA2_DGM_cell4_out15.png",
+        "CA2_DGM_cell4_out17.png"
+      ]
+    },
+    "py_compile": []
+  },
+  "CA3_Diffusion_Models": {
+    "paths": {
+      "README.md": true,
+      "report": true,
+      "description": true,
+      "images": true,
+      "implementation_dir": true
+    },
+    "doc_references": [
+      {
+        "source_doc": "README.md",
+        "reference": "DGM_CA3.pdf",
+        "exists": true,
+        "resolved_path": "report/DGM_CA3.pdf"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "DGM_CA3_EN_final.pdf",
+        "exists": true,
+        "resolved_path": "report/DGM_CA3_EN_final.pdf"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "DGM_HW3.pdf",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "Diffusion_Models.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "codes/score_based_models.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "score_based_models.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "codes/CA3_Diffusion_Models_overview.ipynb",
+        "exists": true,
+        "resolved_path": "codes/CA3_Diffusion_Models_overview.ipynb"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "codes/CA3_Score_Based_Models.ipynb",
+        "exists": true,
+        "resolved_path": "codes/CA3_Score_Based_Models.ipynb"
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "python -m py_compile CA3_Diffusion_Models/**/*.py",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "report/*.tex",
+        "exists": false,
+        "resolved_path": ""
+      }
+    ],
+    "tex_files": [
+      "DGM_CA3_Complete_Report.tex"
+    ],
+    "tex_info": [
+      {
+        "file": "DGM_CA3_Complete_Report.tex",
+        "has_abstract": true,
+        "sections": [
+          "Introduction",
+          "Theoretical Background",
+          "Implementation Methodology",
+          "Experimental Results and Analysis",
+          "Conclusions"
+        ],
+        "subsections": [
+          "Score-Based Generative Models",
+          "Diffusion Models",
+          "Data Generation",
+          "Model Architecture: ScoreNet",
+          "Phase 1: Fixed Sigma Training Experiments",
+          "Phase 2: Trajectory Visualization and Path Analysis",
+          "Phase 3: Varying Sigma Training",
+          "Sampling Method Comparison",
+          "Training Strategy Comparison",
+          "Key Insights and Recommendations",
+          "Summary of Contributions",
+          "Learning Outcomes",
+          "Future Work and Extensions"
+        ],
+        "figure_refs": [
+          {
+            "reference": "images/output_cell_9_img_0.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_9_img_0.png"
+          },
+          {
+            "reference": "images/output_cell_9_img_1.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_9_img_1.png"
+          },
+          {
+            "reference": "images/output_cell_25_img_3.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_25_img_3.png"
+          },
+          {
+            "reference": "images/output_cell_25_img_6.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_25_img_6.png"
+          },
+          {
+            "reference": "images/output_cell_25_img_10.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_25_img_10.png"
+          },
+          {
+            "reference": "images/output_cell_25_img_16.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_25_img_16.png"
+          },
+          {
+            "reference": "images/output_cell_25_img_8.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_25_img_8.png"
+          },
+          {
+            "reference": "images/output_cell_25_img_12.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_25_img_12.png"
+          },
+          {
+            "reference": "images/output_cell_25_img_19.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_25_img_19.png"
+          },
+          {
+            "reference": "images/output_cell_27_img_3.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_27_img_3.png"
+          },
+          {
+            "reference": "images/output_cell_27_img_6.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_27_img_6.png"
+          },
+          {
+            "reference": "images/output_cell_27_img_9.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_27_img_9.png"
+          },
+          {
+            "reference": "images/output_cell_27_img_11.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_27_img_11.png"
+          },
+          {
+            "reference": "images/output_cell_27_img_13.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_27_img_13.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_2.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_2.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_5.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_5.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_8.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_8.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_11.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_11.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_14.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_14.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_17.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_17.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_20.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_20.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_23.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_23.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_26.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_26.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_29.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_29.png"
+          },
+          {
+            "reference": "images/output_cell_29_img_32.png",
+            "exists": false,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA3_Diffusion_Models/report/images/output_cell_29_img_32.png"
+          }
+        ],
+        "has_bibliography": true
+      }
+    ],
+    "report_part_schema": {
+      "problem and objective": "Complete",
+      "method and setup": "Complete",
+      "experiments": "Complete",
+      "results": "Complete",
+      "analysis and interpretation": "Complete",
+      "limitations": "Complete",
+      "conclusion": "Complete",
+      "references": "Complete"
+    },
+    "pdf_info": [
+      {
+        "file": "DGM_CA3.pdf",
+        "pdfinfo_ok": true,
+        "pages": 64,
+        "render_sample_ok": true,
+        "rendered_sample_png_count": 64,
+        "sample_pages_rendered": "1-3"
+      },
+      {
+        "file": "DGM_CA3_EN_final.pdf",
+        "pdfinfo_ok": true,
+        "pages": 31,
+        "render_sample_ok": true,
+        "rendered_sample_png_count": 31,
+        "sample_pages_rendered": "1-3"
+      }
+    ],
+    "image_counts": {
+      "total_in_images_dir": 166,
+      "referenced_in_tex_by_name": 25,
+      "orphans_by_name_count": 141,
+      "orphans_sample": [
+        "Diffusion_Models_cell32_out1019.png",
+        "Diffusion_Models_cell32_out1020.png",
+        "Diffusion_Models_cell32_out1079.png",
+        "Diffusion_Models_cell32_out1080.png",
+        "Diffusion_Models_cell32_out109.png",
+        "Diffusion_Models_cell32_out110.png",
+        "Diffusion_Models_cell32_out1136.png",
+        "Diffusion_Models_cell32_out1137.png",
+        "Diffusion_Models_cell32_out1186.png",
+        "Diffusion_Models_cell32_out1187.png",
+        "Diffusion_Models_cell32_out1236.png",
+        "Diffusion_Models_cell32_out1237.png",
+        "Diffusion_Models_cell32_out1297.png",
+        "Diffusion_Models_cell32_out1298.png",
+        "Diffusion_Models_cell32_out1360.png"
+      ]
+    },
+    "py_compile": []
+  },
+  "CA4_Vision_Language_Model": {
+    "paths": {
+      "README.md": true,
+      "report": true,
+      "description": true,
+      "images": true,
+      "implementation_dir": true
+    },
+    "doc_references": [
+      {
+        "source_doc": "README.md",
+        "reference": "DGM_CA4_fainal_EN_report.pdf",
+        "exists": true,
+        "resolved_path": "report/DGM_CA4_fainal_EN_report.pdf"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "DGM_CA4_report.pdf",
+        "exists": true,
+        "resolved_path": "report/DGM_CA4_report.pdf"
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "DGM_HW4.pdf",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "final_CA4_results1.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "final_CA4_results2.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "README.md",
+        "reference": "final_CA4_training.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "code/eval_p1/final_CA4_results1.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "code/eval_p2/final_CA4_results2.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "code/final_CA4_training.ipynb",
+        "exists": false,
+        "resolved_path": ""
+      },
+      {
+        "source_doc": "CLAUDE.md",
+        "reference": "python -m py_compile CA4_Vision_Language_Model/**/*.py",
+        "exists": false,
+        "resolved_path": ""
+      }
+    ],
+    "tex_files": [
+      "CA4_Full_Report.tex"
+    ],
+    "tex_info": [
+      {
+        "file": "CA4_Full_Report.tex",
+        "has_abstract": true,
+        "sections": [
+          "Introduction",
+          "Related Work and Background",
+          "Methodology",
+          "Experimental Setup",
+          "Results and Discussion",
+          "Evaluation Results and Analysis",
+          "Code Analysis and Implementation Details",
+          "Key Findings and Discussion",
+          "Conclusion"
+        ],
+        "subsections": [
+          "Background and Motivation",
+          "Contributions",
+          "Paper Organization",
+          "Vision-Language Models (VLMs)",
+          "CLEVR Dataset",
+          "Parameter-Efficient Fine-Tuning (PEFT)",
+          "Quantization",
+          "Model Architecture and Configuration",
+          "LoRA Configuration",
+          "Data Preprocessing",
+          "Training Configuration",
+          "Dataset",
+          "Hardware and Software",
+          "Reproducibility Notes",
+          "Training Parameters",
+          "Training Loss Progression",
+          "Training Achievements",
+          "Model Architecture \\& Efficiency",
+          "Evaluation Methodology",
+          "Quantitative Results - Part 1 (210 samples)",
+          "Results Analysis",
+          "ROUGE Metrics Explanation",
+          "Visual Analysis of Results",
+          "Pattern Analysis from Visual Results",
+          "Training Pipeline Overview",
+          "Key Code Components",
+          "Memory Optimization Analysis",
+          "Evaluation Code Analysis",
+          "Training Performance",
+          "Evaluation Performance",
+          "Possible Reasons for Evaluation Results",
+          "Recommendations for Future Work",
+          "Key Findings",
+          "Limitations and Future Work",
+          "Impact"
+        ],
+        "figure_refs": [
+          {
+            "reference": "../images/eval_p1_image_7_1.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA4_Vision_Language_Model/images/eval_p1_image_7_1.png"
+          },
+          {
+            "reference": "../images/eval_p1_image_7_4.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA4_Vision_Language_Model/images/eval_p1_image_7_4.png"
+          },
+          {
+            "reference": "../images/eval_p1_image_7_7.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA4_Vision_Language_Model/images/eval_p1_image_7_7.png"
+          },
+          {
+            "reference": "../images/eval_p1_image_7_10.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA4_Vision_Language_Model/images/eval_p1_image_7_10.png"
+          },
+          {
+            "reference": "../images/eval_p2_image_4_1.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA4_Vision_Language_Model/images/eval_p2_image_4_1.png"
+          },
+          {
+            "reference": "../images/eval_p2_image_4_4.png",
+            "exists": true,
+            "resolved": "/Users/tahamajs/Documents/uni/DGM/CA4_Vision_Language_Model/images/eval_p2_image_4_4.png"
+          }
+        ],
+        "has_bibliography": true
+      }
+    ],
+    "report_part_schema": {
+      "problem and objective": "Complete",
+      "method and setup": "Complete",
+      "experiments": "Complete",
+      "results": "Complete",
+      "analysis and interpretation": "Complete",
+      "limitations": "Complete",
+      "conclusion": "Complete",
+      "references": "Complete"
+    },
+    "pdf_info": [
+      {
+        "file": "DGM_CA4_fainal_EN_report.pdf",
+        "pdfinfo_ok": true,
+        "pages": 54,
+        "render_sample_ok": true,
+        "rendered_sample_png_count": 54,
+        "sample_pages_rendered": "1-3"
+      },
+      {
+        "file": "DGM_CA4_report.pdf",
+        "pdfinfo_ok": true,
+        "pages": 95,
+        "render_sample_ok": true,
+        "rendered_sample_png_count": 95,
+        "sample_pages_rendered": "1-3"
+      }
+    ],
+    "image_counts": {
+      "total_in_images_dir": 20,
+      "referenced_in_tex_by_name": 6,
+      "orphans_by_name_count": 14,
+      "orphans_sample": [
+        "eval_p1_image_7_13.png",
+        "eval_p2_image_4_10.png",
+        "eval_p2_image_4_13.png",
+        "eval_p2_image_4_7.png",
+        "final_CA4_results1_cell7_out1.png",
+        "final_CA4_results1_cell7_out10.png",
+        "final_CA4_results1_cell7_out13.png",
+        "final_CA4_results1_cell7_out4.png",
+        "final_CA4_results1_cell7_out7.png",
+        "final_CA4_results2_cell4_out1.png",
+        "final_CA4_results2_cell4_out10.png",
+        "final_CA4_results2_cell4_out13.png",
+        "final_CA4_results2_cell4_out4.png",
+        "final_CA4_results2_cell4_out7.png"
+      ]
+    },
+    "py_compile": [
+      {
+        "file": "code/eval_p1/eval_part1.py",
+        "ok": true,
+        "error": []
+      },
+      {
+        "file": "code/eval_p2/eval_part2.py",
+        "ok": true,
+        "error": []
+      },
+      {
+        "file": "code/eval_pipeline.py",
+        "ok": true,
+        "error": []
+      },
+      {
+        "file": "code/training_pipeline.py",
+        "ok": true,
+        "error": []
+      }
+    ]
+  }
+}
