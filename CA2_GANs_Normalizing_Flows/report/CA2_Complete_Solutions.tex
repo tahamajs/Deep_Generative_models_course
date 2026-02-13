@@ -316,7 +316,7 @@ The model was trained on 80\% of the FashionMNIST training data (48,000 images) 
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/CA2_DGM_cell4_out20.png}
+    \includegraphics[width=\columnwidth]{CA2_DGM_cell4_out20.png}
     \caption{Training and validation loss curves for RealNVP model. The negative log-likelihood decreases over epochs, indicating successful learning of the data distribution.}
     \label{fig:realnvp_loss}
 \end{figure}
@@ -334,7 +334,7 @@ with torch.no_grad():
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/CA2_DGM_cell11_out1.png}
+    \includegraphics[width=\columnwidth]{CA2_DGM_cell11_out1.png}
     \caption{Generated FashionMNIST samples from RealNVP model after training. The model learns to generate diverse fashion items with reasonable quality.}
     \label{fig:realnvp_samples}
 \end{figure}
@@ -408,7 +408,7 @@ The computed log-likelihoods are:
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/CA2_DGM_cell10_out0.png}
+    \includegraphics[width=\columnwidth]{CA2_DGM_cell10_out0.png}
     \caption{Log-likelihood distributions for FashionMNIST test, MNIST, and KMNIST datasets. FashionMNIST has the highest likelihood as expected, while MNIST and KMNIST show lower likelihoods, enabling OOD detection.}
     \label{fig:ood_detection}
 \end{figure}
@@ -553,8 +553,8 @@ The discriminator aims to \textit{maximize} this, which means:
 
 \textbf{Detailed Interpretation:}
 \begin{itemize}
-    \item \textbf{First Term} $-\mathbb{E}[\log D(x_{real})]$: When $D(x) \to 1$ (confident real), this term → 0 (good for discriminator). When $D(x) \to 0$ (wrongly classified as fake), this term → +∞ (penalty).
-    \item \textbf{Second Term} $-\mathbb{E}[\log(1-D(G(z)))]$: When $D(G(z)) \to 0$ (correctly identifies fake), this term → 0 (good). When $D(G(z)) \to 1$ (fooled), this term → +∞ (penalty).
+    \item \textbf{First Term} $-\mathbb{E}[\log D(x_{real})]$: When $D(x) \to 1$ (confident real), this term $\to 0$ (good for discriminator). When $D(x) \to 0$ (wrongly classified as fake), this term $\to +\infty$ (penalty).
+    \item \textbf{Second Term} $-\mathbb{E}[\log(1-D(G(z)))]$: When $D(G(z)) \to 0$ (correctly identifies fake), this term $\to 0$ (good). When $D(G(z)) \to 1$ (fooled), this term $\to +\infty$ (penalty).
     \item \textbf{Training Goal}: Discriminator learns to push $D(x_{real}) \to 1$ and $D(G(z)) \to 0$
 \end{itemize}
 
@@ -1118,7 +1118,7 @@ For our specific layers:
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/CA2_DGM_cell6_out1.png}
+    \includegraphics[width=\columnwidth]{CA2_DGM_cell6_out1.png}
     \caption{Visualization of transposed convolution operation: a 3×3 input is upsampled to 5×5 output using kernel size 3, stride 1, and padding 1.}
     \label{fig:transposed_conv}
 \end{figure}
@@ -1178,7 +1178,7 @@ We train the DCGAN for 10 epochs and visualize generated samples at different st
 \textbf{Epoch 1 - Initial Samples:}
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_1.png}
+    \includegraphics[width=\columnwidth]{generated_sample_epoch_1.png}
     \caption{Generated samples at Epoch 1 (FID: \FIDEpochOne). The model produces blurry, low-quality images with poorly defined structures as it begins learning.}
     \label{fig:epoch1}
 \end{figure}
@@ -1186,7 +1186,7 @@ We train the DCGAN for 10 epochs and visualize generated samples at different st
 \textbf{Epoch 3 - Mid Training:}
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_3.png}
+    \includegraphics[width=\columnwidth]{generated_sample_epoch_3.png}
     \caption{Generated samples at Epoch 3 (FID: \FIDEpochThree). Significant improvement in image quality with better structure definition and recognizable fashion item shapes.}
     \label{fig:epoch3}
 \end{figure}
@@ -1194,7 +1194,7 @@ We train the DCGAN for 10 epochs and visualize generated samples at different st
 \textbf{Epoch 5 - Continued Improvement:}
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_5.png}
+    \includegraphics[width=\columnwidth]{generated_sample_epoch_5.png}
     \caption{Generated samples at Epoch 5 (FID: \FIDEpochFive). Further improvement in detail and realism with clearer separation between different fashion items.}
     \label{fig:epoch5}
 \end{figure}
@@ -1202,7 +1202,7 @@ We train the DCGAN for 10 epochs and visualize generated samples at different st
 \textbf{Epoch 8 - Best Performance:}
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_8.png}
+    \includegraphics[width=\columnwidth]{generated_sample_epoch_8.png}
     \caption{Generated samples at Epoch 8 (FID: \BestFID{} - Best). Highest quality samples achieved with sharp, detailed, and diverse fashion items. Best FID score indicates optimal generation quality.}
     \label{fig:epoch8}
 \end{figure}
@@ -1210,7 +1210,7 @@ We train the DCGAN for 10 epochs and visualize generated samples at different st
 \textbf{Epoch 10 - Final Samples:}
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/generated_sample_epoch_10.png}
+    \includegraphics[width=\columnwidth]{generated_sample_epoch_10.png}
     \caption{Generated samples at Epoch 10 (FID: \FIDEpochTen). Final samples showing slight quality degradation from best epoch, possibly indicating overfitting or training instability.}
     \label{fig:epoch10}
 \end{figure}
@@ -1219,7 +1219,7 @@ We train the DCGAN for 10 epochs and visualize generated samples at different st
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=0.8\columnwidth]{images/CA2_DGM_cell4_out1.png}
+    \includegraphics[width=0.8\columnwidth]{CA2_DGM_cell4_out1.png}
     \caption{Real FashionMNIST samples from the dataset. These represent the target distribution that the generator learns to approximate.}
     \label{fig:real_samples}
 \end{figure}
@@ -1281,7 +1281,7 @@ Using non-saturating loss for generator to avoid vanishing gradients.
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/Q2_final_res_cell53_out40.png}
+    \includegraphics[width=\columnwidth]{Q2_final_res_cell53_out40.png}
     \caption{Generator and Discriminator loss curves throughout training. The losses oscillate as the networks compete, with discriminator generally stabilizing while generator shows more variance.}
     \label{fig:loss_curves}
 \end{figure}
@@ -1347,8 +1347,8 @@ Using non-saturating loss for generator to avoid vanishing gradients.
 \textbf{Interpreting Loss Interactions:}
 \begin{enumerate}
     \item \textbf{Healthy Training}: Both losses oscillate but trend toward stable values
-    \item \textbf{Discriminator Dominance}: D loss → 0, G loss → +∞ (discriminator too strong, generator cannot learn)
-    \item \textbf{Generator Dominance}: D loss → +∞, G loss → 0 (generator too strong, discriminator useless)
+    \item \textbf{Discriminator Dominance}: D loss $\to 0$, G loss $\to +\infty$ (discriminator too strong, generator cannot learn)
+    \item \textbf{Generator Dominance}: D loss $\to +\infty$, G loss $\to 0$ (generator too strong, discriminator useless)
     \item \textbf{Mode Collapse}: G loss decreases but images lack diversity (generator produces same patterns)
     \item \textbf{Ideal State}: Both losses oscillate in moderate ranges, FID decreases, diversity maintained
 \end{enumerate}
@@ -1371,7 +1371,7 @@ Using non-saturating loss for generator to avoid vanishing gradients.
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/Q2_final_res_cell53_out19.png}
+    \includegraphics[width=\columnwidth]{Q2_final_res_cell53_out19.png}
     \caption{Average loss per epoch for Generator and Discriminator. The trend shows overall stability with some fluctuations during mid-training epochs.}
     \label{fig:epoch_loss}
 \end{figure}
@@ -1388,7 +1388,7 @@ FID scores provide quantitative evaluation of generation quality throughout trai
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=\columnwidth]{images/Q2_final_res_cell53_out31.png}
+    \includegraphics[width=\columnwidth]{Q2_final_res_cell53_out31.png}
     \caption{FID Score progression over 10 epochs. The curve shows overall improvement with best performance at Epoch \BestFIDEpoch, followed by slight degradation.}
     \label{fig:fid_progression}
 \end{figure}
