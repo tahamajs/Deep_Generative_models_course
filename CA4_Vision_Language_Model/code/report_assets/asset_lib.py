@@ -654,7 +654,7 @@ def build_metrics_table_tex(summary: Dict[str, Any]) -> str:
         "\\label{tab:generated_metrics}",
         "\\begin{tabular}{l|l|c|c|c}",
         "\\toprule",
-        "Dataset & Metric & Fine-Tuned & Base Model & Difference \\",
+        "Dataset & Metric & Fine-Tuned & Base Model & Difference \\\\",
         "\\midrule",
     ]
 
@@ -665,10 +665,12 @@ def build_metrics_table_tex(summary: Dict[str, Any]) -> str:
 
     for idx, (label, key) in enumerate(dataset_rows):
         dataset = summary["datasets"][key]
+        label_tex = label.replace("%", r"\%")
         if idx > 0:
             lines.append("\\midrule")
         lines.append(
-            f"\\multicolumn{{5}}{{c}}{{\\textit{{{label}, {dataset['sample_count']} samples}}}} \\")
+            f"\\multicolumn{{5}}{{c}}{{\\textit{{{label_tex}, {dataset['sample_count']} samples}}}} \\\\"
+        )
         lines.append("\\midrule")
 
         for rouge_key, rouge_name in [
@@ -679,17 +681,21 @@ def build_metrics_table_tex(summary: Dict[str, Any]) -> str:
             ft = dataset["finetuned"]["rouge"][rouge_key]
             base = dataset["base"]["rouge"][rouge_key]
             lines.append(
-                f"{label} & {rouge_name} & {ft:.4f} & {base:.4f} & {format_diff(ft - base)} \\")
+                f"{label_tex} & {rouge_name} & {ft:.4f} & {base:.4f} & {format_diff(ft - base)} \\\\"
+            )
 
         ft_numeric = dataset["finetuned"]["numeric"]
         base_numeric = dataset["base"]["numeric"]
 
         lines.append(
-            f"{label} & Accuracy (overall \\%) & {ft_numeric['accuracy_overall_pct']:.2f} & {base_numeric['accuracy_overall_pct']:.2f} & {ft_numeric['accuracy_overall_pct'] - base_numeric['accuracy_overall_pct']:+.2f} \\")
+            f"{label_tex} & Accuracy (overall \\%) & {ft_numeric['accuracy_overall_pct']:.2f} & {base_numeric['accuracy_overall_pct']:.2f} & {ft_numeric['accuracy_overall_pct'] - base_numeric['accuracy_overall_pct']:+.2f} \\\\"
+        )
         lines.append(
-            f"{label} & Accuracy (conditional \\%) & {ft_numeric['accuracy_conditional_pct']:.2f} & {base_numeric['accuracy_conditional_pct']:.2f} & {ft_numeric['accuracy_conditional_pct'] - base_numeric['accuracy_conditional_pct']:+.2f} \\")
+            f"{label_tex} & Accuracy (conditional \\%) & {ft_numeric['accuracy_conditional_pct']:.2f} & {base_numeric['accuracy_conditional_pct']:.2f} & {ft_numeric['accuracy_conditional_pct'] - base_numeric['accuracy_conditional_pct']:+.2f} \\\\"
+        )
         lines.append(
-            f"{label} & Numeric coverage (\\%) & {ft_numeric['numeric_coverage_pct']:.2f} & {base_numeric['numeric_coverage_pct']:.2f} & {ft_numeric['numeric_coverage_pct'] - base_numeric['numeric_coverage_pct']:+.2f} \\")
+            f"{label_tex} & Numeric coverage (\\%) & {ft_numeric['numeric_coverage_pct']:.2f} & {base_numeric['numeric_coverage_pct']:.2f} & {ft_numeric['numeric_coverage_pct'] - base_numeric['numeric_coverage_pct']:+.2f} \\\\"
+        )
 
     lines.extend(
         [
