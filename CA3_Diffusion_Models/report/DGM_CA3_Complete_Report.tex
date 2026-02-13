@@ -59,6 +59,16 @@ This paper presents a comprehensive implementation and experimental analysis of 
 
 The rest of this paper is organized as follows: Section~II presents the theoretical background. Section~III details the implementation methodology. Section~IV presents experimental results and analysis. Section~V provides conclusions and future work directions.
 
+\subsection{Problem Statement and Success Criteria}
+
+The assignment objective is not only to implement score-based generation but also to \textit{demonstrate} correctness and trade-offs in a structured way. Accordingly, we define success criteria in four dimensions:
+\begin{itemize}
+    \item \textbf{Learning correctness:} score fields should point toward high-density regions of the target distribution.
+    \item \textbf{Sampling validity:} generated samples should cover both Gaussian modes with plausible within-mode spread.
+    \item \textbf{Method differentiation:} deterministic, Langevin, and annealed samplers should exhibit expected speed/diversity/quality trade-offs.
+    \item \textbf{Reproducibility:} report artifacts must be regenerable deterministically from tracked project assets.
+\end{itemize}
+
 \section{Theoretical Background}
 \IEEEPARstart{T}{his} section provides comprehensive theoretical foundations for score-based generative models and diffusion models, explaining the mathematical principles, motivations, and connections between different approaches.
 
@@ -1024,6 +1034,33 @@ Maximizes specialization at one operating noise level \\
 
 Across all experiments, the central pattern is consistent: fixed-$\sigma$ models can be excellent specialists, while varying-$\sigma$ training is the most practical default for robust and reusable generation.
 
+\subsection{Research Questions Answered}
+
+Table~\ref{tab:rq_answers} summarizes the primary research questions and their outcomes based on the experiments in this report.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{0.16\textwidth}p{0.46\textwidth}p{0.30\textwidth}}
+\toprule
+RQ ID & Question & Answer (from evidence) \\
+\midrule
+RQ1 & Can DSM with a simple noise-conditioned MLP learn usable score fields on a bimodal 2D target? &
+Yes. Score vectors consistently direct samples toward true high-density regions and support stable sampling trajectories. \\
+\midrule
+RQ2 & Is fixed-$\sigma$ specialization better than varying-$\sigma$ training? &
+It is better only at the matched scale; varying-$\sigma$ is more robust and practical overall. \\
+\midrule
+RQ3 & Which sampler gives the best quality-diversity trade-off? &
+Annealed Langevin gives best quality/diversity; standard Langevin is balanced; deterministic is fastest but least diverse. \\
+\midrule
+RQ4 & Are results reproducible without retraining? &
+Yes. Figures are deterministically reconstructed from notebook-embedded outputs and validated against report references. \\
+\bottomrule
+\end{tabular}
+\caption{Research questions and evidence-backed answers}
+\label{tab:rq_answers}
+\end{table}
+
 \subsection{Sampling Method Comparison}
 
 \subsubsection{Annealed Langevin Dynamics}
@@ -1172,6 +1209,17 @@ This is implemented via:
     \item \texttt{tools/export\_notebook\_results.py}
     \item \texttt{tools/verify\_report\_assets.py}
     \item \texttt{tools/build\_report\_from\_notebook\_outputs.sh}
+\end{itemize}
+
+\subsection{Artifact Contract}
+
+The report pipeline enforces the following file-level contract:
+\begin{itemize}
+    \item \textbf{Input notebook:} \texttt{codes/CA3\_Score\_Based\_Models.ipynb}
+    \item \textbf{Exported canonical figures:} 35 files matching \texttt{images/output\_cell\_*.png}
+    \item \textbf{Traceability manifest:} \texttt{report/asset\_manifest.json} with filename, source cell/index, SHA-256, and byte size
+    \item \textbf{Reference validation:} every \texttt{\textbackslash includegraphics} in the report must resolve to a present image file
+    \item \textbf{Final deliverable:} \texttt{report/DGM\_CA3\_Complete\_Report.pdf}
 \end{itemize}
 
 \subsection{Limitations and Validity Considerations}
