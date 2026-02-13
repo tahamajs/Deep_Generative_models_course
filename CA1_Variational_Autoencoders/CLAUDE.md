@@ -1,13 +1,13 @@
 # CA1_Variational_Autoencoders — Claude Code Guidance
 
 **Technology**: Python, Jupyter, PyTorch  
-**Primary Notebook**: `code/code.ipynb`  
+**Primary Notebook**: `code/CA1_VAE_training_and_evaluation.ipynb`  
 **Reports**: `report/DGM_CA1_Exercise_Solutions.tex` → `DGM_CA1_final_EN.pdf` (IEEE format, keep in sync)  
 **Parent Context**: Extends root `../CLAUDE.md`
 
 ## Development & Commands
 
-- From repo root: `jupyter lab` then open `CA1_Variational_Autoencoders/code/code.ipynb`.
+- From repo root: `jupyter lab` then open `CA1_Variational_Autoencoders/code/CA1_VAE_training_and_evaluation.ipynb`.
 - Environment: activate venv/conda, install PyTorch + dependencies (see root README).
 - Syntax check (if `.py` helpers added): `python -m py_compile CA1_Variational_Autoencoders/**/*.py`.
 - Render report: use LaTeX toolchain to build `report/DGM_CA1_Exercise_Solutions.tex` to PDF (IEEE style).
@@ -26,7 +26,7 @@
 
 ## Key Files
 
-- `code/code.ipynb` — main VAE implementation and experiments.
+- `code/CA1_VAE_training_and_evaluation.ipynb` — main VAE implementation and experiments.
 - `train/` — CelebA subset (smile/non-smile); treat as read-mostly.
 - `images/` — generated visualizations; regenerate via notebook when needed.
 - `report/DGM_CA1_Exercise_Solutions.tex` — authoritative source for PDF; maintain IEEE formatting.

@@ -8,7 +8,7 @@
 | Check | Status | Evidence | Issue | Required Fix |
 |---|---|---|---|---|
 | Project structure present | PASS | README/report/description/images + implementation dir detected | - | Add missing required folders/files. |
-| Entrypoints in README/CLAUDE resolve to existing notebooks/scripts | FAIL | Static path trace across README.md and CLAUDE.md | CLAUDE.md references `code/code.ipynb`, but actual notebook is `code/CA1_VAE_training_and_evaluation.ipynb`.; README file-tree still lists `code.ipynb` (legacy name). | Update stale path references to actual files. |
+| Entrypoints in README/CLAUDE resolve to existing notebooks/scripts | PASS | Static path trace across README.md and CLAUDE.md | - | Update stale path references to actual files. |
 | Python helper scripts compile | PASS | Checked 1 .py file(s) via py_compile | - | Fix syntax errors in failing scripts. |
 | Report part schema coverage | PASS | Section/subsection scan of .tex report source | - | Add missing report sections to meet normalized schema. |
 | Report part quality strength | PASS | Normalized part-status classifier | - | Strengthen weak parts with explicit analysis evidence and/or future-work detail. |
@@ -18,11 +18,9 @@
 | PDF sample rendering sanity (pages 1-3) | PASS | DGM_CA1_final_EN.pdf: 3/3 pages; report.pdf: 3/3 pages | - | Fix broken PDF output and re-render. |
 
 ## Correctness Status Summary
-- Structural completeness score: **88.9%** (8/9 checklist points).
-- FAIL checks: **1**
+- Structural completeness score: **100.0%** (9/9 checklist points).
+- FAIL checks: **0**
 - WARN checks: **0**
-- Blocking items:
-  - Entrypoints in README/CLAUDE resolve to existing notebooks/scripts: CLAUDE.md references `code/code.ipynb`, but actual notebook is `code/CA1_VAE_training_and_evaluation.ipynb`.; README file-tree still lists `code.ipynb` (legacy name).
 
 ## Normalized Report-Part Status
 | Report Part | Status |
@@ -35,4 +33,3 @@
 | Limitations | Complete |
 | Conclusion | Complete |
 | References | Complete |
-

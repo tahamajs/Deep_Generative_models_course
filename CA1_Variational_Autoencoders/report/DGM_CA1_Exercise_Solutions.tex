@@ -5,6 +5,7 @@
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
+\graphicspath{{../images/}}
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{listings}
@@ -379,7 +380,7 @@ The normalization formula is: $x_{\text{norm}} = \frac{x - 0.5}{0.5} = 2(x - 0.5
 \begin{itemize}
     \item \textbf{Tanh Activation}: The decoder's final layer uses Tanh activation, which outputs values in $[-1, 1]$. Normalizing inputs to the same range ensures consistency.
     \item \textbf{Gradient Flow}: Normalized inputs help with gradient flow during backpropagation, reducing the risk of vanishing/exploding gradients.
-    \item \textbf{Training Stability}: Centered inputs (mean ≈ 0) help batch normalization and other normalization layers work more effectively.
+    \item \textbf{Training Stability}: Centered inputs (mean \approx  0) help batch normalization and other normalization layers work more effectively.
     \item \textbf{Convergence Speed}: Normalized data typically allows for faster and more stable convergence.
 \end{itemize}
 
@@ -1262,6 +1263,17 @@ Current limitations include: fixed 128×128 resolution constraining fine detail 
 
 This work successfully implements and evaluates a Variational Autoencoder for facial image generation and reconstruction. The model demonstrates effective compression (128×128×3 to 32 dimensions), high-quality reconstruction preserving essential features, generative capability producing diverse realistic samples, and interpretable latent space enabling semantic manipulation. Results validate VAEs' effectiveness for unsupervised representation learning and provide foundation for advanced generative modeling techniques. The probabilistic framework, enabled by the reparameterization trick and ELBO optimization, successfully bridges traditional autoencoders with generative modeling, demonstrating the power of variational inference in deep learning.
 
+\section{Appendix: Figure Provenance}
+\begin{itemize}
+    \item \textbf{Figure: output\_cell\_11\_img\_0.png} — Exercise 1 reconstruction sample grid.
+    \item \textbf{Figures: output\_cell\_19\_img\_{0,1,2}.png} — Exercise 2 reconstruction grids across batches.
+    \item \textbf{Figure: output\_cell\_21\_img\_0.png} — Training/validation ELBO and loss curves.
+    \item \textbf{Figure: output\_cell\_23\_img\_0.png} — Random generation samples from $z \sim \mathcal{N}(0,I)$.
+    \item \textbf{Figure: output\_cell\_25\_img\_0.png} — Latent interpolation grid between sample pairs.
+    \item \textbf{Figure: output\_cell\_27\_img\_0.png} — 2D latent visualization (t-SNE) of smile/non-smile clusters.
+    \item \textbf{Figure: output\_cell\_29\_img\_0.png} — Latent dimension utilization plot.
+\end{itemize}
+
 \begin{thebibliography}{00}
 \bibitem{kingma2013auto} D. P. Kingma and M. Welling, ``Auto-encoding variational bayes,'' \textit{arXiv preprint arXiv:1312.6114}, 2013.
 
@@ -1275,4 +1287,3 @@ This work successfully implements and evaluates a Variational Autoencoder for fa
 \end{thebibliography}
 
 \end{document}
-
