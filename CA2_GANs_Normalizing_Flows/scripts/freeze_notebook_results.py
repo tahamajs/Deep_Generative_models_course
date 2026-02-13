@@ -197,6 +197,33 @@ def resolve_figure_path(repo_root: Path, report_tex_dir: Path, include_path: str
     return (repo_root / include_path).resolve(), False
 
 
+def extract_braced_value(text: str, command: str) -> str:
+    token = f"\\{command}{{"
+    start_idx = text.find(token)
+    if start_idx == -1:
+        return ""
+
+    i = start_idx + len(token)
+    depth = 1
+    chunks: List[str] = []
+    while i < len(text) and depth > 0:
+        char = text[i]
+        if char == "{":
+            depth += 1
+            chunks.append(char)
+        elif char == "}":
+            depth -= 1
+            if depth > 0:
+                chunks.append(char)
+        else:
+            chunks.append(char)
+        i += 1
+
+    if depth != 0:
+        return ""
+    return "".join(chunks)
+
+
 def extract_figure_manifest(report_text: str, repo_root: Path, report_tex_dir: Path) -> dict:
     include_pattern = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}")
     figure_entries: List[dict] = []
@@ -209,12 +236,12 @@ def extract_figure_manifest(report_text: str, repo_root: Path, report_tex_dir: P
         end_figure = tail.find("\\end{figure}")
         scope = tail if end_figure == -1 else tail[:end_figure]
 
-        caption_match = re.search(r"\\caption\{([^}]*)\}", scope, flags=re.DOTALL)
+        caption_raw = extract_braced_value(scope, "caption")
         label_match = re.search(r"\\label\{([^}]*)\}", scope)
 
         caption = ""
-        if caption_match:
-            caption = " ".join(caption_match.group(1).split())
+        if caption_raw:
+            caption = " ".join(caption_raw.split())
 
         label = label_match.group(1) if label_match else ""
 

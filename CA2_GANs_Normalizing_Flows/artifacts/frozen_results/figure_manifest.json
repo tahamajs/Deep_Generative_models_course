@@ -58,7 +58,7 @@
       "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/generated_sample_epoch_5.png"
     },
     {
-      "caption": "Generated samples at Epoch 8 (FID: \\BestFID{",
+      "caption": "Generated samples at Epoch 8 (FID: \\BestFID{} - Best). Highest quality samples achieved with sharp, detailed, and diverse fashion items. Best FID score indicates optimal generation quality.",
       "exists": true,
       "include_path": "images/generated_sample_epoch_8.png",
       "index": 8,
@@ -106,7 +106,7 @@
       "resolved_path": "/Users/tahamajs/Documents/uni/DGM/CA2_GANs_Normalizing_Flows/images/Q2_final_res_cell53_out31.png"
     }
   ],
-  "generated_at_utc": "2026-02-13T22:16:43.003800+00:00",
+  "generated_at_utc": "2026-02-13T22:17:19.604278+00:00",
   "missing_count": 0,
   "report_source": "report/CA2_Complete_Solutions.tex"
 }
