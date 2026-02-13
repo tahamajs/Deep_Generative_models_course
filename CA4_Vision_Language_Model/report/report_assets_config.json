@@ -1,0 +1,25 @@
+{
+  "p1_json": "code/eval_p1/full_evaluation_results_comparison.json",
+  "p2_json": "code/eval_p2/full_evaluation_results_comparison.json",
+  "qualitative_images": [
+    "images/eval_p1_image_7_1.png",
+    "images/eval_p1_image_7_4.png",
+    "images/eval_p1_image_7_7.png",
+    "images/eval_p1_image_7_10.png",
+    "images/eval_p2_image_4_1.png",
+    "images/eval_p2_image_4_4.png"
+  ],
+  "plot_output_dir": "images/generated",
+  "table_output_tex": "report/generated/metrics_table.tex",
+  "metrics_output_json": "report/generated/metrics_summary.json",
+  "style": {
+    "dpi": 220,
+    "font_size": 11,
+    "title_size": 13,
+    "color_finetuned": "#2E6F95",
+    "color_base": "#E67E22",
+    "color_correct": "#2A9D8F",
+    "color_incorrect": "#E76F51",
+    "color_non_numeric": "#7F8C8D"
+  }
+}
