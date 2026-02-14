@@ -552,7 +552,7 @@ class DDPMTrainer:
         print("Done: Training complete!")
         return self.loss_history
 
-    def plot_loss(self, save_path=None):
+    def plot_loss(self, save_path=None, show=True):
         """Plot training loss curve (and optionally save it for the report)."""
         plt.figure(figsize=(10, 4))
         plt.plot(self.loss_history)
@@ -569,7 +569,10 @@ class DDPMTrainer:
             plt.savefig(save_path, dpi=200, bbox_inches="tight")
             print(f"Done: Saved: {save_path}")
 
-        plt.show()
+        if show:
+            plt.show()
+        else:
+            plt.close()
 
 
 class DDPMSampler:
@@ -586,8 +589,15 @@ class DDPMSampler:
         self.scheduler = scheduler
         self.device = device
 
+    def _infer_img_size(self):
+        channels = DDPM_CONFIG.get("channels", 1)
+        image_size = DDPM_CONFIG.get("image_size", 32)
+        if hasattr(self.model, "inc") and hasattr(self.model.inc, "in_channels"):
+            channels = int(self.model.inc.in_channels)
+        return (channels, image_size, image_size)
+
     @torch.no_grad()
-    def sample(self, batch_size, img_size=(3, 32, 32), show_progress=True):
+    def sample(self, batch_size, img_size=None, show_progress=True):
         """
         Generate samples using DDPM reverse process.
 
@@ -600,6 +610,8 @@ class DDPMSampler:
             Generated images [B, C, H, W]
         """
         self.model.eval()
+        if img_size is None:
+            img_size = self._infer_img_size()
 
         # Start from pure Gaussian noise
         x = torch.randn(batch_size, *img_size, device=self.device)
@@ -657,8 +669,15 @@ class DDIMSampler:
         self.scheduler = scheduler
         self.device = device
 
+    def _infer_img_size(self):
+        channels = DDPM_CONFIG.get("channels", 1)
+        image_size = DDPM_CONFIG.get("image_size", 32)
+        if hasattr(self.model, "inc") and hasattr(self.model.inc, "in_channels"):
+            channels = int(self.model.inc.in_channels)
+        return (channels, image_size, image_size)
+
     @torch.no_grad()
-    def sample(self, batch_size, img_size=(3, 32, 32), num_inference_steps=50, eta=0.0, show_progress=True):
+    def sample(self, batch_size, img_size=None, num_inference_steps=50, eta=0.0, show_progress=True):
         """
         Generate samples using DDIM reverse process.
 
@@ -673,6 +692,8 @@ class DDIMSampler:
             Generated images [B, C, H, W]
         """
         self.model.eval()
+        if img_size is None:
+            img_size = self._infer_img_size()
 
         # Create timestep schedule (skip steps for faster sampling)
         step_ratio = self.scheduler.num_timesteps // num_inference_steps
@@ -735,7 +756,13 @@ class DDIMSampler:
         return x, intermediates
 
 
-def visualize_forward_process(scheduler, img_size=(3, 32, 32), timesteps_to_show=[0, 100, 300, 500, 700, 999]):
+def visualize_forward_process(
+    scheduler,
+    img_size=(1, 32, 32),
+    timesteps_to_show=[0, 100, 300, 500, 700, 999],
+    save_path=None,
+    show=True,
+):
     """
     Visualize the forward diffusion process at various timesteps.
     """
@@ -758,10 +785,18 @@ def visualize_forward_process(scheduler, img_size=(3, 32, 32), timesteps_to_show
 
     plt.suptitle('Forward Diffusion Process: Adding Noise Over Time')
     plt.tight_layout()
-    plt.show()
+    if save_path is not None:
+        save_path = Path(save_path)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(save_path, dpi=200, bbox_inches="tight")
+        print(f"Done: Saved: {save_path}")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
-def visualize_samples(samples, title="Generated Samples", save_path=None):
+def visualize_samples(samples, title="Generated Samples", save_path=None, show=True):
     """Helper function to visualize a batch of samples (and optionally save a grid)."""
     fig, axes = plt.subplots(2, 8, figsize=(16, 4))
     for i, ax in enumerate(axes.flat):
@@ -778,10 +813,13 @@ def visualize_samples(samples, title="Generated Samples", save_path=None):
         save_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(save_path, dpi=200, bbox_inches="tight")
         print(f"Done: Saved: {save_path}")
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
-def visualize_denoising_process(intermediates, title="Denoising Process"):
+def visualize_denoising_process(intermediates, title="Denoising Process", show=True):
     """Visualize the progressive denoising."""
     n_steps = min(len(intermediates), 10)
     fig, axes = plt.subplots(1, n_steps, figsize=(2 * n_steps, 2))
@@ -798,4 +836,7 @@ def visualize_denoising_process(intermediates, title="Denoising Process"):
 
     plt.suptitle(title)
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)

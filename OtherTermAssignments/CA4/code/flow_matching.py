@@ -37,6 +37,7 @@ from tqdm import tqdm
 import os
 from scipy import stats
 from scipy.ndimage import gaussian_filter1d
+from scipy.stats import wasserstein_distance
 
 try:
     import pandas as pd
@@ -88,15 +89,27 @@ class TimeSeriesDataset(Dataset):
             data: 1D numpy array of time series values
             seq_len: Length of sequences to extract
         """
+        arr = np.asarray(data, dtype=np.float32)
+        if arr.ndim == 1:
+            arr = arr[:, None]
+
+        # If already [N, L, F], accept as pre-windowed data.
+        if arr.ndim == 3:
+            self.seq_len = int(arr.shape[1])
+            self.sequences = torch.tensor(arr, dtype=torch.float32)
+            return
+
+        if arr.ndim != 2:
+            raise ValueError(f"Expected data with 1, 2, or 3 dims, got shape {arr.shape}")
+        if arr.shape[0] < seq_len:
+            raise ValueError(f"Need at least seq_len={seq_len} points, got {arr.shape[0]}")
+
         self.seq_len = seq_len
-        self.data = torch.tensor(data, dtype=torch.float32)
-
-        # Create overlapping sequences with shape (num_sequences, seq_len, 1)
-        num_sequences = len(data) - seq_len + 1
-        self.sequences = torch.zeros(num_sequences, seq_len, 1)
-
+        num_sequences = arr.shape[0] - seq_len + 1
+        feature_dim = arr.shape[1]
+        self.sequences = torch.zeros(num_sequences, seq_len, feature_dim)
         for i in range(num_sequences):
-            self.sequences[i, :, 0] = self.data[i:i + seq_len]
+            self.sequences[i] = torch.from_numpy(arr[i:i + seq_len])
 
     def __len__(self):
         """Return number of sequences in dataset."""
@@ -122,44 +135,45 @@ def load_spy_data(start_date="2010-01-01", end_date="2023-12-31", seq_len=64):
     Returns:
         train_dataset, test_dataset, scaler_params (mean, std)
     """
+    prices = None
     if YFINANCE_AVAILABLE:
-        print(f"Downloading SPY data from {start_date} to {end_date}...")
-        spy = yf.download("SPY", start=start_date, end=end_date, progress=False)
+        try:
+            print(f"Downloading SPY data from {start_date} to {end_date}...")
+            spy = yf.download("SPY", start=start_date, end=end_date, progress=False)
+            if spy is None or len(spy) == 0:
+                raise ValueError("SPY download returned empty dataframe")
 
-        # Robustly handle both single-level and MultiIndex columns
-        cols = spy.columns
-        if isinstance(cols, pd.MultiIndex):
-            # Determine which level holds price field names (e.g., 'Close')
-            if 'Price' in cols.names:
-                price_level = cols.names.index('Price')
+            cols = spy.columns
+            if isinstance(cols, pd.MultiIndex):
+                if 'Price' in cols.names:
+                    price_level = cols.names.index('Price')
+                else:
+                    price_level = 0
+                price_names = cols.get_level_values(price_level)
+                if 'Adj Close' in price_names:
+                    prices_series = spy.xs('Adj Close', axis=1, level=price_level)
+                elif 'Close' in price_names:
+                    prices_series = spy.xs('Close', axis=1, level=price_level)
+                else:
+                    raise ValueError(f"Could not find 'Adj Close' or 'Close' in MultiIndex columns: {cols}")
+                if isinstance(prices_series, pd.DataFrame):
+                    prices = prices_series.iloc[:, 0].values
+                else:
+                    prices = prices_series.values
             else:
-                price_level = 0
-            price_names = cols.get_level_values(price_level)
-            if 'Adj Close' in price_names:
-                prices_series = spy.xs('Adj Close', axis=1, level=price_level)
-            elif 'Close' in price_names:
-                prices_series = spy.xs('Close', axis=1, level=price_level)
-            else:
-                raise ValueError(f"Could not find 'Adj Close' or 'Close' in MultiIndex columns: {cols}")
-            # If multiple tickers, pick the first column
-            if isinstance(prices_series, pd.DataFrame):
-                prices = prices_series.iloc[:, 0].values
-            else:
-                prices = prices_series.values
-        else:
-            # Standard single-ticker DataFrame
-            if 'Adj Close' in cols:
-                prices = spy['Adj Close'].values
-            elif 'Close' in cols:
-                prices = spy['Close'].values
-            else:
-                raise ValueError(f"Could not find 'Adj Close' or 'Close' in columns: {list(cols)}")
-    else:
-        print("Using synthetic data (yfinance not available)...")
-        # Generate synthetic price data that mimics market behavior
+                if 'Adj Close' in cols:
+                    prices = spy['Adj Close'].values
+                elif 'Close' in cols:
+                    prices = spy['Close'].values
+                else:
+                    raise ValueError(f"Could not find 'Adj Close' or 'Close' in columns: {list(cols)}")
+        except Exception as exc:
+            print(f"SPY download unavailable ({exc}); falling back to synthetic data.")
+
+    if prices is None:
         np.random.seed(42)
         n_days = 3500  # ~14 years of trading days
-        returns = np.random.normal(0.0003, 0.012, n_days)  # Mean ~7.5%/year, ~19% vol
+        returns = np.random.normal(0.0003, 0.012, n_days)
         prices = 100 * np.exp(np.cumsum(returns))
 
     # Calculate log-returns
@@ -477,7 +491,7 @@ class FlowMatchingTrainer:
 
         print("Done: Flow Matching training complete!")
 
-    def plot_loss(self):
+    def plot_loss(self, save_path=None, show=True):
         """Plot training and test loss curves."""
         plt.figure(figsize=(10, 4))
         plt.plot(self.train_loss_history, label='Train Loss')
@@ -487,7 +501,15 @@ class FlowMatchingTrainer:
         plt.title('Flow Matching Training Loss')
         plt.legend()
         plt.grid(True)
-        plt.show()
+        if save_path is not None:
+            save_path = Path(save_path)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(save_path, dpi=200, bbox_inches="tight")
+            print(f"Saved figure: {save_path}")
+        if show:
+            plt.show()
+        else:
+            plt.close()
 
 
 class FlowMatchingSampler:
@@ -847,250 +869,120 @@ def evaluate_generated_samples(real_data, generated_data):
     }
 
 
-def visualize_flow_matching_results(real_data, generated_data, loss_history=None):
-    """
-    Create comprehensive visualizations comparing real and generated time series.
-
-    Args:
-        real_data: Real time series data [n_samples, seq_len, feature_dim]
-        generated_data: Generated time series data [n_samples, seq_len, feature_dim]
-        loss_history: Optional training loss history for plotting
-    """
-    print("📊 Creating Flow Matching Visualizations")
+def visualize_flow_matching_results(real_data, generated_data, loss_history=None, show=True):
+    """Create report-compatible visualizations for Flow Matching outputs."""
+    print("Creating Flow Matching visualizations")
     print("=" * 60)
 
-    # Convert to numpy if needed
     if torch.is_tensor(real_data):
         real_np = real_data.squeeze().cpu().numpy()
     else:
-        real_np = real_data.squeeze()
+        real_np = np.asarray(real_data).squeeze()
 
     if torch.is_tensor(generated_data):
         gen_np = generated_data.squeeze().cpu().numpy()
     else:
-        gen_np = generated_data.squeeze()
+        gen_np = np.asarray(generated_data).squeeze()
 
-    # 1. Sample visualization (normalized)
-    fig, axes = plt.subplots(2, 4, figsize=(16, 8))
+    if real_np.ndim == 1:
+        real_np = real_np[None, :]
+    if gen_np.ndim == 1:
+        gen_np = gen_np[None, :]
 
-    # Top row: Generated samples
-    for i in range(4):
-        sample = gen_np[i].squeeze()
-        axes[0, i].plot(sample, 'b-', alpha=0.8)
-        axes[0, i].set_title(f'Generated Sample {i+1}')
-        axes[0, i].set_xlabel('Time')
-        axes[0, i].set_ylabel('Value')
-        axes[0, i].grid(True, alpha=0.3)
+    rows = min(4, len(gen_np))
+    cols = min(4, len(gen_np))
 
-    # Bottom row: Real samples
-    for i in range(4):
-        sample = real_np[i].squeeze()
-        axes[1, i].plot(sample, 'g-', alpha=0.8)
-        axes[1, i].set_title(f'Real Sample {i+1}')
-        axes[1, i].set_xlabel('Time')
-        axes[1, i].set_ylabel('Value')
-        axes[1, i].grid(True, alpha=0.3)
-
-    plt.suptitle('Flow Matching: Generated vs Real Time Series Samples', fontsize=14)
+    # Generated-only samples figure for report step 4.
+    fig_gen, axes_gen = plt.subplots(1, cols, figsize=(4 * cols, 3))
+    if cols == 1:
+        axes_gen = [axes_gen]
+    for i, ax in enumerate(axes_gen):
+        ax.plot(gen_np[i], "b-", alpha=0.9)
+        ax.set_title(f"Generated Sample {i + 1}")
+        ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    save_fig('fm_generated_vs_real.png')
-    plt.show()
+    save_fig("fm_generated_samples.png")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig_gen)
 
-    # 2. Distribution comparison
+    # Real vs generated comparison for report step 5.
+    fig_cmp, axes_cmp = plt.subplots(2, cols, figsize=(4 * cols, 6))
+    if cols == 1:
+        axes_cmp = np.array([[axes_cmp[0]], [axes_cmp[1]]])
+    for i in range(cols):
+        axes_cmp[0, i].plot(gen_np[i], "b-", alpha=0.8)
+        axes_cmp[0, i].set_title(f"Generated {i + 1}")
+        axes_cmp[0, i].grid(True, alpha=0.3)
+        axes_cmp[1, i].plot(real_np[i], "g-", alpha=0.8)
+        axes_cmp[1, i].set_title(f"Real {i + 1}")
+        axes_cmp[1, i].grid(True, alpha=0.3)
+    plt.tight_layout()
+    save_fig("fm_real_vs_gen.png")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig_cmp)
+
+    # Distribution comparison for report step 6.
     real_values = real_np.flatten()
     gen_values = gen_np.flatten()
-
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-
-    # Histogram comparison
-    ax1 = axes[0, 0]
-    ax1.hist(real_values, bins=100, alpha=0.5, density=True, label='Real', color='blue')
-    ax1.hist(gen_values, bins=100, alpha=0.5, density=True, label='Generated', color='green')
-    ax1.set_xlabel('Value')
-    ax1.set_ylabel('Density')
-    ax1.set_title('Distribution: Real vs Generated')
-    ax1.legend()
-    ax1.grid(True, alpha=0.3)
-
-    # KDE comparison
-    ax2 = axes[0, 1]
+    fig_dist, axes_dist = plt.subplots(1, 2, figsize=(12, 4))
+    axes_dist[0].hist(real_values, bins=100, alpha=0.5, density=True, label="Real")
+    axes_dist[0].hist(gen_values, bins=100, alpha=0.5, density=True, label="Generated")
+    axes_dist[0].set_title("Histogram")
+    axes_dist[0].legend()
+    axes_dist[0].grid(True, alpha=0.3)
     from scipy.stats import gaussian_kde
-
-    real_kde = gaussian_kde(real_values)
-    gen_kde = gaussian_kde(gen_values)
-    x_range = np.linspace(real_values.min(), real_values.max(), 500)
-
-    ax2.plot(x_range, real_kde(x_range), 'b-', linewidth=2, label='Real')
-    ax2.plot(x_range, gen_kde(x_range), 'g--', linewidth=2, label='Generated')
-    ax2.fill_between(x_range, real_kde(x_range), alpha=0.3, color='blue')
-    ax2.fill_between(x_range, gen_kde(x_range), alpha=0.3, color='green')
-    ax2.set_xlabel('Value')
-    ax2.set_ylabel('Density')
-    ax2.set_title('KDE: Real vs Generated')
-    ax2.legend()
-    ax2.grid(True, alpha=0.3)
-
-    # Q-Q Plot
-    ax3 = axes[1, 0]
-    real_quantiles = np.percentile(real_values, np.linspace(1, 99, 1000))
-    gen_quantiles = np.percentile(gen_values, np.linspace(1, 99, 1000))
-
-    ax3.scatter(real_quantiles, gen_quantiles, alpha=0.5, s=10)
-    ax3.plot([real_quantiles.min(), real_quantiles.max()],
-             [real_quantiles.min(), real_quantiles.max()], 'r--', linewidth=2)
-    ax3.set_xlabel('Real Quantiles')
-    ax3.set_ylabel('Generated Quantiles')
-    ax3.set_title('Q-Q Plot')
-    ax3.grid(True, alpha=0.3)
-
-    # CDF Comparison
-    ax4 = axes[1, 1]
-    real_ecdf = np.arange(1, len(real_values) + 1) / len(real_values)
-    gen_ecdf = np.arange(1, len(gen_values) + 1) / len(gen_values)
-
-    ax4.plot(np.sort(real_values), real_ecdf, 'b-', label='Real', linewidth=1.5)
-    ax4.plot(np.sort(gen_values), gen_ecdf, 'g--', label='Generated', linewidth=1.5)
-    ax4.set_xlabel('Value')
-    ax4.set_ylabel('Cumulative Probability')
-    ax4.set_title('Empirical CDF')
-    ax4.legend()
-    ax4.grid(True, alpha=0.3)
-
-    plt.suptitle('Distribution Comparison Analysis', fontsize=14)
+    x_range = np.linspace(min(real_values.min(), gen_values.min()), max(real_values.max(), gen_values.max()), 500)
+    axes_dist[1].plot(x_range, gaussian_kde(real_values)(x_range), "b-", linewidth=2, label="Real")
+    axes_dist[1].plot(x_range, gaussian_kde(gen_values)(x_range), "g--", linewidth=2, label="Generated")
+    axes_dist[1].set_title("KDE")
+    axes_dist[1].legend()
+    axes_dist[1].grid(True, alpha=0.3)
     plt.tight_layout()
-    save_fig('fm_distribution_comparison.png')
-    plt.show()
+    save_fig("fm_dist_comparison.png")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig_dist)
 
-    # 3. Statistical comparison
-    real_stats = compute_statistics(real_np, "Real")
-    gen_stats = compute_statistics(gen_np, "Generated")
-
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-
-    # Basic statistics comparison
-    metrics = ['mean', 'variance', 'std']
-    real_vals = [real_stats[m] for m in metrics]
-    gen_vals = [gen_stats[m] for m in metrics]
-
-    x = np.arange(len(metrics))
-    width = 0.35
-
-    axes[0].bar(x - width/2, real_vals, width, label='Real', color='blue', alpha=0.7)
-    axes[0].bar(x + width/2, gen_vals, width, label='Generated', color='green', alpha=0.7)
-    axes[0].set_xticks(x)
-    axes[0].set_xticklabels(['Mean', 'Variance', 'Std Dev'])
-    axes[0].set_title('Basic Statistics Comparison')
-    axes[0].legend()
-    axes[0].grid(True, alpha=0.3)
-
-    # Volatility distribution
-    real_vol = np.std(real_np, axis=1).flatten()
-    gen_vol = np.std(gen_np, axis=1).flatten()
-
-    axes[1].hist(real_vol, bins=30, alpha=0.5, density=True, label='Real', color='blue')
-    axes[1].hist(gen_vol, bins=30, alpha=0.5, density=True, label='Generated', color='green')
-    axes[1].set_xlabel('Sequence Volatility')
-    axes[1].set_ylabel('Density')
-    axes[1].set_title('Volatility Distribution')
-    axes[1].legend()
-    axes[1].grid(True, alpha=0.3)
-
-    # Higher-order moments
-    moments = ['Skewness', 'Kurtosis']
-    real_moments = [real_stats['skewness'], real_stats['kurtosis']]
-    gen_moments = [gen_stats['skewness'], gen_stats['kurtosis']]
-
-    x = np.arange(len(moments))
-    axes[2].bar(x - width/2, real_moments, width, label='Real', color='blue', alpha=0.7)
-    axes[2].bar(x + width/2, gen_moments, width, label='Generated', color='green', alpha=0.7)
-    axes[2].set_xticks(x)
-    axes[2].set_xticklabels(moments)
-    axes[2].set_title('Higher-Order Moments')
-    axes[2].legend()
-    axes[2].grid(True, alpha=0.3)
-    axes[2].axhline(y=0, color='k', linestyle='-', linewidth=0.5)
-
-    plt.suptitle('Statistical Evaluation', fontsize=14)
-    plt.tight_layout()
-    save_fig('fm_statistical_evaluation.png')
-    plt.show()
-
-    # 4. Temporal analysis (autocorrelation)
+    # Autocorrelation figure for report step 8.
     real_ac_mean, real_ac_all = compute_autocorrelation(real_np)
     gen_ac_mean, gen_ac_all = compute_autocorrelation(gen_np)
-
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-
-    # Autocorrelation comparison
-    ax1 = axes[0, 0]
     lags = np.arange(1, len(real_ac_mean) + 1)
-    ax1.bar(lags - 0.2, real_ac_mean, 0.4, label='Real', color='blue', alpha=0.7)
-    ax1.bar(lags + 0.2, gen_ac_mean, 0.4, label='Generated', color='green', alpha=0.7)
-    ax1.axhline(y=0, color='k', linestyle='-', linewidth=0.5)
-    ax1.set_xlabel('Lag')
-    ax1.set_ylabel('Autocorrelation')
-    ax1.set_title('Mean Autocorrelation by Lag')
-    ax1.legend()
-    ax1.grid(True, alpha=0.3)
-
-    # Autocorrelation error
-    ax2 = axes[0, 1]
-    ac_diff = gen_ac_mean - real_ac_mean
-    ax2.bar(lags, ac_diff, color=['red' if d < 0 else 'green' for d in ac_diff], alpha=0.7)
-    ax2.axhline(y=0, color='k', linestyle='-', linewidth=0.5)
-    ax2.set_xlabel('Lag')
-    ax2.set_ylabel('Difference (Gen - Real)')
-    ax2.set_title('Autocorrelation Error')
-    ax2.grid(True, alpha=0.3)
-
-    # Distribution of AC(1)
-    ax3 = axes[1, 0]
-    ax3.hist(real_ac_all[:, 0], bins=30, alpha=0.5, density=True, label='Real', color='blue')
-    ax3.hist(gen_ac_all[:, 0], bins=30, alpha=0.5, density=True, label='Generated', color='green')
-    ax3.set_xlabel('AC(1) Value')
-    ax3.set_ylabel('Density')
-    ax3.set_title('Lag-1 Autocorrelation Distribution')
-    ax3.legend()
-    ax3.grid(True, alpha=0.3)
-
-    # Summary metrics
-    ax4 = axes[1, 1]
-    swd = sliced_wasserstein_distance(real_np, gen_np)
-    ac_mse = np.mean((real_ac_mean - gen_ac_mean) ** 2)
-    ac_mae = np.mean(np.abs(real_ac_mean - gen_ac_mean))
-
-    metrics = ['SWD', 'AC MSE', 'AC MAE']
-    values = [swd, ac_mse * 100, ac_mae * 100]  # Scale for visualization
-
-    bars = ax4.bar(metrics, values, color=['purple', 'orange', 'red'], alpha=0.7)
-    ax4.set_ylabel('Metric Value')
-    ax4.set_title('Advanced Metrics Summary')
-    ax4.grid(True, alpha=0.3)
-
-    # Add value labels
-    for bar, val in zip(bars, [swd, ac_mse, ac_mae]):
-        height = bar.get_height()
-        ax4.text(bar.get_x() + bar.get_width()/2., height,
-                 f'{val:.4f}', ha='center', va='bottom')
-
-    plt.suptitle('Temporal and Structural Analysis', fontsize=14)
+    fig_ac, axes_ac = plt.subplots(1, 2, figsize=(12, 4))
+    axes_ac[0].bar(lags - 0.2, real_ac_mean, 0.4, label="Real")
+    axes_ac[0].bar(lags + 0.2, gen_ac_mean, 0.4, label="Generated")
+    axes_ac[0].set_title("Mean Autocorrelation")
+    axes_ac[0].legend()
+    axes_ac[0].grid(True, alpha=0.3)
+    axes_ac[1].hist(real_ac_all[:, 0], bins=30, alpha=0.5, density=True, label="Real")
+    axes_ac[1].hist(gen_ac_all[:, 0], bins=30, alpha=0.5, density=True, label="Generated")
+    axes_ac[1].set_title("Lag-1 Autocorrelation")
+    axes_ac[1].legend()
+    axes_ac[1].grid(True, alpha=0.3)
     plt.tight_layout()
-    save_fig('fm_temporal_analysis.png')
-    plt.show()
+    save_fig("fm_autocorr.png")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig_ac)
 
-    # 5. Training loss (if provided)
     if loss_history is not None:
-        plt.figure(figsize=(10, 6))
-        plt.plot(loss_history, 'b-', linewidth=2, label='Training Loss')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Flow Matching Training Loss')
+        fig_loss = plt.figure(figsize=(10, 4))
+        plt.plot(loss_history, "b-", linewidth=2, label="Train Loss")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Flow Matching Training Loss")
         plt.grid(True, alpha=0.3)
         plt.legend()
         plt.tight_layout()
-        save_fig('fm_training_loss.png')
-        plt.show()
+        save_fig("fm_loss_curve.png")
+        if show:
+            plt.show()
+        else:
+            plt.close(fig_loss)
 
-    print("Done: Visualization complete - all plots saved!")
-
-
+    print("Done: Flow Matching visualizations saved")

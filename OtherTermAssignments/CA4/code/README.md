@@ -12,6 +12,8 @@ This directory contains the **complete** separated Python files extracted from t
 - `run_ddpm.py`: Runner script for DDPM training and sampling
 - `run_stable_diffusion.py`: Runner script for DreamBooth training
 - `run_flow_matching.py`: Runner script for Flow Matching training and evaluation
+- `run_all.py`: End-to-end runner for all stages
+- `sync_report_figures.py`: Backfills notebook-exported figures used in report
 
 ## ✅ Complete Extraction Status:
 
@@ -26,10 +28,15 @@ This directory contains the **complete** separated Python files extracted from t
 The main files contain only class and function definitions. Use the runner scripts to execute:
 
 ```bash
-python run_ddpm.py              # Run DDPM training and sampling
-python run_stable_diffusion.py  # Run DreamBooth (requires diffusers)
-python run_flow_matching.py     # Run Flow Matching for time series
+python run_all.py --preset quick --dreambooth auto  # Recommended full pipeline
+
+python run_ddpm.py --preset quick                   # DDPM/DDIM only
+python run_stable_diffusion.py --mode auto          # DreamBooth optional
+python run_flow_matching.py --preset quick          # Flow Matching only
 ```
+
+All report plots are saved into:
+`../report/En_report/figures/`
 
 Or import and use the classes directly:
 

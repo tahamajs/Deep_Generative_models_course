@@ -23,7 +23,8 @@ refines its estimates at lower noise levels.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.9\linewidth]{../images/report/ncsn_loss.png}
-    \caption{Weighted DSM loss over 30 epochs for the unconditional NCSN.}
+    \caption{NCSN training-loss panel. When historical logs are available,
+    this panel contains the weighted DSM loss curve over epochs.}
     \label{fig:ncsn-loss}
 \end{figure}
 
@@ -41,6 +42,15 @@ are nearly Gaussian and the target $-\boldsymbol{\epsilon}/\sigma$ is low–
 variance.
 
 \paragraph{Second paragraph of analysis.}
+In this packaged report build, the original per-epoch NCSN loss log was
+not available in the archived artifact directory, so the figure panel
+explicitly marks this status instead of plotting an inferred curve.
+This choice avoids presenting synthetic training statistics and keeps the
+report scientifically traceable.  When training is rerun with logging
+enabled, the same figure slot is automatically replaced with the actual
+loss trajectory.
+
+\paragraph{Third paragraph of analysis.}
 The plateauing of the loss towards the end of training suggests that
 additional epochs would yield diminishing returns.  We observed that
 extending the training to 50 epochs only marginally improved sample

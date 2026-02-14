@@ -24,17 +24,19 @@ The implementation includes complete theoretical derivations, practical code, co
 ## 📁 **Project Structure**
 
 ```
-CA4_Vision_Language_Model/
+CA4/
 ├── code/                          # Modular Python implementations
 │   ├── utils.py                   # Common utilities and device setup
 │   ├── ddpm.py                    # DDPM/DDIM implementation
 │   ├── stable_diffusion.py        # Stable Diffusion & DreamBooth
 │   ├── flow_matching.py           # Flow Matching for time series
-│   ├── run_ddpm.py               # DDPM training script
-│   ├── run_stable_diffusion.py   # DreamBooth training script
-│   ├── run_flow_matching.py      # Flow Matching training script
-│   ├── notebook/                 # Jupyter notebooks
-│   └── README.md                 # Code documentation
+│   ├── run_ddpm.py                # DDPM training script
+│   ├── run_stable_diffusion.py    # DreamBooth training script
+│   ├── run_flow_matching.py       # Flow Matching training script
+│   ├── run_all.py                 # End-to-end runner (recommended)
+│   ├── sync_report_figures.py     # Backfill notebook figures
+│   ├── notebook/                  # Jupyter notebooks
+│   └── README.md                  # Code documentation
 ├── description/                   # Assignment specifications
 │   ├── DGM_HW4.pdf               # Original assignment PDF
 │   ├── Desc_en.md                # English description
@@ -102,18 +104,30 @@ pip install diffusers transformers accelerate peft
 pip install yfinance pandas
 ```
 
+### Run Full Pipeline (Recommended)
+
+```bash
+python code/run_all.py --preset quick --dreambooth auto
+```
+
+This command:
+- runs DDPM + DDIM
+- runs Flow Matching
+- runs DreamBooth only if dependencies are available (`--dreambooth auto`)
+- syncs notebook-derived report figures
+- writes plots to `report/En_report/figures/`
+
 ### Running Individual Models
 
 ```bash
 # DDPM/DDIM Image Generation
-cd code
-python run_ddpm.py
+python code/run_ddpm.py --preset quick
 
 # DreamBooth Personalization (requires diffusers)
-python run_stable_diffusion.py
+python code/run_stable_diffusion.py --mode auto
 
 # Flow Matching Time Series
-python run_flow_matching.py
+python code/run_flow_matching.py --preset quick
 ```
 
 ### Using as Library

@@ -1,15 +1,15 @@
+import os
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
-import numpy as np
-import matplotlib.pyplot as plt
-import math
-from torchvision import transforms, datasets
 from PIL import Image
-from pathlib import Path
+from torch.utils.data import DataLoader, Dataset
+from torchvision import datasets, transforms
 from tqdm import tqdm
-import os
 
 # Device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -20,9 +20,17 @@ np.random.seed(42)
 if torch.cuda.is_available():
     torch.cuda.manual_seed(42)
 
-# Report figures directory
-REPORT_FIG_DIR = Path("../report/En_report/figures")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+REPORT_FIG_DIR = REPO_ROOT / "report" / "En_report" / "figures"
 REPORT_FIG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def set_report_fig_dir(path):
+    """Set report figure output directory at runtime."""
+    global REPORT_FIG_DIR
+    REPORT_FIG_DIR = Path(path).resolve()
+    REPORT_FIG_DIR.mkdir(parents=True, exist_ok=True)
+    return REPORT_FIG_DIR
 
 def save_fig(filename: str, dpi: int = 200):
     """
