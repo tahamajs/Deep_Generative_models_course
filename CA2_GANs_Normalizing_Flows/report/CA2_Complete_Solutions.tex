@@ -72,6 +72,18 @@ We employ the FashionMNIST dataset~\cite{xiao2017fashion}, containing 70,000 gra
 
 Experiments use PyTorch 1.12+ with CUDA support. Models train on 60,000 training images with 10,000 reserved for testing. Normalizing flows use 80/20 train/validation split (48,000/12,000 images).
 
+\subsection{Contributions and Report Scope}
+
+This report is designed as a complete technical artifact that combines theory, implementation, and evidence from frozen notebook outputs. Its main contributions are:
+\begin{enumerate}
+    \item \textbf{End-to-end RealNVP and DCGAN implementations}: Model architectures, objectives, and training setups are documented with equations and practical interpretation.
+    \item \textbf{Integrated quantitative and qualitative evaluation}: Likelihood analysis, OOD behavior, FID progression, and image-quality evolution are jointly analyzed.
+    \item \textbf{Traceable frozen-results workflow}: All key numbers are imported from saved notebook outputs through generated report macros/tables, avoiding manual transcription.
+    \item \textbf{Evidence-linked conclusions}: Every major claim is tied to figures/tables included in the report and tracked in the frozen-results manifest.
+\end{enumerate}
+
+Report organization follows the modeling pipeline: Sections II--III cover RealNVP theory and experiments, Sections IV--V cover GAN theory and DCGAN implementation/results, and final sections provide consolidated findings, reproducibility protocol, limitations, and figure provenance.
+
 \section{Normalizing Flows: RealNVP Implementation}
 
 \subsection{RealNVP Architecture and Theory}
@@ -1521,16 +1533,76 @@ The DCGAN implementation achieves a Fréchet Inception Distance of \BestFID{} at
 
 Key findings include: (1) normalizing flows excel in density estimation and OOD detection, providing interpretable likelihood scores, (2) GANs produce higher-quality visual samples through adversarial training but lack explicit density estimation, (3) learned latent representations significantly enhance normalizing flow performance, and (4) training stability is critical for GAN convergence, with best results achieved when generator and discriminator maintain balanced losses.
 
+\section{Consolidated Quantitative Summary}
+\subsection{Frozen RealNVP Metrics Snapshot}
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.2}
+\caption{Frozen RealNVP Log-Likelihood Summary}
+\label{tab:frozen_realnvp_summary}
+\centering
+\begin{tabular}{|p{1.3cm}|p{2.1cm}|p{2.6cm}|}
+\hline
+\textbf{Space} & \textbf{In-Distribution} & \textbf{OOD Contrast} \\
+\hline
+Pixel &
+Train: \PixelTrainLL{} \newline
+Test: \PixelTestLL{} &
+MNIST: \PixelMNISTLL{} \newline
+KMNIST: \PixelKMNISTLL{} \\
+\hline
+Latent &
+Train: \LatentTrainLL{} \newline
+Test: \LatentTestLL{} &
+MNIST: \LatentMNISTLL{} \newline
+KMNIST: \LatentKMNISTLL{} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Frozen GAN FID Milestones}
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.15}
+\caption{Frozen GAN FID Milestones}
+\label{tab:frozen_gan_summary}
+\centering
+\begin{tabular}{|p{3.1cm}|p{2.7cm}|}
+\hline
+\textbf{Milestone} & \textbf{Value} \\
+\hline
+Initial FID (Epoch 1) & \InitialFID{} \\
+\hline
+Best FID (Epoch \BestFIDEpoch) & \BestFID{} \\
+\hline
+Final FID (Epoch 10) & \FinalFID{} \\
+\hline
+Initial $\rightarrow$ Best improvement & \BestFIDImprovePct\% \\
+\hline
+Initial $\rightarrow$ Final improvement & \FinalFIDImprovePct\% \\
+\hline
+\end{tabular}
+\end{table}
+
+Together, Tables~\ref{tab:frozen_realnvp_summary}, \ref{tab:frozen_gan_summary}, and \ref{tab:fid_scores} provide a single quantitative reference point for all principal claims in this report.
+
 \section{Limitations and Future Work}
 \subsection{Reproducibility and Traceability}
 To ensure this report is reproducible without retraining, all quantitative values are synchronized from frozen notebook outputs:
 \begin{itemize}
-    \item Pixel-space flow likelihoods are parsed from \texttt{CA2\_GANs\_and\_NormalizingFlows\_main.ipynb} (cell 36 output).
-    \item Latent-space flow likelihoods are parsed from \texttt{CA2\_GANs\_and\_NormalizingFlows\_main.ipynb} (cell 50 output).
-    \item GAN FID progression is parsed from \texttt{CA2\_question2\_results.ipynb} (cell 57 output stream).
-    \item Report macros/tables are generated automatically into \texttt{generated\_metrics.tex} and \texttt{generated\_fid\_table.tex}.
+    \item Pixel-space flow likelihoods are parsed from main notebook saved outputs (cell 36).
+    \item Latent-space flow likelihoods are parsed from main notebook saved outputs (cell 50).
+    \item GAN FID progression is parsed from results notebook saved outputs (cell 57).
+    \item Report metrics and FID table are auto-generated and included at build time.
 \end{itemize}
 This protocol prevents manual transcription drift between notebook outputs and report claims.
+
+\subsection{Reproducibility Execution Checklist}
+\begin{enumerate}
+    \item Run the frozen-results extractor.
+    \item Run the frozen-results verifier to validate schema and figure references.
+    \item Rebuild the report PDF with \textit{latexmk}.
+    \item Copy the rebuilt PDF to the submission alias filename.
+\end{enumerate}
+All steps use frozen notebook outputs and existing image files; no notebook cell execution is required.
 
 \subsection{Evidence-Backed Limitations}
 \begin{table}[!t]
@@ -1570,20 +1642,42 @@ The report intentionally includes 13 core figures out of a larger generated pool
 
 \subsection{Figure-to-Claim Mapping}
 \begin{itemize}
-    \item \textbf{CA2\_DGM\_cell4\_out20.png}: RealNVP train/validation loss trend (Sec. RealNVP implementation).
-    \item \textbf{CA2\_DGM\_cell11\_out1.png}: RealNVP generated sample quality snapshot.
-    \item \textbf{CA2\_DGM\_cell10\_out0.png}: OOD likelihood distribution comparison (FashionMNIST vs MNIST vs KMNIST).
-    \item \textbf{CA2\_DGM\_cell6\_out1.png}: Transposed-convolution behavior illustration for GAN architecture explanation.
-    \item \textbf{generated\_sample\_epoch\_1.png}: Early GAN output quality reference.
-    \item \textbf{generated\_sample\_epoch\_3.png}: Early-to-mid GAN quality improvement reference.
-    \item \textbf{generated\_sample\_epoch\_5.png}: Mid-training GAN quality reference.
-    \item \textbf{generated\_sample\_epoch\_8.png}: Best-epoch GAN quality reference (\BestFID).
-    \item \textbf{generated\_sample\_epoch\_10.png}: Final-epoch GAN quality reference (\FinalFID).
-    \item \textbf{CA2\_DGM\_cell4\_out1.png}: Real dataset sample baseline for qualitative comparison.
-    \item \textbf{Q2\_final\_res\_cell53\_out40.png}: Generator/discriminator loss dynamics.
-    \item \textbf{Q2\_final\_res\_cell53\_out19.png}: Per-epoch average loss comparison.
-    \item \textbf{Q2\_final\_res\_cell53\_out31.png}: FID progression curve used in quantitative GAN evaluation.
+    \item Fig. \ref{fig:realnvp_loss}: RealNVP train/validation loss trend.
+    \item Fig. \ref{fig:realnvp_samples}: RealNVP sample quality snapshot.
+    \item Fig. \ref{fig:ood_detection}: OOD likelihood separation across FashionMNIST, MNIST, and KMNIST.
+    \item Fig. \ref{fig:transposed_conv}: Transposed convolution explanation for GAN architecture.
+    \item Figs. \ref{fig:epoch1}, \ref{fig:epoch3}, \ref{fig:epoch5}, \ref{fig:epoch8}, \ref{fig:epoch10}: GAN sample-quality progression.
+    \item Fig. \ref{fig:real_samples}: Real-data qualitative baseline.
+    \item Fig. \ref{fig:loss_curves} and Fig. \ref{fig:epoch_loss}: Adversarial loss dynamics and per-epoch stability.
+    \item Fig. \ref{fig:fid_progression} and Table \ref{tab:fid_scores}: Quantitative GAN quality trajectory via FID.
 \end{itemize}
+\vspace{1mm}
+\noindent\textit{Note:} Full file-level provenance is recorded in the generated asset manifest under the frozen-results artifacts.
+
+\subsection{Claim-to-Evidence Matrix}
+\begin{table}[!t]
+\renewcommand{\arraystretch}{1.15}
+\caption{Primary Claims and Supporting Frozen Evidence}
+\label{tab:claim_evidence_matrix}
+\centering
+\begin{tabular}{|p{2.0cm}|p{2.7cm}|p{1.9cm}|}
+\hline
+\textbf{Claim} & \textbf{Evidence in Report} & \textbf{Source Type} \\
+\hline
+Flow learns in-distribution density &
+Fig.~\ref{fig:realnvp_loss}, Fig.~\ref{fig:realnvp_samples}, Table~\ref{tab:frozen_realnvp_summary} &
+Saved notebook metrics + figures \\
+\hline
+Latent-space flow improves OOD separability &
+Fig.~\ref{fig:ood_detection}, Table~\ref{tab:frozen_realnvp_summary} &
+Saved notebook metrics + OOD plot \\
+\hline
+GAN quality peaks at Epoch \BestFIDEpoch &
+Fig.~\ref{fig:fid_progression}, Table~\ref{tab:fid_scores}, Figs.~\ref{fig:epoch5}/\ref{fig:epoch8}/\ref{fig:epoch10} &
+Saved notebook FID stream + generated samples \\
+\hline
+\end{tabular}
+\end{table}
 
 \begin{thebibliography}{1}
 
