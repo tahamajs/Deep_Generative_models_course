@@ -274,8 +274,76 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 The code is designed to run on both CPU and GPU. In restricted environments
 without internet access, fresh MNIST downloads may fail; in that case this
 report remains reproducible by using archived outputs under
-\texttt{codes/code\_results/my\_results\_last}. The data loader surfaces an
-explicit error message for this condition.
+\texttt{codes/code\_results/} and \texttt{my\_results\_last}. The data loader
+surfaces an explicit error message for this condition.
+
+\subsection{Archived Configuration Snapshot}
+
+To ensure this document is decision-complete for a reviewer, we summarize the
+exact archived configurations used to generate the integrated figures.
+
+\begin{table}[H]
+\centering
+\caption{Archived EBM run configuration used in this report.}
+\label{tab:ebm-archived-config}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Field} & \textbf{Value} \\
+\midrule
+Source file & \texttt{codes/code\_results/my\_results\_last/run\_info.json} \\
+Epochs & 15 \\
+Learning rate & $2\times 10^{-4}$ \\
+$\lambda$ regularization & $10^{-4}$ \\
+Langevin step size & 0.1 \\
+Langevin steps & 60 \\
+Langevin noise scale & 0.01 \\
+Clamp range & $[-1,1]$ \\
+Batch size & 64 \\
+Seed & 42 \\
+Recorded device & CUDA \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Archived NCSN run configuration used in this report.}
+\label{tab:ncsn-archived-config}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Field} & \textbf{Value} \\
+\midrule
+Source file & \texttt{codes/code\_results/my\_results\_last/ncsn/run\_info.json} \\
+Epochs & 30 \\
+Learning rate & $2\times 10^{-4}$ \\
+Sigma range & $\sigma_{\max}=30.0,\ \sigma_{\min}=0.01$ \\
+Noise levels & 10 \\
+ALD steps per level & 150 \\
+ALD base step LR & $2\times 10^{-5}$ \\
+Embedding dim & 128 \\
+Batch size & 32 \\
+Seed & 42 \\
+Recorded device & CUDA \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Data and Artifact Constraints}
+
+The report is built to be reproducible in constrained environments, with the
+following explicit constraints:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Offline compatibility:} if MNIST download is unavailable, the
+  report can still be rebuilt from archived artifacts.
+  \item \textbf{NCSN loss trace availability:} some archived bundles contain
+  sample checkpoints but not full per-step loss histories; in that case the
+  NCSN loss panel is presented as an explicit fallback notice instead of a
+  synthetic curve.
+  \item \textbf{Metric scope:} clean-target MAE is computed for EBM denoising
+  because clean/noisy/denoised triplets are available in one archive; NCSN
+  quantitative diagnostics focus on transformation and texture statistics
+  unless matched clean references are present.
+\end{itemize}
 
 \subsection{Artifact Inventory and Traceability}
 
