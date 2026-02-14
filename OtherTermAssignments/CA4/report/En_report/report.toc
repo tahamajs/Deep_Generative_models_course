@@ -1,153 +1,153 @@
 \babel@toc {english}{}\relax 
-\contentsline {section}{\numberline {1}Introduction}{3}{section.1}%
-\contentsline {section}{\numberline {2}Methodology}{3}{section.2}%
-\contentsline {section}{\numberline {3}Question One: Diffusion Models}{3}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Part One: Theory Questions}{3}{subsection.3.1}%
-\contentsline {subsubsection}{\numberline {3.1.1}Question 1: Closed Form Proof}{3}{subsubsection.3.1.1}%
-\contentsline {subsubsection}{\numberline {3.1.2}Question 2: Advantage of Noise Prediction}{4}{subsubsection.3.1.2}%
-\contentsline {subsubsection}{\numberline {3.1.3}Question 3: Cost Function Analysis (VLB)}{4}{subsubsection.3.1.3}%
-\contentsline {subsubsection}{\numberline {3.1.4}Question 4: DDIM Sampling}{5}{subsubsection.3.1.4}%
-\contentsline {subsubsection}{\numberline {3.1.5}Question 5: Classifier-Free Guidance (CFG)}{5}{subsubsection.3.1.5}%
-\contentsline {section}{\numberline {4}Comprehensive Model Explanations}{6}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Denoising Diffusion Probabilistic Models (DDPM)}{6}{subsection.4.1}%
-\contentsline {subsubsection}{\numberline {4.1.1}Overview and Intuition}{6}{subsubsection.4.1.1}%
-\contentsline {subsubsection}{\numberline {4.1.2}Mathematical Foundation}{7}{subsubsection.4.1.2}%
-\contentsline {subsubsection}{\numberline {4.1.3}Network Architecture}{7}{subsubsection.4.1.3}%
-\contentsline {subsubsection}{\numberline {4.1.4}Training Objective}{7}{subsubsection.4.1.4}%
-\contentsline {subsubsection}{\numberline {4.1.5}Sampling Process}{8}{subsubsection.4.1.5}%
-\contentsline {subsubsection}{\numberline {4.1.6}DDIM: Deterministic Variant}{8}{subsubsection.4.1.6}%
-\contentsline {subsection}{\numberline {4.2}Stable Diffusion and DreamBooth}{8}{subsection.4.2}%
-\contentsline {subsubsection}{\numberline {4.2.1}Stable Diffusion Architecture}{8}{subsubsection.4.2.1}%
-\contentsline {subsubsection}{\numberline {4.2.2}Diffusion in Latent Space}{8}{subsubsection.4.2.2}%
-\contentsline {subsubsection}{\numberline {4.2.3}Text Conditioning}{8}{subsubsection.4.2.3}%
-\contentsline {subsubsection}{\numberline {4.2.4}Classifier-Free Guidance (CFG)}{9}{subsubsection.4.2.4}%
-\contentsline {subsubsection}{\numberline {4.2.5}DreamBooth: Personalization Technique}{9}{subsubsection.4.2.5}%
-\contentsline {subsubsection}{\numberline {4.2.6}LoRA: Parameter-Efficient Fine-Tuning}{9}{subsubsection.4.2.6}%
-\contentsline {subsubsection}{\numberline {4.2.7}DreamBooth Training Process}{9}{subsubsection.4.2.7}%
-\contentsline {subsubsection}{\numberline {4.2.8}Inference with DreamBooth}{10}{subsubsection.4.2.8}%
-\contentsline {subsection}{\numberline {4.3}Flow Matching for Time Series Generation}{10}{subsection.4.3}%
-\contentsline {subsubsection}{\numberline {4.3.1}Overview}{10}{subsubsection.4.3.1}%
-\contentsline {subsubsection}{\numberline {4.3.2}Mathematical Foundation}{10}{subsubsection.4.3.2}%
-\contentsline {subsubsection}{\numberline {4.3.3}Linear Interpolation Paths}{10}{subsubsection.4.3.3}%
-\contentsline {subsubsection}{\numberline {4.3.4}Network Architecture}{10}{subsubsection.4.3.4}%
-\contentsline {subsubsection}{\numberline {4.3.5}Training Process}{11}{subsubsection.4.3.5}%
-\contentsline {subsubsection}{\numberline {4.3.6}Sampling via ODE Integration}{11}{subsubsection.4.3.6}%
-\contentsline {subsubsection}{\numberline {4.3.7}Evaluation Metrics}{11}{subsubsection.4.3.7}%
-\contentsline {subsubsection}{\numberline {4.3.8}Advantages over Diffusion Models}{12}{subsubsection.4.3.8}%
-\contentsline {section}{\numberline {5}Implementation Details and Architectures}{13}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Denoising Diffusion Probabilistic Models (DDPM)}{13}{subsection.5.1}%
-\contentsline {subsubsection}{\numberline {5.1.1}Architecture: U-Net for Noise Prediction}{13}{subsubsection.5.1.1}%
-\contentsline {subsubsection}{\numberline {5.1.2}DDIM Sampling}{16}{subsubsection.5.1.2}%
-\contentsline {subsection}{\numberline {5.2}Stable Diffusion with DreamBooth}{17}{subsection.5.2}%
-\contentsline {subsubsection}{\numberline {5.2.1}Architecture Overview}{17}{subsubsection.5.2.1}%
-\contentsline {subsubsection}{\numberline {5.2.2}DreamBooth Fine-tuning}{19}{subsubsection.5.2.2}%
-\contentsline {subsection}{\numberline {5.3}Flow Matching for Time Series Generation}{21}{subsection.5.3}%
-\contentsline {subsubsection}{\numberline {5.3.1}Conditional Flow Matching Theory}{21}{subsubsection.5.3.1}%
-\contentsline {subsubsection}{\numberline {5.3.2}Transformer-based Flow Matching Architecture}{21}{subsubsection.5.3.2}%
-\contentsline {subsubsection}{\numberline {5.3.3}Conditional Flow Matching Training}{23}{subsubsection.5.3.3}%
-\contentsline {subsubsection}{\numberline {5.3.4}Time Series Dataset and Training}{24}{subsubsection.5.3.4}%
-\contentsline {subsubsection}{\numberline {5.3.5}Sampling from Trained Flow}{25}{subsubsection.5.3.5}%
-\contentsline {subsubsection}{\numberline {5.3.6}Data Preprocessing}{26}{subsubsection.5.3.6}%
-\contentsline {subsection}{\numberline {5.4}Common Implementation Details}{26}{subsection.5.4}%
-\contentsline {subsubsection}{\numberline {5.4.1}Training Infrastructure}{26}{subsubsection.5.4.1}%
-\contentsline {subsubsection}{\numberline {5.4.2}Evaluation Metrics}{27}{subsubsection.5.4.2}%
-\contentsline {subsection}{\numberline {5.5}Part Two: Practical Questions}{28}{subsection.5.5}%
-\contentsline {subsubsection}{\numberline {5.5.1}Subsection 1: DDPM and DDIM Implementation}{28}{subsubsection.5.5.1}%
-\contentsline {subsubsection}{\numberline {5.5.2}Subsection 2: Stable Diffusion and DreamBooth}{32}{subsubsection.5.5.2}%
-\contentsline {section}{\numberline {6}Question Two: Flow Matching and Time Series}{35}{section.6}%
-\contentsline {subsection}{\numberline {6.1}Part One: Theory Questions}{35}{subsection.6.1}%
-\contentsline {subsubsection}{\numberline {6.1.1}Question 1: Vector Field}{35}{subsubsection.6.1.1}%
-\contentsline {subsubsection}{\numberline {6.1.2}Question 2: Linear Paths}{35}{subsubsection.6.1.2}%
-\contentsline {subsubsection}{\numberline {6.1.3}Question 3: Loss Function Proof}{36}{subsubsection.6.1.3}%
-\contentsline {subsection}{\numberline {6.2}Part Two: Practical Report \& Evaluation}{38}{subsection.6.2}%
-\contentsline {subsection}{\numberline {6.3}Part Two: Practical Report \& Evaluation}{43}{subsection.6.3}%
-\contentsline {section}{\numberline {A}All Notebook Figures}{47}{appendix.A}%
-\contentsline {section}{\numberline {A}Appendix: Mathematical Derivations and Frameworks}{54}{appendix.A}%
-\contentsline {subsection}{\numberline {A.1}A. The Diffusion Model Framework}{54}{subsection.A.1}%
-\contentsline {subsubsection}{\numberline {A.1.1}A.1 Forward Process (Markov Chain)}{54}{subsubsection.A.1.1}%
-\contentsline {subsubsection}{\numberline {A.1.2}A.2 The Reverse Process (Generative Step)}{54}{subsubsection.A.1.2}%
-\contentsline {subsection}{\numberline {A.2}B. Flow Matching Theory (The ODE Perspective)}{54}{subsection.A.2}%
-\contentsline {subsubsection}{\numberline {A.2.1}B.1 Vector Fields and Probability Paths}{54}{subsubsection.A.2.1}%
-\contentsline {subsubsection}{\numberline {A.2.2}B.2 Linear Conditional Paths}{54}{subsubsection.A.2.2}%
-\contentsline {subsection}{\numberline {A.3}C. Advanced Statistical Evaluation Metrics}{55}{subsection.A.3}%
-\contentsline {section}{\numberline {B}Practical Implementation: Diffusion Models}{56}{appendix.B}%
-\contentsline {subsection}{\numberline {B.1}DDPM and DDIM Implementation}{56}{subsection.B.1}%
-\contentsline {subsubsection}{\numberline {B.1.1}Noise Schedule and Forward Process}{56}{subsubsection.B.1.1}%
-\contentsline {subsubsection}{\numberline {B.1.2}Forward Diffusion Process}{57}{subsubsection.B.1.2}%
-\contentsline {subsubsection}{\numberline {B.1.3}U-Net Architecture for Noise Prediction}{58}{subsubsection.B.1.3}%
-\contentsline {subsubsection}{\numberline {B.1.4}Training Implementation}{60}{subsubsection.B.1.4}%
-\contentsline {subsubsection}{\numberline {B.1.5}DDPM Sampling}{60}{subsubsection.B.1.5}%
-\contentsline {subsubsection}{\numberline {B.1.6}DDIM Sampling Implementation}{61}{subsubsection.B.1.6}%
-\contentsline {subsubsection}{\numberline {B.1.7}Experimental Results and Analysis}{63}{subsubsection.B.1.7}%
-\contentsline {subsection}{\numberline {B.2}Stable Diffusion with DreamBooth Fine-tuning}{64}{subsection.B.2}%
-\contentsline {subsubsection}{\numberline {B.2.1}DreamBooth Dataset Implementation}{64}{subsubsection.B.2.1}%
-\contentsline {subsubsection}{\numberline {B.2.2}LoRA Fine-tuning Implementation}{66}{subsubsection.B.2.2}%
-\contentsline {subsubsection}{\numberline {B.2.3}Class Image Generation for Prior Preservation}{68}{subsubsection.B.2.3}%
-\contentsline {subsubsection}{\numberline {B.2.4}DreamBooth Results and Analysis}{69}{subsubsection.B.2.4}%
-\contentsline {subsubsection}{\numberline {B.2.5}Ablation Study: Components of DreamBooth}{70}{subsubsection.B.2.5}%
-\contentsline {subsection}{\numberline {B.3}Computational Considerations and Best Practices}{70}{subsection.B.3}%
-\contentsline {subsubsection}{\numberline {B.3.1}Memory Optimization}{70}{subsubsection.B.3.1}%
-\contentsline {subsubsection}{\numberline {B.3.2}Hyperparameter Tuning}{70}{subsubsection.B.3.2}%
-\contentsline {subsubsection}{\numberline {B.3.3}Common Pitfalls and Solutions}{71}{subsubsection.B.3.3}%
-\contentsline {subsection}{\numberline {B.4}Complete Code Flow Analysis}{71}{subsection.B.4}%
-\contentsline {subsubsection}{\numberline {B.4.1}DDPM/DDIM Implementation Flow}{71}{subsubsection.B.4.1}%
-\contentsline {subsubsection}{\numberline {B.4.2}Stable Diffusion with DreamBooth Flow}{73}{subsubsection.B.4.2}%
-\contentsline {subsubsection}{\numberline {B.4.3}Flow Matching Implementation Flow}{75}{subsubsection.B.4.3}%
-\contentsline {subsubsection}{\numberline {B.4.4}Overall Architecture and Data Flow}{77}{subsubsection.B.4.4}%
-\contentsline {section}{\numberline {C}Appendix: Source Code}{79}{appendix.C}%
-\contentsline {subsection}{\numberline {C.1}ddpm.py}{79}{subsection.C.1}%
-\contentsline {subsection}{\numberline {C.2}Evaluation Metrics (Concise)}{91}{subsection.C.2}%
-\contentsline {subsection}{\numberline {C.3}Reproducing Experiments - Quick Commands}{92}{subsection.C.3}%
-\contentsline {subsection}{\numberline {C.4}Assignment Requirements Mapping}{92}{subsection.C.4}%
-\contentsline {subsection}{\numberline {C.5}Submission Checklist}{92}{subsection.C.5}%
-\contentsline {subsection}{\numberline {C.6}Quick Reproducibility Commands}{93}{subsection.C.6}%
-\contentsline {subsection}{\numberline {C.7}Final Readiness Summary}{93}{subsection.C.7}%
-\contentsline {section}{\numberline {D}Appendix: Comprehensive Mathematical Framework}{94}{appendix.D}%
-\contentsline {subsection}{\numberline {D.1}Diffusion Models: Complete Mathematical Theory}{94}{subsection.D.1}%
-\contentsline {subsubsection}{\numberline {D.1.1}Forward Process: Closed-Form Marginal Distribution}{94}{subsubsection.D.1.1}%
-\contentsline {subsubsection}{\numberline {D.1.2}Reverse Process: Variational Lower Bound}{95}{subsubsection.D.1.2}%
-\contentsline {subsubsection}{\numberline {D.1.3}DDIM: Deterministic Sampling}{95}{subsubsection.D.1.3}%
-\contentsline {subsubsection}{\numberline {D.1.4}Classifier-Free Guidance: Mathematical Foundation}{95}{subsubsection.D.1.4}%
-\contentsline {subsection}{\numberline {D.2}Flow Matching: Complete Mathematical Framework}{96}{subsection.D.2}%
-\contentsline {subsubsection}{\numberline {D.2.1}Continuous-Time Flow Definition}{96}{subsubsection.D.2.1}%
-\contentsline {subsubsection}{\numberline {D.2.2}Conditional Flow Matching Loss}{96}{subsubsection.D.2.2}%
-\contentsline {subsubsection}{\numberline {D.2.3}Connection to Denoising Score Matching}{96}{subsubsection.D.2.3}%
-\contentsline {subsubsection}{\numberline {D.2.4}Optimal Transport Coupling}{96}{subsubsection.D.2.4}%
-\contentsline {subsection}{\numberline {D.3}Stable Diffusion: Latent Space Mathematics}{97}{subsection.D.3}%
-\contentsline {subsubsection}{\numberline {D.3.1}VAE Autoencoder in Latent Space}{97}{subsubsection.D.3.1}%
-\contentsline {subsubsection}{\numberline {D.3.2}Diffusion in Latent Space}{97}{subsubsection.D.3.2}%
-\contentsline {subsubsection}{\numberline {D.3.3}Cross-Attention Conditioning}{97}{subsubsection.D.3.3}%
-\contentsline {subsubsection}{\numberline {D.3.4}DreamBooth: Parameter-Efficient Fine-Tuning}{97}{subsubsection.D.3.4}%
-\contentsline {subsection}{\numberline {D.4}Evaluation Metrics: Mathematical Foundations}{97}{subsection.D.4}%
-\contentsline {subsubsection}{\numberline {D.4.1}Sliced Wasserstein Distance}{97}{subsubsection.D.4.1}%
-\contentsline {subsubsection}{\numberline {D.4.2}Autocorrelation Function}{97}{subsubsection.D.4.2}%
-\contentsline {subsubsection}{\numberline {D.4.3}Higher-Order Moments}{98}{subsubsection.D.4.3}%
-\contentsline {subsection}{\numberline {D.5}Implementation Algorithms}{98}{subsection.D.5}%
-\contentsline {subsubsection}{\numberline {D.5.1}DDPM Training Algorithm}{98}{subsubsection.D.5.1}%
-\contentsline {subsubsection}{\numberline {D.5.2}Flow Matching Training Algorithm}{98}{subsubsection.D.5.2}%
-\contentsline {subsubsection}{\numberline {D.5.3}ODE Sampling Algorithm}{98}{subsubsection.D.5.3}%
-\contentsline {subsection}{\numberline {D.6}Computational Complexity Analysis}{99}{subsection.D.6}%
-\contentsline {subsubsection}{\numberline {D.6.1}Time Complexity}{99}{subsubsection.D.6.1}%
-\contentsline {subsubsection}{\numberline {D.6.2}Space Complexity}{99}{subsubsection.D.6.2}%
-\contentsline {subsection}{\numberline {D.7}Convergence Analysis}{99}{subsection.D.7}%
-\contentsline {subsubsection}{\numberline {D.7.1}DDPM Convergence}{99}{subsubsection.D.7.1}%
-\contentsline {subsubsection}{\numberline {D.7.2}Flow Matching Convergence}{99}{subsubsection.D.7.2}%
-\contentsline {subsection}{\numberline {D.8}Practical Considerations and Best Practices}{99}{subsection.D.8}%
-\contentsline {subsubsection}{\numberline {D.8.1}Hyperparameter Selection}{99}{subsubsection.D.8.1}%
-\contentsline {subsubsection}{\numberline {D.8.2}Training Stability}{100}{subsubsection.D.8.2}%
-\contentsline {subsubsection}{\numberline {D.8.3}Evaluation Best Practices}{100}{subsubsection.D.8.3}%
-\contentsline {section}{\numberline {E}Appendix: Complete Source Code}{101}{appendix.E}%
-\contentsline {subsection}{\numberline {E.1}DDPM Implementation}{101}{subsection.E.1}%
-\contentsline {subsection}{\numberline {E.2}Flow Matching Implementation}{103}{subsection.E.2}%
-\contentsline {subsection}{\numberline {E.3}Evaluation Metrics Implementation}{104}{subsection.E.3}%
-\contentsline {section}{\numberline {F}Appendix: Model Answers to Assignment Questions}{106}{appendix.F}%
-\contentsline {subsection}{\numberline {F.1}Question One -- Diffusion Models (Theory)}{106}{subsection.F.1}%
-\contentsline {subsection}{\numberline {F.2}Question One -- Diffusion Models (Practical)}{107}{subsection.F.2}%
-\contentsline {subsection}{\numberline {F.3}Question Two -- Flow Matching (Theory)}{107}{subsection.F.3}%
-\contentsline {subsection}{\numberline {F.4}Question Two -- Flow Matching (Practical)}{107}{subsection.F.4}%
-\contentsline {section}{\numberline {G}Comprehensive Completion Protocol (CA4)}{108}{appendix.G}%
-\contentsline {subsection}{\numberline {G.1}Deliverable Completeness Checklist}{108}{subsection.G.1}%
-\contentsline {subsection}{\numberline {G.2}Threats to Validity and Mitigations}{108}{subsection.G.2}%
-\contentsline {subsection}{\numberline {G.3}Reproducibility Protocol}{108}{subsection.G.3}%
-\contentsline {subsection}{\numberline {G.4}Expected Generated Artifacts}{109}{subsection.G.4}%
-\contentsline {subsection}{\numberline {G.5}Originality Statement}{109}{subsection.G.5}%
+\contentsline {section}{\numberline {1}Introduction}{6}{section.1}%
+\contentsline {section}{\numberline {2}Methodology}{6}{section.2}%
+\contentsline {section}{\numberline {3}Question One: Diffusion Models}{6}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Part One: Theory Questions}{6}{subsection.3.1}%
+\contentsline {subsubsection}{\numberline {3.1.1}Question 1: Closed Form Proof}{6}{subsubsection.3.1.1}%
+\contentsline {subsubsection}{\numberline {3.1.2}Question 2: Advantage of Noise Prediction}{7}{subsubsection.3.1.2}%
+\contentsline {subsubsection}{\numberline {3.1.3}Question 3: Cost Function Analysis (VLB)}{7}{subsubsection.3.1.3}%
+\contentsline {subsubsection}{\numberline {3.1.4}Question 4: DDIM Sampling}{8}{subsubsection.3.1.4}%
+\contentsline {subsubsection}{\numberline {3.1.5}Question 5: Classifier-Free Guidance (CFG)}{8}{subsubsection.3.1.5}%
+\contentsline {section}{\numberline {4}Comprehensive Model Explanations}{9}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Denoising Diffusion Probabilistic Models (DDPM)}{9}{subsection.4.1}%
+\contentsline {subsubsection}{\numberline {4.1.1}Overview and Intuition}{9}{subsubsection.4.1.1}%
+\contentsline {subsubsection}{\numberline {4.1.2}Mathematical Foundation}{10}{subsubsection.4.1.2}%
+\contentsline {subsubsection}{\numberline {4.1.3}Network Architecture}{10}{subsubsection.4.1.3}%
+\contentsline {subsubsection}{\numberline {4.1.4}Training Objective}{10}{subsubsection.4.1.4}%
+\contentsline {subsubsection}{\numberline {4.1.5}Sampling Process}{11}{subsubsection.4.1.5}%
+\contentsline {subsubsection}{\numberline {4.1.6}DDIM: Deterministic Variant}{11}{subsubsection.4.1.6}%
+\contentsline {subsection}{\numberline {4.2}Stable Diffusion and DreamBooth}{11}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1}Stable Diffusion Architecture}{11}{subsubsection.4.2.1}%
+\contentsline {subsubsection}{\numberline {4.2.2}Diffusion in Latent Space}{11}{subsubsection.4.2.2}%
+\contentsline {subsubsection}{\numberline {4.2.3}Text Conditioning}{11}{subsubsection.4.2.3}%
+\contentsline {subsubsection}{\numberline {4.2.4}Classifier-Free Guidance (CFG)}{12}{subsubsection.4.2.4}%
+\contentsline {subsubsection}{\numberline {4.2.5}DreamBooth: Personalization Technique}{12}{subsubsection.4.2.5}%
+\contentsline {subsubsection}{\numberline {4.2.6}LoRA: Parameter-Efficient Fine-Tuning}{12}{subsubsection.4.2.6}%
+\contentsline {subsubsection}{\numberline {4.2.7}DreamBooth Training Process}{12}{subsubsection.4.2.7}%
+\contentsline {subsubsection}{\numberline {4.2.8}Inference with DreamBooth}{13}{subsubsection.4.2.8}%
+\contentsline {subsection}{\numberline {4.3}Flow Matching for Time Series Generation}{13}{subsection.4.3}%
+\contentsline {subsubsection}{\numberline {4.3.1}Overview}{13}{subsubsection.4.3.1}%
+\contentsline {subsubsection}{\numberline {4.3.2}Mathematical Foundation}{13}{subsubsection.4.3.2}%
+\contentsline {subsubsection}{\numberline {4.3.3}Linear Interpolation Paths}{13}{subsubsection.4.3.3}%
+\contentsline {subsubsection}{\numberline {4.3.4}Network Architecture}{13}{subsubsection.4.3.4}%
+\contentsline {subsubsection}{\numberline {4.3.5}Training Process}{14}{subsubsection.4.3.5}%
+\contentsline {subsubsection}{\numberline {4.3.6}Sampling via ODE Integration}{14}{subsubsection.4.3.6}%
+\contentsline {subsubsection}{\numberline {4.3.7}Evaluation Metrics}{14}{subsubsection.4.3.7}%
+\contentsline {subsubsection}{\numberline {4.3.8}Advantages over Diffusion Models}{15}{subsubsection.4.3.8}%
+\contentsline {section}{\numberline {5}Implementation Details and Architectures}{16}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Denoising Diffusion Probabilistic Models (DDPM)}{16}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}Architecture: U-Net for Noise Prediction}{16}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {5.1.2}DDIM Sampling}{19}{subsubsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.2}Stable Diffusion with DreamBooth}{20}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {5.2.1}Architecture Overview}{20}{subsubsection.5.2.1}%
+\contentsline {subsubsection}{\numberline {5.2.2}DreamBooth Fine-tuning}{22}{subsubsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.3}Flow Matching for Time Series Generation}{24}{subsection.5.3}%
+\contentsline {subsubsection}{\numberline {5.3.1}Conditional Flow Matching Theory}{24}{subsubsection.5.3.1}%
+\contentsline {subsubsection}{\numberline {5.3.2}Transformer-based Flow Matching Architecture}{24}{subsubsection.5.3.2}%
+\contentsline {subsubsection}{\numberline {5.3.3}Conditional Flow Matching Training}{26}{subsubsection.5.3.3}%
+\contentsline {subsubsection}{\numberline {5.3.4}Time Series Dataset and Training}{27}{subsubsection.5.3.4}%
+\contentsline {subsubsection}{\numberline {5.3.5}Sampling from Trained Flow}{28}{subsubsection.5.3.5}%
+\contentsline {subsubsection}{\numberline {5.3.6}Data Preprocessing}{29}{subsubsection.5.3.6}%
+\contentsline {subsection}{\numberline {5.4}Common Implementation Details}{29}{subsection.5.4}%
+\contentsline {subsubsection}{\numberline {5.4.1}Training Infrastructure}{29}{subsubsection.5.4.1}%
+\contentsline {subsubsection}{\numberline {5.4.2}Evaluation Metrics}{30}{subsubsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.5}Part Two: Practical Questions}{31}{subsection.5.5}%
+\contentsline {subsubsection}{\numberline {5.5.1}Subsection 1: DDPM and DDIM Implementation}{31}{subsubsection.5.5.1}%
+\contentsline {subsubsection}{\numberline {5.5.2}Subsection 2: Stable Diffusion and DreamBooth}{35}{subsubsection.5.5.2}%
+\contentsline {section}{\numberline {6}Question Two: Flow Matching and Time Series}{38}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Part One: Theory Questions}{38}{subsection.6.1}%
+\contentsline {subsubsection}{\numberline {6.1.1}Question 1: Vector Field}{38}{subsubsection.6.1.1}%
+\contentsline {subsubsection}{\numberline {6.1.2}Question 2: Linear Paths}{38}{subsubsection.6.1.2}%
+\contentsline {subsubsection}{\numberline {6.1.3}Question 3: Loss Function Proof}{39}{subsubsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.2}Part Two: Practical Report \& Evaluation}{41}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Part Two: Practical Report \& Evaluation}{46}{subsection.6.3}%
+\contentsline {section}{\numberline {A}All Notebook Figures}{50}{appendix.A}%
+\contentsline {section}{\numberline {A}Appendix: Mathematical Derivations and Frameworks}{57}{appendix.A}%
+\contentsline {subsection}{\numberline {A.1}A. The Diffusion Model Framework}{57}{subsection.A.1}%
+\contentsline {subsubsection}{\numberline {A.1.1}A.1 Forward Process (Markov Chain)}{57}{subsubsection.A.1.1}%
+\contentsline {subsubsection}{\numberline {A.1.2}A.2 The Reverse Process (Generative Step)}{57}{subsubsection.A.1.2}%
+\contentsline {subsection}{\numberline {A.2}B. Flow Matching Theory (The ODE Perspective)}{57}{subsection.A.2}%
+\contentsline {subsubsection}{\numberline {A.2.1}B.1 Vector Fields and Probability Paths}{57}{subsubsection.A.2.1}%
+\contentsline {subsubsection}{\numberline {A.2.2}B.2 Linear Conditional Paths}{57}{subsubsection.A.2.2}%
+\contentsline {subsection}{\numberline {A.3}C. Advanced Statistical Evaluation Metrics}{58}{subsection.A.3}%
+\contentsline {section}{\numberline {B}Practical Implementation: Diffusion Models}{59}{appendix.B}%
+\contentsline {subsection}{\numberline {B.1}DDPM and DDIM Implementation}{59}{subsection.B.1}%
+\contentsline {subsubsection}{\numberline {B.1.1}Noise Schedule and Forward Process}{59}{subsubsection.B.1.1}%
+\contentsline {subsubsection}{\numberline {B.1.2}Forward Diffusion Process}{60}{subsubsection.B.1.2}%
+\contentsline {subsubsection}{\numberline {B.1.3}U-Net Architecture for Noise Prediction}{61}{subsubsection.B.1.3}%
+\contentsline {subsubsection}{\numberline {B.1.4}Training Implementation}{63}{subsubsection.B.1.4}%
+\contentsline {subsubsection}{\numberline {B.1.5}DDPM Sampling}{63}{subsubsection.B.1.5}%
+\contentsline {subsubsection}{\numberline {B.1.6}DDIM Sampling Implementation}{64}{subsubsection.B.1.6}%
+\contentsline {subsubsection}{\numberline {B.1.7}Experimental Results and Analysis}{66}{subsubsection.B.1.7}%
+\contentsline {subsection}{\numberline {B.2}Stable Diffusion with DreamBooth Fine-tuning}{67}{subsection.B.2}%
+\contentsline {subsubsection}{\numberline {B.2.1}DreamBooth Dataset Implementation}{67}{subsubsection.B.2.1}%
+\contentsline {subsubsection}{\numberline {B.2.2}LoRA Fine-tuning Implementation}{69}{subsubsection.B.2.2}%
+\contentsline {subsubsection}{\numberline {B.2.3}Class Image Generation for Prior Preservation}{71}{subsubsection.B.2.3}%
+\contentsline {subsubsection}{\numberline {B.2.4}DreamBooth Results and Analysis}{72}{subsubsection.B.2.4}%
+\contentsline {subsubsection}{\numberline {B.2.5}Ablation Study: Components of DreamBooth}{73}{subsubsection.B.2.5}%
+\contentsline {subsection}{\numberline {B.3}Computational Considerations and Best Practices}{73}{subsection.B.3}%
+\contentsline {subsubsection}{\numberline {B.3.1}Memory Optimization}{73}{subsubsection.B.3.1}%
+\contentsline {subsubsection}{\numberline {B.3.2}Hyperparameter Tuning}{73}{subsubsection.B.3.2}%
+\contentsline {subsubsection}{\numberline {B.3.3}Common Pitfalls and Solutions}{74}{subsubsection.B.3.3}%
+\contentsline {subsection}{\numberline {B.4}Complete Code Flow Analysis}{74}{subsection.B.4}%
+\contentsline {subsubsection}{\numberline {B.4.1}DDPM/DDIM Implementation Flow}{74}{subsubsection.B.4.1}%
+\contentsline {subsubsection}{\numberline {B.4.2}Stable Diffusion with DreamBooth Flow}{76}{subsubsection.B.4.2}%
+\contentsline {subsubsection}{\numberline {B.4.3}Flow Matching Implementation Flow}{78}{subsubsection.B.4.3}%
+\contentsline {subsubsection}{\numberline {B.4.4}Overall Architecture and Data Flow}{80}{subsubsection.B.4.4}%
+\contentsline {section}{\numberline {C}Appendix: Source Code}{82}{appendix.C}%
+\contentsline {subsection}{\numberline {C.1}ddpm.py}{82}{subsection.C.1}%
+\contentsline {subsection}{\numberline {C.2}Evaluation Metrics (Concise)}{94}{subsection.C.2}%
+\contentsline {subsection}{\numberline {C.3}Reproducing Experiments - Quick Commands}{95}{subsection.C.3}%
+\contentsline {subsection}{\numberline {C.4}Assignment Requirements Mapping}{95}{subsection.C.4}%
+\contentsline {subsection}{\numberline {C.5}Submission Checklist}{95}{subsection.C.5}%
+\contentsline {subsection}{\numberline {C.6}Quick Reproducibility Commands}{96}{subsection.C.6}%
+\contentsline {subsection}{\numberline {C.7}Final Readiness Summary}{96}{subsection.C.7}%
+\contentsline {section}{\numberline {D}Appendix: Comprehensive Mathematical Framework}{97}{appendix.D}%
+\contentsline {subsection}{\numberline {D.1}Diffusion Models: Complete Mathematical Theory}{97}{subsection.D.1}%
+\contentsline {subsubsection}{\numberline {D.1.1}Forward Process: Closed-Form Marginal Distribution}{97}{subsubsection.D.1.1}%
+\contentsline {subsubsection}{\numberline {D.1.2}Reverse Process: Variational Lower Bound}{98}{subsubsection.D.1.2}%
+\contentsline {subsubsection}{\numberline {D.1.3}DDIM: Deterministic Sampling}{98}{subsubsection.D.1.3}%
+\contentsline {subsubsection}{\numberline {D.1.4}Classifier-Free Guidance: Mathematical Foundation}{98}{subsubsection.D.1.4}%
+\contentsline {subsection}{\numberline {D.2}Flow Matching: Complete Mathematical Framework}{99}{subsection.D.2}%
+\contentsline {subsubsection}{\numberline {D.2.1}Continuous-Time Flow Definition}{99}{subsubsection.D.2.1}%
+\contentsline {subsubsection}{\numberline {D.2.2}Conditional Flow Matching Loss}{99}{subsubsection.D.2.2}%
+\contentsline {subsubsection}{\numberline {D.2.3}Connection to Denoising Score Matching}{99}{subsubsection.D.2.3}%
+\contentsline {subsubsection}{\numberline {D.2.4}Optimal Transport Coupling}{99}{subsubsection.D.2.4}%
+\contentsline {subsection}{\numberline {D.3}Stable Diffusion: Latent Space Mathematics}{100}{subsection.D.3}%
+\contentsline {subsubsection}{\numberline {D.3.1}VAE Autoencoder in Latent Space}{100}{subsubsection.D.3.1}%
+\contentsline {subsubsection}{\numberline {D.3.2}Diffusion in Latent Space}{100}{subsubsection.D.3.2}%
+\contentsline {subsubsection}{\numberline {D.3.3}Cross-Attention Conditioning}{100}{subsubsection.D.3.3}%
+\contentsline {subsubsection}{\numberline {D.3.4}DreamBooth: Parameter-Efficient Fine-Tuning}{100}{subsubsection.D.3.4}%
+\contentsline {subsection}{\numberline {D.4}Evaluation Metrics: Mathematical Foundations}{100}{subsection.D.4}%
+\contentsline {subsubsection}{\numberline {D.4.1}Sliced Wasserstein Distance}{100}{subsubsection.D.4.1}%
+\contentsline {subsubsection}{\numberline {D.4.2}Autocorrelation Function}{100}{subsubsection.D.4.2}%
+\contentsline {subsubsection}{\numberline {D.4.3}Higher-Order Moments}{101}{subsubsection.D.4.3}%
+\contentsline {subsection}{\numberline {D.5}Implementation Algorithms}{101}{subsection.D.5}%
+\contentsline {subsubsection}{\numberline {D.5.1}DDPM Training Algorithm}{101}{subsubsection.D.5.1}%
+\contentsline {subsubsection}{\numberline {D.5.2}Flow Matching Training Algorithm}{101}{subsubsection.D.5.2}%
+\contentsline {subsubsection}{\numberline {D.5.3}ODE Sampling Algorithm}{101}{subsubsection.D.5.3}%
+\contentsline {subsection}{\numberline {D.6}Computational Complexity Analysis}{102}{subsection.D.6}%
+\contentsline {subsubsection}{\numberline {D.6.1}Time Complexity}{102}{subsubsection.D.6.1}%
+\contentsline {subsubsection}{\numberline {D.6.2}Space Complexity}{102}{subsubsection.D.6.2}%
+\contentsline {subsection}{\numberline {D.7}Convergence Analysis}{102}{subsection.D.7}%
+\contentsline {subsubsection}{\numberline {D.7.1}DDPM Convergence}{102}{subsubsection.D.7.1}%
+\contentsline {subsubsection}{\numberline {D.7.2}Flow Matching Convergence}{102}{subsubsection.D.7.2}%
+\contentsline {subsection}{\numberline {D.8}Practical Considerations and Best Practices}{102}{subsection.D.8}%
+\contentsline {subsubsection}{\numberline {D.8.1}Hyperparameter Selection}{102}{subsubsection.D.8.1}%
+\contentsline {subsubsection}{\numberline {D.8.2}Training Stability}{103}{subsubsection.D.8.2}%
+\contentsline {subsubsection}{\numberline {D.8.3}Evaluation Best Practices}{103}{subsubsection.D.8.3}%
+\contentsline {section}{\numberline {E}Appendix: Complete Source Code}{104}{appendix.E}%
+\contentsline {subsection}{\numberline {E.1}DDPM Implementation}{104}{subsection.E.1}%
+\contentsline {subsection}{\numberline {E.2}Flow Matching Implementation}{106}{subsection.E.2}%
+\contentsline {subsection}{\numberline {E.3}Evaluation Metrics Implementation}{107}{subsection.E.3}%
+\contentsline {section}{\numberline {F}Appendix: Model Answers to Assignment Questions}{109}{appendix.F}%
+\contentsline {subsection}{\numberline {F.1}Question One -- Diffusion Models (Theory)}{109}{subsection.F.1}%
+\contentsline {subsection}{\numberline {F.2}Question One -- Diffusion Models (Practical)}{110}{subsection.F.2}%
+\contentsline {subsection}{\numberline {F.3}Question Two -- Flow Matching (Theory)}{110}{subsection.F.3}%
+\contentsline {subsection}{\numberline {F.4}Question Two -- Flow Matching (Practical)}{111}{subsection.F.4}%
+\contentsline {section}{\numberline {G}Comprehensive Completion Protocol (CA4)}{111}{appendix.G}%
+\contentsline {subsection}{\numberline {G.1}Deliverable Completeness Checklist}{111}{subsection.G.1}%
+\contentsline {subsection}{\numberline {G.2}Threats to Validity and Mitigations}{111}{subsection.G.2}%
+\contentsline {subsection}{\numberline {G.3}Reproducibility Protocol}{112}{subsection.G.3}%
+\contentsline {subsection}{\numberline {G.4}Expected Generated Artifacts}{112}{subsection.G.4}%
+\contentsline {subsection}{\numberline {G.5}Originality Statement}{112}{subsection.G.5}%

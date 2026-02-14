@@ -3845,25 +3845,27 @@ return xt
 - Higher-order moments: skewness and kurtosis to assess tail behaviour.
 
 \subsection{Reproducing Experiments - Quick Commands}
-Run the main scripts from the `code/` folder. Example commands:
+Run the main scripts from the \texttt{code/} folder. Example commands:
 \begin{verbatim}
 cd OtherTermAssignments/CA4/code
 python3 run_all.py --preset quick --dreambooth auto
 \end{verbatim}
 
 Notes:
-- Ensure Python packages in requirements.txt (in the CA4 folder) are installed in a virtualenv. If GPU is available, use CUDA-enabled PyTorch.
-- Figures used in this report are saved to the folder referenced by REPORT_FIG_DIR (see code/utils.py).
-- The command above executes DDPM, Flow Matching, optional DreamBooth, and figure synchronization in one reproducible pipeline.
+\begin{itemize}
+    \item Ensure Python packages in \texttt{requirements.txt} (in the CA4 folder) are installed in a virtualenv. If GPU is available, use CUDA-enabled PyTorch.
+    \item Figures used in this report are saved to the folder referenced by \texttt{REPORT\_FIG\_DIR} (see \texttt{code/utils.py}).
+    \item The command above executes DDPM, Flow Matching, optional DreamBooth, and figure synchronization in one reproducible pipeline.
+\end{itemize}
 
 \subsection{Assignment Requirements Mapping}
 This appendix maps the report contents to the assignment specification (see the assignment description). Ensure the following items are present in the final PDF:
 \begin{itemize}
-    \item For Question One (Diffusion Models): include full derivations (closed-form marginal), explanation of noise prediction advantages, VLB discussion, and DDIM/CFG notes. Corresponding implementation and runnable examples are included in the appendix code listings and runnable scripts (see code/ddpm.py and code/run_ddpm.py).
-    \item For Question One (Practical): provide the implemented noise schedule, the `perturb_input` implementation, training loop, and sampling routine. Include training curves, sample grids, and captions for each figure.
-    \item For Question Two (Flow Matching): include the theoretical vector-field derivation, reasons for linear paths, and practical implementation details. Reference code/flow_matching.py and code/run_flow_matching.py for the dataset preprocessing and training code.
+    \item For Question One (Diffusion Models): include full derivations (closed-form marginal), explanation of noise prediction advantages, VLB discussion, and DDIM/CFG notes. Corresponding implementation and runnable examples are included in the appendix code listings and runnable scripts (see \texttt{code/ddpm.py} and \texttt{code/run\_ddpm.py}).
+    \item For Question One (Practical): provide the implemented noise schedule, the \texttt{perturb\_input} implementation, training loop, and sampling routine. Include training curves, sample grids, and captions for each figure.
+    \item For Question Two (Flow Matching): include the theoretical vector-field derivation, reasons for linear paths, and practical implementation details. Reference \texttt{code/flow\_matching.py} and \texttt{code/run\_flow\_matching.py} for the dataset preprocessing and training code.
     \item Evaluation: include histograms/KDE comparisons, Sliced Wasserstein Distance (SWD) values, autocorrelation plots and MSE values, and the tabulated mean/variance/volatility comparison between real and generated data.
-    \item Stable Diffusion / DreamBooth (if used): include dataset description, DreamBoothDataset details, LoRA settings (if applied) and example prompts. Refer to code/stable_diffusion.py and code/run_stable_diffusion.py.
+    \item Stable Diffusion / DreamBooth (if used): include dataset description, DreamBoothDataset details, LoRA settings (if applied) and example prompts. Refer to \texttt{code/stable\_diffusion.py} and \texttt{code/run\_stable\_diffusion.py}.
 \end{itemize}
 
 \subsection{Submission Checklist}
@@ -3874,13 +3876,13 @@ Before zipping and submitting, confirm the following items are present and corre
     \item A short "How to run" section with exact commands is present (see the last part of this appendix).
     \item Training and test loss curves are included and described.
     \item Evaluation metrics (SWD, ACF MSE, histogram/KDE comparisons, summaries of moments) are reported with short interpretation.
-    \item The ZIP file is named exactly: HW4_[Lastname]_[StudentNumber].zip and contains the report PDF, all code, and necessary small assets (figures). Large model weights may be excluded but include instructions to download if necessary.
+    \item The ZIP file is named exactly: \texttt{HW4\_[Lastname]\_[StudentNumber].zip} and contains the report PDF, all code, and necessary small assets (figures). Large model weights may be excluded but include instructions to download if necessary.
     \item Submission contact emails are included in the report: mollahoseini@ut.ac.ir, fatemehnadir@gmail.com.
     \item A short originality statement is added to the report (student declaration that the work is original and sources are cited).
 \end{itemize}
 
 \subsection{Quick Reproducibility Commands}
-Run these from the code/ folder (suggested virtualenv/conda with required packages installed):
+Run these from the \texttt{code/} folder (suggested virtualenv/conda with required packages installed):
 \begin{verbatim}
 python3 run_all.py --preset quick --dreambooth auto
 python3 run_ddpm.py --preset full
@@ -4536,7 +4538,7 @@ The linear variance schedule interpolates $\beta_t$ from $\beta_{start} = 0.0001
 \]
 Then compute $\alpha_t = 1 - \beta_t$ and $\bar{\alpha}_t = \prod_{s=1}^t \alpha_s$.
 
-**(3 Points)**
+\textbf{(3 Points)}
 
 \textbf{Step 2: \texttt{perturb\_input} function}
 Using reparameterization:
@@ -4545,25 +4547,29 @@ x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon, \quad \eps
 \]
 Return $x_t$ and $\epsilon$ for loss computation.
 
-**(4 Points)**
+\textbf{(4 Points)}
 
 \textbf{Step 3: Training Loop}
 For each batch:
-- Sample $t \sim \Uniform\{0, \dots, T-1\}$
-- Compute $x_t, \epsilon = \perturb(x_0, t)$
-- Predict $\epsilon_\theta = \unet(x_t, t)$
-- Loss = MSE$(\epsilon, \epsilon_\theta)$
-- Backpropagate and update.
+\begin{itemize}
+    \item Sample $t \sim \mathrm{Uniform}\{0, \dots, T-1\}$.
+    \item Compute $x_t, \epsilon = \texttt{perturb}(x_0, t)$.
+    \item Predict $\epsilon_\theta = \texttt{unet}(x_t, t)$.
+    \item Loss $= \mathrm{MSE}(\epsilon, \epsilon_\theta)$.
+    \item Backpropagate and update.
+\end{itemize}
 
-**(4 Points)**
+\textbf{(4 Points)}
 
 \textbf{Step 4: Sampling}
 Start with $x_T \sim \mathcal{N}(0, I)$, then for $t = T-1$ downto $0$:
-- Predict $\epsilon_\theta = \unet(x_t, t)$
-- Compute posterior mean $\tilde{\mu}_t = \frac{\sqrt{\bar{\alpha}_{t-1}} (1 - \alpha_t)}{1 - \bar{\alpha}_t} x_t + \frac{\sqrt{\alpha_t} (1 - \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t} \epsilon_\theta$
-- Sample $x_{t-1} \sim \mathcal{N}(\tilde{\mu}_t, \tilde{\beta}_t I)$, where $\tilde{\beta}_t = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \beta_t$
+\begin{itemize}
+    \item Predict $\epsilon_\theta = \texttt{unet}(x_t, t)$.
+    \item Compute posterior mean $\tilde{\mu}_t = \frac{\sqrt{\bar{\alpha}_{t-1}} (1 - \alpha_t)}{1 - \bar{\alpha}_t} x_t + \frac{\sqrt{\alpha_t} (1 - \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t} \epsilon_\theta$.
+    \item Sample $x_{t-1} \sim \mathcal{N}(\tilde{\mu}_t, \tilde{\beta}_t I)$, where $\tilde{\beta}_t = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t} \beta_t$.
+\end{itemize}
 
-**(4 Points)**
+\textbf{(4 Points)}
 
 \subsection{Question Two -- Flow Matching (Theory)}
 
@@ -4576,29 +4582,37 @@ Start with $x_T \sim \mathcal{N}(0, I)$, then for $t = T-1$ downto $0$:
 \subsection{Question Two -- Flow Matching (Practical)}
 
 \textbf{Data Preparation:}
-- Load SPY log-returns from 2010-2023.
-- Compute log-returns: $r_t = \log(p_t / p_{t-1})$
-- Create sequences of length 64 with overlap.
-- Standardize: $r' = (r - \mu) / \sigma$
-- Split chronologically: 90% train, 10% test.
+\begin{itemize}
+    \item Load SPY log-returns from 2010-2023.
+    \item Compute log-returns: $r_t = \log(p_t / p_{t-1})$.
+    \item Create sequences of length 64 with overlap.
+    \item Standardize: $r' = (r - \mu) / \sigma$.
+    \item Split chronologically: 90\% train, 10\% test.
+\end{itemize}
 
-**(Implementation Notes:)** Use MLP or Transformer for $v_\theta(x, t)$.
+\textbf{(Implementation Notes:)} Use MLP or Transformer for $v_\theta(x, t)$.
 
 \textbf{Training:}
-- Sample $x_0 \sim \mathcal{N}(0, I)$, $x_1 \sim$ data, $t \sim \Uniform[0,1]$
-- $x_t = (1-t) x_0 + t x_1$
-- Loss: $\mathbb{E} \|v_\theta(x_t, t) - (x_1 - x_0)\|^2$
+\begin{itemize}
+    \item Sample $x_0 \sim \mathcal{N}(0, I)$, $x_1 \sim$ data, $t \sim \mathrm{Uniform}[0,1]$.
+    \item $x_t = (1-t) x_0 + t x_1$.
+    \item Loss: $\mathbb{E} \|v_\theta(x_t, t) - (x_1 - x_0)\|^2$.
+\end{itemize}
 
 \textbf{Sampling:}
-- Start $x \leftarrow \mathcal{N}(0, I)$
-- Solve $\frac{dx}{dt} = v_\theta(x, t)$ from $t=0$ to $1$ using Euler/Heun.
+\begin{itemize}
+    \item Start $x \leftarrow \mathcal{N}(0, I)$.
+    \item Solve $\frac{dx}{dt} = v_\theta(x, t)$ from $t=0$ to $1$ using Euler/Heun.
+\end{itemize}
 
 \textbf{Evaluation:}
-- SWD: Approximate Wasserstein with 1D projections.
-- ACF MSE: Compare autocorrelation functions.
-- Moments: Mean, variance, volatility.
+\begin{itemize}
+    \item SWD: Approximate Wasserstein with 1D projections.
+    \item ACF MSE: Compare autocorrelation functions.
+    \item Moments: Mean, variance, volatility.
+\end{itemize}
 
-**(30 Points)**
+\textbf{(30 Points)}
 
 \section{Comprehensive Completion Protocol (CA4)}
 
