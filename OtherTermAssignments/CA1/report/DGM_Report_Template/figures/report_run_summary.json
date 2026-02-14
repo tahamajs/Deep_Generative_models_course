@@ -1,0 +1,28 @@
+{
+  "output_dir": "/Users/tahamajs/Documents/uni/DGM/OtherTermAssignments/CA1/report/DGM_Report_Template/figures",
+  "betas": [
+    1.0,
+    2.0,
+    5.0
+  ],
+  "epochs": 3,
+  "subset": 10000,
+  "base_beta": 1.0,
+  "final_metrics": {
+    "1.0": {
+      "val_loss": 238.401015625,
+      "val_recon": 205.328435546875,
+      "val_kl": 33.072581298828126
+    },
+    "2.0": {
+      "val_loss": 275.15373046875,
+      "val_recon": 233.50404296875,
+      "val_kl": 20.82484423828125
+    },
+    "5.0": {
+      "val_loss": 599.3489609375,
+      "val_recon": 589.3135625,
+      "val_kl": 2.0070748138427734
+    }
+  }
+}

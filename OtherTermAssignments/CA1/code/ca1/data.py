@@ -59,9 +59,16 @@ def seed_worker(worker_id: int) -> None:
     np.random.seed(worker_seed)
 
 
-def create_dataloaders(imgs, batch_size=128, train_split=0.9, generator=None):
+def create_dataloaders(
+    imgs,
+    batch_size=128,
+    train_split=0.9,
+    generator=None,
+    return_indices: bool = False,
+    seed: int = None,
+):
     n_train = int(len(imgs) * train_split)
-    rng = np.random.default_rng(CONFIG["seed"])
+    rng = np.random.default_rng(CONFIG["seed"] if seed is None else seed)
     indices = rng.permutation(len(imgs))
     train_indices = indices[:n_train]
     val_indices = indices[n_train:]
@@ -85,4 +92,6 @@ def create_dataloaders(imgs, batch_size=128, train_split=0.9, generator=None):
         worker_init_fn=seed_worker,
         generator=generator,
     )
+    if return_indices:
+        return train_loader, val_loader, train_indices, val_indices
     return train_loader, val_loader

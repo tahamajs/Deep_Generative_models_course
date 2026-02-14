@@ -23,12 +23,15 @@ python run.py smoke
 
 # Full training (example)
 python run.py train --epochs 30 --beta 1.0 --batch-size 128
+
+# End-to-end report figure generation (PGM + beta-VAE plots)
+python run.py report --output-dir ../report/DGM_Report_Template/figures --epochs 30 --subset 30000 --betas 1,2,5
 ```
 
 Notes
 - The script expects the dSprites `.npz` file at the path configured in `ca1/config.py` (`data_path`). If not present it will attempt to download automatically.
 - No training is run by default; use the `train` or `smoke` subcommands explicitly.
-- Visualizations are saved as PNG files in the current working directory.
+- `report` saves all report figures plus checkpoints and run metadata in the specified output directory.
 
 Development
 - Package location: `ca1/`

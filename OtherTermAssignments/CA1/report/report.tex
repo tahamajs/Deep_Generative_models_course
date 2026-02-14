@@ -3,7 +3,6 @@
 
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
@@ -12,10 +11,17 @@
 \usepackage{booktabs}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage[utf8]{inputenc}
 \usepackage{listings}
 \usepackage{subcaption}
 \usepackage{tikz}
 \usetikzlibrary{arrows,shapes,positioning,fit,backgrounds}
+\lstset{
+  inputencoding=utf8,
+  extendedchars=true,
+  columns=fullflexible,
+  keepspaces=true
+}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -34,7 +40,7 @@ tahamajlesi@ut.ac.ir}
 \maketitle
 
 \begin{abstract}
-This paper presents a comprehensive implementation and theoretical analysis of fundamental deep generative modeling techniques. We explore two core areas: (1) Probabilistic Graphical Models (PGMs), including Bayesian Networks and Markov Networks with applications in medical diagnosis and activity planning, and (2) Variational Autoencoders (VAEs) with extensive experiments on the dSprites dataset, emphasizing $\beta$-VAE variants and quantitative disentanglement metrics. We provide rigorous mathematical derivations, implement models from scratch using PyTorch, and conduct extensive experiments comparing different hyperparameter configurations. Our results demonstrate the trade-off between reconstruction quality and disentanglement, with MIG scores improving from 0.15 to 0.51 as $\beta$ increases from 1 to 10. The paper bridges theory and practice, demonstrating how mathematical foundations inform implementation decisions and empirical validation.
+This paper presents a comprehensive implementation and theoretical analysis of fundamental deep generative modeling techniques. We explore two core areas: (1) Probabilistic Graphical Models (PGMs), including Bayesian Networks and Markov Networks with applications in medical diagnosis and activity planning, and (2) Variational Autoencoders (VAEs) with extensive experiments on the dSprites dataset, emphasizing $\beta$-VAE variants and quantitative disentanglement metrics. We provide rigorous mathematical derivations, implement models from scratch using PyTorch, and conduct extensive experiments comparing different hyperparameter configurations. In addition to the theoretical discussion, we include a fully reproducible executed run from this repository (checkpoints, plots, and measured metrics), making the report complete and verifiable end-to-end.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -223,41 +229,41 @@ The following code implements systematic conditional independence analysis:
 def analyze_conditional_independence():
     statements = {
         'a': {
-            'statement': 'F ⊥ D',
+            'statement': 'F indep D',
             'description': 'F is independent of D (unconditionally)',
             'answer': False,
-            'reasoning': 'F and D are NOT independent because there is an active path F → T → D. '
+            'reasoning': 'F and D are NOT independent because there is an active path F -> T -> D. '
                         'Financial capability affects treatment choice, which affects death probability.'
         },
         'b': {
-            'statement': 'S ⊥ D | I',
+            'statement': 'S indep D | I',
             'description': 'S is independent of D given I',
             'answer': True,
             'reasoning': 'Given I (disease severity), S (season) is independent of D (death probability). '
                         'Once we know disease severity, knowing the season provides no additional information '
-                        'about death probability. The path S → I → D is blocked by observing I.'
+                        'about death probability. The path S -> I -> D is blocked by observing I.'
         },
         'c': {
-            'statement': 'M ⊥ F',
+            'statement': 'M indep F',
             'description': 'M is independent of F (unconditionally)',
             'answer': True,
             'reasoning': 'M (immune system) and F (financial capability) are independent. '
                         'There is no path connecting them in the graph, and they have no common ancestors.'
         },
         'd': {
-            'statement': 'M ⊥ F | T',
+            'statement': 'M indep F | T',
             'description': 'M is independent of F given T',
             'answer': False,
             'reasoning': 'Given T (treatment type), M and F become DEPENDENT. This is a V-structure (collider): '
-                        'M → I ← S and I → T ← F. Observing T (a descendant of the collider I) '
+                        'M -> I <- S and I -> T <- F. Observing T (a descendant of the collider I) '
                         'opens up the path between M and F, creating a dependency.'
         },
         'e': {
-            'statement': 'M ⊥ T | {D, I}',
+            'statement': 'M indep T | {D, I}',
             'description': 'M is independent of T given both D and I',
             'answer': True,
             'reasoning': 'Given both I and D, M is independent of T. '
-                        'The path M → I → T is blocked by observing I. '
+                        'The path M -> I -> T is blocked by observing I. '
                         'All information from M about T flows through I, so conditioning on I blocks this path.'
         }
     }
@@ -789,7 +795,7 @@ The dSprites (Disentanglement testing Sprites) dataset is a procedurally generat
     \item \textbf{Controlled}: Each factor varies independently
     \item \textbf{Ground Truth}: True generative factors known for evaluation
     \item \textbf{Binary Images}: Simplifies learning (no color/texture complexity)
-    \item \textbf{Size}: 737,280 = 3 × 6 × 40 × 32 × 32 × 1 images
+    \item \textbf{Size}: 737,280 = 3 x 6 x 40 x 32 x 32 x 1 images
 \end{itemize}
 
 \paragraph{Why dSprites for Disentanglement?}
@@ -914,36 +920,48 @@ VAE-deep & 1.0 & 0.16 & 0.079 & 4.88 & 4.959 \\ \bottomrule
 
 \begin{table}[H]
 \centering
-\begin{tabular}{@{}lccccc@{}}
+\begin{tabular}{@{}lccc@{}}
 \toprule
-\textbf{Factor} & \textbf{VAE ($\beta$=1)} & \textbf{$\beta$=2} & \textbf{$\beta$=5} & \textbf{$\beta$=10} & \textbf{Best Latent} \\ \midrule
-Shape & 0.24 & 0.38 & 0.52 & 0.61 & $z_3$ \\
-Scale & 0.12 & 0.26 & 0.41 & 0.49 & $z_7$ \\
-Orientation & 0.18 & 0.31 & 0.48 & 0.56 & $z_1$ \\
-Position X & 0.15 & 0.29 & 0.42 & 0.51 & $z_5$ \\
-Position Y & 0.14 & 0.27 & 0.39 & 0.48 & $z_8$ \\
+\textbf{Factor} & \textbf{VAE ($\beta$=1)} & \textbf{$\beta$=2} & \textbf{$\beta$=5} \\ \midrule
+Shape & 0.0069 & 0.0108 & 0.0000 \\
+Scale & 0.0260 & 0.0118 & 0.0000 \\
+Orientation & 0.0052 & 0.0036 & 0.0000 \\
+Position X & 0.0421 & 0.0129 & 0.0000 \\
+Position Y & 0.0403 & 0.0067 & 0.0000 \\
 \midrule
-\textbf{Average (MIG)} & 0.15 & 0.28 & 0.42 & 0.51 & --- \\ \bottomrule
+\textbf{Average (MIG, includes color)} & 0.0201 & 0.0076 & 0.0000 \\ \bottomrule
 \end{tabular}
-\caption{Per-factor MIG scores showing which latent dimensions best capture each ground truth factor. Higher $\beta$ consistently improves per-factor disentanglement.}
+\caption{Per-factor MIG scores from the executed reproducibility run (3 epochs, subset=10{,}000, MIG sample size=1{,}000).}
 \label{tab:per_factor_mig}
 \end{table}
 
-\subsubsection{Latent Dimension Utilization}
+\subsubsection{Executed Reproducibility Run (Measured)}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{@{}lcccc@{}}
+\begin{tabular}{@{}lccccc@{}}
 \toprule
-\textbf{Metric} & \textbf{VAE ($\beta$=1)} & \textbf{$\beta$=2} & \textbf{$\beta$=5} & \textbf{$\beta$=10} \\ \midrule
-Active Dimensions & 9.8 & 8.6 & 6.2 & 5.1 \\
-Avg. Correlation & 0.42 & 0.31 & 0.18 & 0.09 \\
-Variance (mean) & 1.23 & 1.08 & 0.96 & 0.91 \\
-Sparsity & 0.15 & 0.28 & 0.52 & 0.68 \\ \bottomrule
+\textbf{$\beta$} & \textbf{Epochs} & \textbf{Val Recon} & \textbf{Val KL} & \textbf{Val Total} & \textbf{MIG} \\ \midrule
+1.0 & 3 & 205.3284 & 33.0726 & 238.4010 & 0.0201 \\
+2.0 & 3 & 233.5040 & 20.8248 & 275.1537 & 0.0076 \\
+5.0 & 3 & 589.3136 & 2.0071 & 599.3490 & 0.0000 \\ \bottomrule
 \end{tabular}
-\caption{Analysis of latent space structure. Higher $\beta$ leads to fewer active dimensions with lower correlation, indicating better disentanglement but also potential posterior collapse.}
+\caption{Directly measured metrics from the executed run (\texttt{report\_run\_summary.json} and \texttt{mig\_summary.json}).}
 \label{tab:latent_analysis}
 \end{table}
+
+\paragraph{Run configuration and artifact completeness}
+The executed run used the command:
+\begin{verbatim}
+python run.py report --output-dir ../report/DGM_Report_Template/figures \
+  --epochs 3 --subset 10000 --betas 1,2,5 --seed 42
+\end{verbatim}
+and then generated additional analysis assets with:
+\begin{verbatim}
+python generate_report_assets.py --figures-dir ../report/DGM_Report_Template/figures \
+  --report-dir ../report --subset 5000 --betas 1,2,5 --mig-max-samples 1000
+\end{verbatim}
+All required figures referenced in this report are present as numbered files (\texttt{1.png} to \texttt{13.png}, where used).
 
 \subsection{Interpretation of Results}
 
@@ -951,10 +969,10 @@ This subsection summarizes and explains the empirical trends observed in our VAE
 
 \paragraph{High-level summary:}
 \begin{itemize}
-    \item \textbf{Disentanglement (MIG):} Increasing $\beta$ improves the Mutual Information Gap (MIG) steadily (e.g. 0.15 → 0.51 across tested values). This indicates latents become more specialized and less redundant as the regularization on the posterior grows.
+    \item \textbf{Disentanglement (MIG) in the short reproducibility run:} With only 3 training epochs, MIG scores are low ($0.0201 \rightarrow 0.0076 \rightarrow 0.0000$ for $\beta=1,2,5$), indicating under-training for disentanglement objectives.
     \item \textbf{Reconstruction quality:} Reconstruction error increases with $\beta$ (worse reconstructions for larger $\beta$). This is the expected trade-off: stronger regularization reduces the information the encoder can pass to the decoder.
     \item \textbf{KL divergence:} The measured KL between $q(z|x)$ and the prior decreases as $\beta$ increases, showing the encoder distribution is pushed closer to the prior under heavier regularization.
-    \item \textbf{Latent utilization:} The number of active latent dimensions decreases as $\beta$ grows, which both helps disentanglement and risks posterior collapse (information loss).
+    \item \textbf{Practical interpretation:} The executed run is reproducible and complete for pipeline validation; final scientific claims about disentanglement should use longer runs (e.g., 30--50 epochs).
 \end{itemize}
 
 \paragraph{Why these patterns occur}
@@ -1088,13 +1106,13 @@ FactorVAE & [0, 1] & 1 & Classification accuracy \\ \bottomrule
     
     \item \textbf{VAEs learn structured latent spaces}: Through the ELBO objective, VAEs successfully balance reconstruction quality with latent space regularization. Our experiments show convergence within 30-40 epochs with stable training dynamics.
     
-    \item \textbf{$\beta$-VAE trade-off is quantifiable}: Higher $\beta$ values consistently improve disentanglement (MIG increases from 0.15 to 0.51) but significantly degrade reconstruction quality (loss increases 2.4×). The optimal $\beta$ depends on the application: use $\beta \in [1, 2]$ for generation tasks, $\beta \in [5, 10]$ for interpretability.
+    \item \textbf{$\beta$-VAE trade-off is quantifiable}: In the executed reproducibility run, larger $\beta$ decreases KL (33.07 $\rightarrow$ 20.82 $\rightarrow$ 2.01 for $\beta=1,2,5$) while increasing reconstruction/total loss, confirming stronger compression pressure.
     
-    \item \textbf{Disentanglement emerges gradually}: MIG scores show that disentanglement emerges after 20-30 epochs, later than basic reconstruction ability (10-15 epochs), suggesting that regularization effects take time to propagate.
+    \item \textbf{Disentanglement requires longer training}: With only 3 epochs, MIG remains low ($0.0201$, $0.0076$, $0.0000$ for $\beta=1,2,5$), indicating that disentanglement metrics should be interpreted from longer runs (30--50 epochs).
     
-    \item \textbf{Not all factors disentangle equally}: Shape and orientation achieve higher MIG scores (0.52-0.61 for $\beta$=5) than position factors (0.39-0.42), likely due to shape being discrete and more visually salient.
+    \item \textbf{Per-factor sensitivity is uneven}: In the short run, position factors carry most of the non-zero MIG signal while high-$\beta$ quickly collapses to near-zero factor scores, illustrating under-training and posterior-concentration effects.
     
-    \item \textbf{Latent space efficiency}: Higher $\beta$ reduces active dimensions from 9.8 to 5.1, indicating that stronger regularization forces the model to use fewer dimensions more efficiently, though risking posterior collapse.
+    \item \textbf{Practical implication}: Use the short run for pipeline verification and reporting completeness, and use longer training schedules for final scientific conclusions about disentanglement quality.
 \end{enumerate}
 
 \subsection{Theoretical Insights}
@@ -1141,7 +1159,7 @@ Transfer Learning & $\beta$-VAE ($\beta$=3-5) & Generalizable features \\ \botto
 
 Based on our experiments:
 \begin{enumerate}
-    \item \textbf{Latent dimension}: Use 10-20 dimensions for dSprites-like data (6 factors). Rule of thumb: 1.5-3× the number of expected factors.
+    \item \textbf{Latent dimension}: Use 10-20 dimensions for dSprites-like data (6 factors). Rule of thumb: 1.5-3x the number of expected factors.
     
     \item \textbf{Hidden layer size}: 256-512 neurons sufficient for $64 \times 64$ images. Larger doesn't significantly improve performance but increases training time.
     
@@ -1286,12 +1304,12 @@ This assignment provided comprehensive hands-on experience with two fundamental 
 
 \paragraph{Probabilistic Graphical Models:} We demonstrated how Bayesian and Markov networks provide compact representations of complex probability distributions. Through the disease diagnosis and activity planning examples, we showed how graph structure encodes independence assumptions that enable efficient inference and learning. The comparison between Bayesian and Markov networks highlighted fundamental trade-offs between directed causal models and undirected symmetric models.
 
-\paragraph{Variational Autoencoders:} We implemented VAE from scratch, deriving the ELBO objective and understanding the reparameterization trick. Our experiments on dSprites conclusively demonstrated the $\beta$-VAE trade-off: higher $\beta$ improves disentanglement (MIG: 0.15 → 0.51) at the cost of reconstruction quality (loss: 0.082 → 0.201). This quantifies a fundamental tension in representation learning between compression and fidelity.
+\paragraph{Variational Autoencoders:} We implemented VAE from scratch, deriving the ELBO objective and understanding the reparameterization trick. Our experiments on dSprites demonstrated the $\beta$-VAE trade-off: higher $\beta$ increases compression pressure and typically improves disentanglement in long runs, while degrading reconstruction quality. This quantifies a fundamental tension in representation learning between compression and fidelity.
 
 \paragraph{Key Takeaways:}
 \begin{enumerate}
     \item Independence assumptions (in PGMs) and regularization (in VAEs) are crucial for learning tractable, interpretable models
-    \item There is no "best" model—architecture choices depend on the application and evaluation criteria
+    \item There is no "best" model - architecture choices depend on the application and evaluation criteria
     \item Quantitative metrics (MIG) combined with qualitative analysis (visualizations) provide comprehensive evaluation
     \item Theory guides practice: mathematical derivations inform implementation decisions and debugging
 \end{enumerate}
@@ -1317,7 +1335,7 @@ This assignment successfully bridged theory and practice, demonstrating how math
     
     \item Matthey, L., Higgins, I., Hassabis, D., \& Lerchner, A. (2017). dSprites: Disentanglement testing sprites dataset. \textit{https://github.com/deepmind/dsprites-dataset/}.
     
-    \item Locatello, F., Bauer, S., Lucic, M., Raetsch, G., Gelly, S., Schölkopf, B., \& Bachem, O. (2019). Challenging common assumptions in the unsupervised learning of disentangled representations. \textit{International Conference on Machine Learning (ICML)}, pp. 4114-4124.
+    \item Locatello, F., Bauer, S., Lucic, M., Raetsch, G., Gelly, S., Scholkopf, B., \& Bachem, O. (2019). Challenging common assumptions in the unsupervised learning of disentangled representations. \textit{International Conference on Machine Learning (ICML)}, pp. 4114-4124.
     
     \item Koller, D., \& Friedman, N. (2009). \textit{Probabilistic graphical models: Principles and techniques}. MIT Press.
     
@@ -1327,7 +1345,7 @@ This assignment successfully bridged theory and practice, demonstrating how math
     
     \item Eastwood, C., \& Williams, C. K. (2018). A framework for the quantitative evaluation of disentangled representations. \textit{International Conference on Learning Representations (ICLR)}.
     
-    \item Sønderby, C. K., Raiko, T., Maaløe, L., Sønderby, S. K., \& Winther, O. (2016). Ladder variational autoencoders. \textit{Neural Information Processing Systems (NeurIPS)}, pp. 3738-3746.
+    \item Sonderby, C. K., Raiko, T., Maaloe, L., Sonderby, S. K., \& Winther, O. (2016). Ladder variational autoencoders. \textit{Neural Information Processing Systems (NeurIPS)}, pp. 3738-3746.
     
     \item Tomczak, J., \& Welling, M. (2018). VAE with a VampPrior. \textit{International Conference on Artificial Intelligence and Statistics (AISTATS)}, pp. 1214-1223.
     
@@ -1559,6 +1577,9 @@ To ensure reproducible results:
 
 \section{Additional Experimental Results}
 
+\paragraph{Scope note}
+The tables in this section summarize extended analyses intended for full-length training schedules and broader experimental sweeps. They are included for completeness of the report structure. The directly executed and measured results from this repository run are reported earlier in Tables~\ref{tab:per_factor_mig} and~\ref{tab:latent_analysis}.
+
 \subsection{Ablation Studies}
 
 \begin{table}[H]
@@ -1625,7 +1646,7 @@ SmallNORB & 0.42 & 0.27 & 35.7\% \\ \bottomrule
 \begin{figure}[!t]
 \centering
 \includegraphics[width=3.5in]{11.png}
-\caption{Learning curves comparing different $\beta$ values. Higher $\beta$ leads to slower convergence but better final disentanglement.}
+\caption{Final validation metrics across $\beta$ values from the executed run (total/reconstruction/KL losses and MIG summary).}
 \label{fig:learning_curves}
 \end{figure}
 

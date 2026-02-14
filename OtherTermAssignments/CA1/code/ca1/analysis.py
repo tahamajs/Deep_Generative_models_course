@@ -86,7 +86,15 @@ def analyze_latent_statistics(model, data_loader: DataLoader, save_path=None):
     return {'means': means, 'stds': stds}
 
 
-def visualize_latent_space_2d(model, data_loader: DataLoader, latents_classes, max_samples=5000, save_path=None):
+def visualize_latent_space_2d(
+    model,
+    data_loader: DataLoader,
+    latents_classes,
+    max_samples=5000,
+    save_path=None,
+    color_factor_idx=1,
+    show=True,
+):
     # Extract a limited number of latents
     model.eval()
     latents = []
@@ -103,11 +111,12 @@ def visualize_latent_space_2d(model, data_loader: DataLoader, latents_classes, m
     pca = PCA(n_components=2)
     lat2 = pca.fit_transform(latents)
     plt.figure(figsize=(8, 6))
-    # color by first factor if available
+    # Color by a non-trivial factor if available (shape by default for dSprites).
     if latents_classes is not None:
-        labels = latents_classes[: lat2.shape[0], 0]
+        factor_idx = min(color_factor_idx, latents_classes.shape[1] - 1)
+        labels = latents_classes[: lat2.shape[0], factor_idx]
         scatter = plt.scatter(lat2[:, 0], lat2[:, 1], c=labels, cmap='tab10', s=6)
-        plt.colorbar(scatter, label='factor 0')
+        plt.colorbar(scatter, label=f'factor {factor_idx}')
     else:
         plt.scatter(lat2[:, 0], lat2[:, 1], s=6)
     plt.title('PCA of Latent Space (2D)')
@@ -115,7 +124,9 @@ def visualize_latent_space_2d(model, data_loader: DataLoader, latents_classes, m
     plt.ylabel('PC 2')
     if save_path:
         plt.savefig(save_path, dpi=200, bbox_inches='tight')
-    plt.show()
+    if show:
+        plt.show()
+    plt.close()
     return pca, lat2
 
 
