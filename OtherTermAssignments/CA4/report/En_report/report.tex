@@ -1859,7 +1859,7 @@ loss = F.mse_loss(v_pred, v_target)
 
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.85\textwidth}{Screenshot 2026-01-06 at 4.21.48 AM.png}
+        \maybeincludegraphics{width=0.85\textwidth}{fm_loss_curve.png}
         \caption{Flow Matching Training Loss (Blue) vs Test Loss (Orange) over 50 Epochs.}
         \label{fig:fm_loss}
     \end{figure}
@@ -1892,7 +1892,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.01 AM.jpg}
+        \maybeincludegraphics{width=0.95\textwidth}{fm_generated_samples.png}
         \caption{Generated Time Series Samples. Top: Normalized Log-Returns. Bottom: Denormalized (Scale restored).}
         \label{fig:fm_samples}
     \end{figure}
@@ -1910,7 +1910,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.17 AM.jpg}
+        \maybeincludegraphics{width=0.95\textwidth}{fm_real_vs_gen.png}
         \caption{Qualitative Comparison. Top Row: Real Data. Middle Row: Generated Data. Bottom Row: Overlaid Comparison.}
         \label{fig:fm_qualitative}
     \end{figure}
@@ -1929,7 +1929,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.33 AM.jpg}
+        \maybeincludegraphics{width=0.95\textwidth}{fm_dist_comparison.png}
         \caption{Distribution Analysis. Histogram (Top-Left), KDE (Top-Right), Q-Q Plot (Bottom-Left), CDF (Bottom-Right).}
         \label{fig:fm_dist}
     \end{figure}
@@ -1945,7 +1945,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.43 AM.png}
+        \maybeincludegraphics{width=0.95\textwidth}{main_3_8_Step_7__Basic_Statistical_Evaluation_and_Volatility_cell073_out02.png}
         \caption{Statistical Metrics Comparison. Left: Mean/Variance. Middle: Volatility Distribution. Right: Higher-Order Moments.}
         \label{fig:fm_stats}
     \end{figure}
@@ -1974,7 +1974,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.53 AM.jpg}
+        \maybeincludegraphics{width=0.95\textwidth}{main_3_9_Step_8__Advanced_Structural_and_Temporal_Evaluation_cell080_out02.png}
         \caption{Advanced Evaluation. Left: Autocorrelation Function (ACF). Right: Evaluation Summary.}
         \label{fig:fm_advanced}
     \end{figure}
@@ -2785,7 +2785,7 @@ def generate_class_images(pipeline, class_prompt, num_images=200, output_dir="cl
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics{width=\textwidth}{figures/dreambooth_results.png}
+    \maybeincludegraphics{width=\textwidth}{dreambooth_generated_grid.png}
     \caption{DreamBooth fine-tuning results. Left: Original subject. Middle: Generated with instance prompt. Right: Generated with novel contexts.}
     \label{fig:dreambooth_results}
 \end{figure}
