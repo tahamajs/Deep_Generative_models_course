@@ -132,6 +132,13 @@
 \newcommand{\mathdef}[1]{\textbf{#1}}
 \newcommand{\highlight}[1]{\colorbox{yellow!20}{#1}}
 \newcommand{\modelname}[1]{\textsf{#1}}
+\newcommand{\maybeincludegraphics}[2]{%
+    \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
+        \IfFileExists{figures/#2}{\includegraphics[#1]{figures/#2}}{%
+            \fbox{\parbox{0.9\linewidth}{\centering Missing figure:\\\texttt{\detokenize{#2}}}}%
+        }%
+    }%
+}
 
 % =========================================
 % HYPERREF SETUP
@@ -385,7 +392,7 @@ Stable Diffusion is a latent diffusion model that performs diffusion in a compre
 1. **VAE (Variational Autoencoder):**
    - **Encoder:** Maps images to latent space: $z = \mathcal{E}(x)$
    - **Decoder:** Reconstructs images: $\hat{x} = \mathcal{D}(z)$
-   - **Latent Space:** Typically 4x smaller than input (e.g., 512×512 → 64×64×4)
+   - **Latent Space:** Typically 4x smaller than input (e.g., 512x512 -> 64x64x4)
 
 2. **Text Encoder (CLIP):**
    - Encodes text prompts into embeddings
@@ -598,18 +605,18 @@ The core denoising model is a U-Net architecture designed for image-to-image tra
     \item \textbf{Encoder (Downsampling):} 4 levels with residual blocks
         \begin{itemize}
             \item Each level: 2 ResNet blocks with GroupNorm and SiLU activation
-            \item Downsampling: 2×2 convolutional stride-2 layers
+            \item Downsampling: 2x2 convolutional stride-2 layers
             \item Channels: [64, 128, 256, 512]
         \end{itemize}
     \item \textbf{Bottleneck:} 2 ResNet blocks at 512 channels
     \item \textbf{Decoder (Upsampling):} 4 levels with residual blocks
         \begin{itemize}
             \item Each level: 2 ResNet blocks with skip connections
-            \item Upsampling: 2×2 transposed convolutional layers
+            \item Upsampling: 2x2 transposed convolutional layers
             \item Channels: [512, 256, 128, 64]
         \end{itemize}
     \item \textbf{Time Embedding:} Sinusoidal positional encoding injected via linear layers
-    \item \textbf{Output:} 3×3 convolution to predict noise (same channels as input)
+    \item \textbf{Output:} 3x3 convolution to predict noise (same channels as input)
 \end{itemize}
 
 \textbf{Detailed U-Net Implementation:}
@@ -722,11 +729,11 @@ class SinusoidalTimeEmbedding(nn.Module):
         \toprule
         \textbf{Parameter} & \textbf{Value} \\
         \midrule
-        Image Size & 32×32 (MNIST padded) \\
+        Image Size & 32x32 (MNIST padded) \\
         Channels & 3 \\
         Timesteps (T) & 1000 \\
-        β_start & 0.0001 \\
-        β_end & 0.02 \\
+        $\beta_{\text{start}}$ & 0.0001 \\
+        $\beta_{\text{end}}$ & 0.02 \\
         Learning Rate & 1e-4 \\
         Batch Size & 128 \\
         Optimizer & AdamW \\
@@ -813,13 +820,13 @@ class DDIMSampler:
 
 \subsubsection{Architecture Overview}
 Stable Diffusion consists of three main components working in latent space:
-1. \textbf{VAE Encoder/Decoder:} Compresses 512×512 images to 64×64×4 latents
+1. \textbf{VAE Encoder/Decoder:} Compresses 512x512 images to 64x64x4 latents
 2. \textbf{CLIP Text Encoder:} Encodes text prompts to embeddings
 3. \textbf{U-Net Denoiser:} Conditions on text embeddings for guided generation
 
 \textbf{U-Net Architecture (Stable Diffusion):}
 \begin{itemize}
-    \item \textbf{Input:} 64×64×4 latent space
+    \item \textbf{Input:} 64x64x4 latent space
     \item \textbf{Time Embedding:} 1280-dim sinusoidal + linear projection
     \item \textbf{Text Conditioning:} Cross-attention with CLIP embeddings (768-dim)
     \item \textbf{Architecture:} Similar to DDPM U-Net but with:
@@ -1445,7 +1452,7 @@ def sample(self, batch_size, img_size=(3, 32, 32)):
 \end{lstlisting}
 \end{solutionbox}
 
-	extbf{Step 5: Visual Results (DDPM vs DDIM)}
+\textbf{Step 5: Visual Results (DDPM vs DDIM)}
 \begin{solutionbox}
     The following figures are exported directly from the notebook runs. DDPM uses many reverse steps (e.g., 1000) and is stochastic, while DDIM can use fewer steps (e.g., 50) and becomes deterministic for $\eta=0$. In practice, DDIM is much faster with only a small quality drop for moderate step counts.
 
@@ -1467,8 +1474,8 @@ def sample(self, batch_size, img_size=(3, 32, 32)):
         \caption{DDPM training loss curve (noise-prediction MSE).}
     \end{figure}
 
-    	extbf{Explanation:}
-    The DDPM loss typically decreases smoothly as the model learns to predict $\epsilon$ across timesteps. DDIM’s strided updates reduce sampling time significantly, and $\eta$ controls stochasticity (larger $\eta$ increases diversity, $\eta=0$ is deterministic).
+    \textbf{Explanation:}
+    The DDPM loss typically decreases smoothly as the model learns to predict $\epsilon$ across timesteps. DDIM's strided updates reduce sampling time significantly, and $\eta$ controls stochasticity (larger $\eta$ increases diversity, $\eta=0$ is deterministic).
 \end{solutionbox}
 
 \newpage
@@ -1487,7 +1494,7 @@ def sample(self, batch_size, img_size=(3, 32, 32)):
         \caption{Example instance training image used for DreamBooth fine-tuning.}
     \end{figure}
 
-    	extbf{Explanation:} The instance set should contain multiple views/poses of the same subject. The special identifier token (e.g., \texttt{sks}) is paired with the instance prompt so the model can bind the subject identity to that token.
+    \textbf{Explanation:} The instance set should contain multiple views/poses of the same subject. The special identifier token (e.g., \texttt{sks}) is paired with the instance prompt so the model can bind the subject identity to that token.
 \end{solutionbox}
 
 \textbf{Step 2: Dataset Class}
@@ -1852,7 +1859,7 @@ loss = F.mse_loss(v_pred, v_target)
 
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.85\textwidth}{Screenshot 2026-01-06 at 4.21.48 AM.png}
+        \maybeincludegraphics{width=0.85\textwidth}{Screenshot 2026-01-06 at 4.21.48 AM.png}
         \caption{Flow Matching Training Loss (Blue) vs Test Loss (Orange) over 50 Epochs.}
         \label{fig:fm_loss}
     \end{figure}
@@ -1885,7 +1892,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.01 AM.jpg}
+        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.01 AM.jpg}
         \caption{Generated Time Series Samples. Top: Normalized Log-Returns. Bottom: Denormalized (Scale restored).}
         \label{fig:fm_samples}
     \end{figure}
@@ -1903,7 +1910,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.17 AM.jpg}
+        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.17 AM.jpg}
         \caption{Qualitative Comparison. Top Row: Real Data. Middle Row: Generated Data. Bottom Row: Overlaid Comparison.}
         \label{fig:fm_qualitative}
     \end{figure}
@@ -1922,7 +1929,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.33 AM.jpg}
+        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.33 AM.jpg}
         \caption{Distribution Analysis. Histogram (Top-Left), KDE (Top-Right), Q-Q Plot (Bottom-Left), CDF (Bottom-Right).}
         \label{fig:fm_dist}
     \end{figure}
@@ -1938,7 +1945,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.43 AM.png}
+        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.43 AM.png}
         \caption{Statistical Metrics Comparison. Left: Mean/Variance. Middle: Volatility Distribution. Right: Higher-Order Moments.}
         \label{fig:fm_stats}
     \end{figure}
@@ -1967,7 +1974,7 @@ loss = F.mse_loss(v_pred, v_target)
 \begin{solutionbox}
     \begin{figure}[H]
         \centering
-        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.53 AM.jpg}
+        \maybeincludegraphics{width=0.95\textwidth}{Screenshot 2026-01-06 at 4.22.53 AM.jpg}
         \caption{Advanced Evaluation. Left: Autocorrelation Function (ACF). Right: Evaluation Summary.}
         \label{fig:fm_advanced}
     \end{figure}
@@ -2018,91 +2025,91 @@ This appendix contains all figures extracted directly from the executed notebook
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{ddpm_samples_grid.png}
+    \maybeincludegraphics{width=0.9\textwidth}{ddpm_samples_grid.png}
     \caption{Step 4: DDPM and DDIM Sampling - DDPM Samples (Cell 34, Output 2)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{ddim_samples_grid.png}
+    \maybeincludegraphics{width=0.9\textwidth}{ddim_samples_grid.png}
     \caption{Step 4: DDPM and DDIM Sampling - DDIM Samples (Cell 34, Output 4)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_1_7_Step_4__DDPM_and_DDIM_Sampling_cell036_out01.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_1_7_Step_4__DDPM_and_DDIM_Sampling_cell036_out01.png}
     \caption{Step 4: DDPM and DDIM Sampling (Cell 36, Output 1)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_1_7_Step_4__DDPM_and_DDIM_Sampling_cell036_out02.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_1_7_Step_4__DDPM_and_DDIM_Sampling_cell036_out02.png}
     \caption{Step 4: DDPM and DDIM Sampling (Cell 36, Output 2)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_2_5_Step_5__Inference_and_Testing_cell049_out06.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_2_5_Step_5__Inference_and_Testing_cell049_out06.png}
     \caption{Step 5: Inference and Testing (Cell 49, Output 6)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_2_5_Step_5__Inference_and_Testing_cell049_out09.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_2_5_Step_5__Inference_and_Testing_cell049_out09.png}
     \caption{Step 5: Inference and Testing (Cell 49, Output 9)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_2_5_Step_5__Inference_and_Testing_cell049_out12.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_2_5_Step_5__Inference_and_Testing_cell049_out12.png}
     \caption{Step 5: Inference and Testing (Cell 49, Output 12)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_3_2_Data_Preparation_cell054_out02.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_3_2_Data_Preparation_cell054_out02.png}
     \caption{Data Preparation (Cell 54, Output 2)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_3_4_Flow_Matching_Training_cell064_out102.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_3_4_Flow_Matching_Training_cell064_out102.png}
     \caption{Flow Matching Training (Cell 64, Output 102)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_3_6_Steps_4-5__Visualizing_Generated_Time_Series_cell069_out02.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_3_6_Steps_4-5__Visualizing_Generated_Time_Series_cell069_out02.png}
     \caption{Steps 4-5: Visualizing Generated Time Series (Cell 69, Output 2)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_3_6_Steps_4-5__Visualizing_Generated_Time_Series_cell069_out04.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_3_6_Steps_4-5__Visualizing_Generated_Time_Series_cell069_out04.png}
     \caption{Steps 4-5: Visualizing Generated Time Series (Cell 69, Output 4)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_3_7_Step_6__Distribution_Comparison__Histogram_KDE_cell071_out02.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_3_7_Step_6__Distribution_Comparison__Histogram_KDE_cell071_out02.png}
     \caption{Step 6: Distribution Comparison - Histogram KDE (Cell 71, Output 2)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_3_8_Step_7__Basic_Statistical_Evaluation_and_Volatility_cell073_out02.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_3_8_Step_7__Basic_Statistical_Evaluation_and_Volatility_cell073_out02.png}
     \caption{Step 7: Basic Statistical Evaluation and Volatility (Cell 73, Output 2)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_3_9_Step_8__Advanced_Structural_and_Temporal_Evaluation_cell080_out02.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_3_9_Step_8__Advanced_Structural_and_Temporal_Evaluation_cell080_out02.png}
     \caption{Step 8: Advanced Structural and Temporal Evaluation (Cell 80, Output 2)}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \maybeincludegraphics[width=0.9\textwidth]{main_Summary_and_Conclusion_cell085_out02.png}
+    \maybeincludegraphics{width=0.9\textwidth}{main_Summary_and_Conclusion_cell085_out02.png}
     \caption{Summary and Conclusion (Cell 85, Output 2)}
 \end{figure}
 \newpage
@@ -2242,7 +2249,7 @@ The \texttt{perturb\_input} function implements the closed-form forward process 
         sqrt_alpha_cumprod_t = sqrt_alpha_cumprod_t[:, None, None, None]
         sqrt_one_minus_alpha_cumprod_t = sqrt_one_minus_alpha_cumprod_t[:, None, None, None]
         
-        # Apply reparameterization: x_t = sqrt(ᾱ_t) * x_0 + sqrt(1-ᾱ_t) * ε
+        # Apply reparameterization: x_t = sqrt(alpha_bar_t) * x_0 + sqrt(1-alpha_bar_t) * epsilon
         x_t = sqrt_alpha_cumprod_t * x_0 + sqrt_one_minus_alpha_cumprod_t * noise
         
         return x_t, noise
@@ -2250,7 +2257,7 @@ The \texttt{perturb\_input} function implements the closed-form forward process 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.95\textwidth]{figures/forward_diffusion_viz.png}
+    \maybeincludegraphics{width=0.95\textwidth}{figures/forward_diffusion_viz.png}
     \caption{Forward Diffusion Process Visualization: Progressive noise addition over 1000 timesteps on MNIST digits. Each column shows the same digit at different noise levels.}
     \label{fig:forward_process}
 \end{figure}
@@ -2543,7 +2550,7 @@ Our experiments demonstrate the fundamental trade-off between sample quality and
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{figures/ddpm_ddim_samples.png}
+    \maybeincludegraphics{width=\textwidth}{figures/ddpm_ddim_samples.png}
     \caption{Sample quality comparison: DDPM (left) vs DDIM with 50 steps (right). DDIM maintains visual fidelity while being significantly faster.}
     \label{fig:ddpm_ddim_samples}
 \end{figure}
@@ -2778,7 +2785,7 @@ def generate_class_images(pipeline, class_prompt, num_images=200, output_dir="cl
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{figures/dreambooth_results.png}
+    \maybeincludegraphics{width=\textwidth}{figures/dreambooth_results.png}
     \caption{DreamBooth fine-tuning results. Left: Original subject. Middle: Generated with instance prompt. Right: Generated with novel contexts.}
     \label{fig:dreambooth_results}
 \end{figure}
@@ -2878,40 +2885,37 @@ This section provides a comprehensive analysis of the code flow and implementati
 \subsubsection{DDPM/DDIM Implementation Flow}
 
 \textbf{A. Noise Schedule Initialization (\texttt{DDPMScheduler.\_\_init\_\_}):}
-```python
-# Flow: Parameter Setup → Beta Schedule → Alpha Calculations → Pre-computations
+\begin{lstlisting}[language=Python]
+# Flow: Parameter Setup -> Beta Schedule -> Alpha Calculations -> Pre-computations
 self.betas = torch.linspace(beta_start=0.0001, beta_end=0.02, 1000)  # Linear schedule
-self.alphas = 1.0 - self.betas  # α_t = 1 - β_t
-self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)  # ∏_{s=1}^t α_s
+self.alphas = 1.0 - self.betas  # alpha_t = 1 - beta_t
+self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)  # prod_{s=1}^t alpha_s
 self.sqrt_alphas_cumprod = torch.sqrt(self.alphas_cumprod)  # \sqrt(\bar{\alpha}_t)
 self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - self.alphas_cumprod)  # \sqrt(1-\bar{\alpha}_t)
-```
-
+\end{lstlisting}
 The scheduler pre-computes all diffusion coefficients for efficiency. The linear beta schedule ensures gradual noise addition, with small $\beta_{\text{start}}$ preserving early details and $\beta_{\text{end}}$ ensuring complete corruption.
 
 \textbf{B. Forward Process (\texttt{perturb\_input}):}
-```python
-# Flow: Input → Sample Timestep → Extract Coefficients → Apply Reparameterization
+\begin{lstlisting}[language=Python]
+# Flow: Input -> Sample Timestep -> Extract Coefficients -> Apply Reparameterization
 x_t = sqrt_alpha_cumprod_t * x_0 + sqrt_one_minus_alpha_cumprod_t * noise
-```
-
+\end{lstlisting}
 Implements the closed-form $q(x_t|x_0) = \mathcal{N}(\sqrt{\bar{\alpha}_t}x_0, (1-\bar{\alpha}_t)I)$. The reparameterization trick enables differentiable noise addition, crucial for training.
 
 \textbf{C. U-Net Architecture Flow:}
-```python
-# Flow: Input → Time Embedding → Encoder (4 levels) → Bottleneck → Decoder (4 levels) → Output
+\begin{lstlisting}[language=Python]
+# Flow: Input -> Time Embedding -> Encoder (4 levels) -> Bottleneck -> Decoder (4 levels) -> Output
 # Key Components:
 # - Sinusoidal time embedding for temporal conditioning
 # - Residual blocks with GroupNorm and SiLU activation
 # - Skip connections preserve spatial information
 # - Time injection via linear projection in each ResBlock
-```
-
+\end{lstlisting}
 The U-Net learns to predict noise $\epsilon_\theta(x_t, t)$. Time conditioning allows the model to understand noise levels. Skip connections prevent information loss during downsampling.
 
 \textbf{D. Training Loop Flow:}
-```python
-# Flow: Load Batch → Sample t → Forward Diffusion → Predict Noise → Compute Loss → Backprop
+\begin{lstlisting}[language=Python]
+# Flow: Load Batch -> Sample t -> Forward Diffusion -> Predict Noise -> Compute Loss -> Backprop
 for epoch in epochs:
     for x_0, _ in dataloader:
         t = torch.randint(0, 1000, (batch_size,))  # Random timestep sampling
@@ -2919,13 +2923,12 @@ for epoch in epochs:
         noise_pred = model(x_t, t)  # Predict noise
         loss = F.mse_loss(noise_pred, noise)  # Simplified DDPM loss
         loss.backward()  # Gradient computation
-```
-
+\end{lstlisting}
 The training minimizes $\mathcal{L}_{\text{simple}} = \mathbb{E}[\|\epsilon - \epsilon_\theta(x_t, t)\|^2]$. Random t sampling ensures the model learns across all noise levels.
 
 \textbf{E. DDPM Sampling Flow:}
-```python
-# Flow: Start from Noise → Reverse Loop (T to 0) → Predict Noise → Compute Mean → Add Noise → Repeat
+\begin{lstlisting}[language=Python]
+# Flow: Start from Noise -> Reverse Loop (T to 0) -> Predict Noise -> Compute Mean -> Add Noise -> Repeat
 x = torch.randn(shape)  # x_T ~ N(0,I)
 for t in reversed(range(T)):
     noise_pred = model(x, t)
@@ -2934,13 +2937,12 @@ for t in reversed(range(T)):
         x = mean + \sqrt(\beta_t) * torch.randn_like(x)  # Add stochasticity
     else:
         x = mean  # Deterministic at t=0
-```
-
+\end{lstlisting}
 Implements the reverse Markov chain. The stochastic noise injection ensures diversity but requires all T steps.
 
 \textbf{F. DDIM Sampling Flow:}
-```python
-# Flow: Create Strided Timesteps → Start from Noise → Non-Markovian Updates
+\begin{lstlisting}[language=Python]
+# Flow: Create Strided Timesteps -> Start from Noise -> Non-Markovian Updates
 timesteps = torch.arange(0, 1000, 20)  # Every 20th step for 50 total steps
 timesteps = torch.flip(timesteps, [0])  # Reverse: T to 0
 
@@ -2949,15 +2951,14 @@ for i, t in enumerate(timesteps):
     pred_x0 = (x - \sqrt(1-\bar{\alpha}_t) * noise_pred) / \sqrt{\bar{\alpha}}_t  # Predict clean image
     dir_xt = \sqrt(1-\bar{\alpha}_{t-1} - \eta^2(1-\bar{\alpha}_t/\bar{\alpha}_{t-1})) * noise_pred  # Direction
     x = \sqrt{\bar{\alpha}}_{t-1} * pred_x0 + dir_xt + \eta * noise  # Update (\eta controls stochasticity)
-```
-
+\end{lstlisting}
 DDIM enables 20x speedup by skipping steps. $\eta=0$ makes it deterministic, $\eta=1$ approaches DDPM quality. The non-Markovian formulation allows direct jumps between timesteps.
 
 \subsubsection{Stable Diffusion with DreamBooth Flow}
 
 \textbf{A. Dataset Implementation Flow:}
-```python
-# Flow: Load Instance Images → Load Class Images → Preprocessing → Tokenization
+\begin{lstlisting}[language=Python]
+# Flow: Load Instance Images -> Load Class Images -> Preprocessing -> Tokenization
 class DreamBoothDataset(Dataset):
     def __init__(self, instance_root, instance_prompt, tokenizer, class_root, class_prompt):
         # Load instance images (specific subject)
@@ -2979,13 +2980,12 @@ class DreamBoothDataset(Dataset):
         
         # Same for class image and prompt
         # Return: {"instance_images": tensor, "instance_prompt_ids": tokens, ...}
-```
-
+\end{lstlisting}
 Dual loading ensures balanced training between subject-specific learning and generalization preservation.
 
 \textbf{B. LoRA Fine-tuning Setup Flow:}
-```python
-# Flow: Load Pre-trained SD → Freeze Components → Apply LoRA → Setup Optimizer
+\begin{lstlisting}[language=Python]
+# Flow: Load Pre-trained SD -> Freeze Components -> Apply LoRA -> Setup Optimizer
 class DreamBoothTrainer:
     def __init__(self, model_id, lora_rank=4):
         # Load Stable Diffusion components
@@ -3004,13 +3004,12 @@ class DreamBoothTrainer:
         
         # Optimizer on LoRA parameters only (0.8% of total parameters)
         self.optimizer = AdamW(self.unet.parameters(), lr=1e-4)
-```
-
+\end{lstlisting}
 LoRA reduces trainable parameters from ~800M to ~3M, enabling fine-tuning on consumer GPUs while maintaining quality.
 
 \textbf{C. Training Step Flow:}
-```python
-# Flow: Encode Images → Add Noise → Predict Noise → Compute Loss → Backprop
+\begin{lstlisting}[language=Python]
+# Flow: Encode Images -> Add Noise -> Predict Noise -> Compute Loss -> Backprop
 def training_step(self, batch):
     # Encode instance image to latents
     latents = self.vae.encode(batch["instance_images"]).sample() * 0.18215
@@ -3039,13 +3038,12 @@ def training_step(self, batch):
         total_loss = instance_loss + prior_weight * class_loss
     
     return total_loss
-```
-
+\end{lstlisting}
 Dual loss ensures the model learns subject identity while preserving general class knowledge. Prior preservation prevents catastrophic forgetting.
 
 \textbf{D. Inference Flow:}
-```python
-# Flow: Tokenize Prompt → Encode Text → Iterative Denoising → Decode Image
+\begin{lstlisting}[language=Python]
+# Flow: Tokenize Prompt -> Encode Text -> Iterative Denoising -> Decode Image
 def generate(self, prompt, guidance_scale=7.5):
     # Tokenize prompt containing identifier (e.g., "sks person on beach")
     text_input = self.tokenizer(prompt, padding=True, return_tensors="pt")
@@ -3078,15 +3076,14 @@ def generate(self, prompt, guidance_scale=7.5):
     # Decode from latent space to image
     images = self.vae.decode(latents / 0.18215).sample
     return images
-```
-
+\end{lstlisting}
 Classifier-free guidance amplifies conditional signal relative to unconditional. The identifier token "sks" triggers learned subject features.
 
 \subsubsection{Flow Matching Implementation Flow}
 
 \textbf{A. Conditional Flow Matching Theory:}
-```python
-# Flow: Sample Time → Linear Interpolation → Predict Velocity → MSE Loss
+\begin{lstlisting}[language=Python]
+# Flow: Sample Time -> Linear Interpolation -> Predict Velocity -> MSE Loss
 def compute_loss(self, x0, x1, t):
     # Sample from conditional path: x_t = (1-t)x0 + t*x1
     t_expanded = t.view(-1, 1, 1)
@@ -3102,13 +3099,12 @@ def compute_loss(self, x0, x1, t):
     loss = F.mse_loss(v_pred, v_target)
     
     return loss
-```
-
+\end{lstlisting}
 CFM learns a velocity field that transports noise to data via straight-line paths. The constant target velocity simplifies learning compared to diffusion's varying noise prediction.
 
 \textbf{B. Transformer Architecture Flow:}
-```python
-# Flow: Input → Time Embedding → Input Projection → Transformer Layers → Output Projection
+\begin{lstlisting}[language=Python]
+# Flow: Input -> Time Embedding -> Input Projection -> Transformer Layers -> Output Projection
 class TimeSeriesFlowMatching(nn.Module):
     def forward(self, x, t):
         # Time embedding (sinusoidal)
@@ -3129,13 +3125,12 @@ class TimeSeriesFlowMatching(nn.Module):
         velocity = self.output_proj(self.norm(h))  # [batch, seq_len, input_dim]
         
         return velocity
-```
-
+\end{lstlisting}
 The transformer captures temporal dependencies in time series. Time conditioning enables the model to learn different behaviors at different transport stages.
 
 \textbf{C. Training Flow:}
-```python
-# Flow: Load Data → Sample Time → Compute Loss → Optimize
+\begin{lstlisting}[language=Python]
+# Flow: Load Data -> Sample Time -> Compute Loss -> Optimize
 def train_flow_matching(model, dataset, epochs=100):
     for epoch in range(epochs):
         for batch in dataloader:
@@ -3153,13 +3148,12 @@ def train_flow_matching(model, dataset, epochs=100):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-```
-
+\end{lstlisting}
 Training learns the velocity field that transports Gaussian noise to the data distribution along straight paths.
 
 \textbf{D. Sampling Flow:}
-```python
-# Flow: Start from Noise → ODE Integration → Generate Samples
+\begin{lstlisting}[language=Python]
+# Flow: Start from Noise -> ODE Integration -> Generate Samples
 def sample_from_flow(model, x0, num_steps=100):
     dt = 1.0 / num_steps  # Integration step size
     xt = x0.clone()  # Start from noise
@@ -3175,8 +3169,7 @@ def sample_from_flow(model, x0, num_steps=100):
         xt = xt + vt * dt
     
     return xt  # Final samples follow data distribution
-```
-
+\end{lstlisting}
 ODE solving generates samples by following the learned velocity field from noise to data. More steps reduce numerical error but increase computation.
 
 \subsubsection{Overall Architecture and Data Flow}
@@ -3278,12 +3271,12 @@ class ResidualBlock(nn.Module):
         self.act = nn.SiLU() 
         self.time_mlp = nn.Linear(time_emb_dim, out_channels)
 
-        # اصلاح مهم: حذف شرط up=True/False برای تعیین in_channels
-        # اکنون ما تعداد دقیق کانال ورودی (in_channels) را از بیرون می‌دهیم
+        # Important fix: remove up=True/False branch for choosing in_channels.
+        # We now pass the exact input channel count from the caller.
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         
-        # برای لایه آخر (Upsample یا Downsample)
+        # Last transform layer (Upsample or Downsample)
         # If input and output sizes are not the same or we want to change image size
         self.transform = nn.Conv2d(out_channels, out_channels, kernel_size, 2, 1)
         # Note: We use ConvTranspose2d for Upsample in the UNet itself or here
@@ -3777,7 +3770,7 @@ E. J. Hu, Y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang, and W. Chen
 Y. Lipman, R. T. Q. Chen, H. Ben-Hamu, M. Nickel, and M. Le, ``Flow matching for generative modeling,'' in \textit{International Conference on Learning Representations (ICLR)}, 2023.
 
 \bibitem{score_matching}
-P. Vincent, ``A connection between score matching and denoising autoencoders,'' \textit{Neural Computation}, vol. 23, no. 7, pp. 1661–1674, 2011.
+P. Vincent, ``A connection between score matching and denoising autoencoders,'' \textit{Neural Computation}, vol. 23, no. 7, pp. 1661--1674, 2011.
 
 \end{thebibliography}
 \newpage
