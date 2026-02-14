@@ -361,14 +361,13 @@ clean-target MAE.
 \centering
 \caption{NCSN denoising diagnostics from archived grids.}
 \label{tab:ncsn-denoise-metrics}
-\begin{tabular}{@{}cccc@{}}
+\begin{tabular}{@{}ccc@{}}
 \toprule
-\textbf{$\sigma$} & \textbf{Mean Abs Update} & \textbf{Laplacian Var Ratio} &
-\textbf{Comment} \\
+\textbf{$\sigma$} & \textbf{Mean Abs Update} & \textbf{Laplacian Var Ratio} \\
 \midrule
-0.2 & 0.2368 & 3.1711 & Strong structural sharpening from noisy input. \\
-0.4 & 0.2493 & 1.7111 & Moderate sharpening while preserving digit topology. \\
-0.6 & 0.2587 & 0.9660 & Heavy correction with near-equal high-frequency energy. \\
+0.2 & 0.2368 & 3.1711 \\
+0.4 & 0.2493 & 1.7111 \\
+0.6 & 0.2587 & 0.9660 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -377,8 +376,10 @@ clean-target MAE.
 For EBM, the MAE gain increases with noise level, indicating that Langevin
 refinement remains beneficial even under heavy corruption, although absolute
 error still grows as expected. For NCSN, the model applies consistently large
-updates across all noise levels, reflecting aggressive correction behavior of
-the annealed sampler.
+updates across all noise levels. A Laplacian ratio above 1 indicates
+high-frequency sharpening relative to the noisy input (observed at
+$\sigma=0.2$ and $0.4$), while values near 1 indicate a near-balance between
+denoising and smoothing (observed at $\sigma=0.6$).
 
 \subsection{Validation and Acceptance Criteria}
 
