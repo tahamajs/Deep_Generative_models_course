@@ -298,11 +298,11 @@ Without cycle consistency, adversarial objectives alone allow mappings that prod
 Adversarial terms:
 \begin{align}
 \mathcal{L}_{GAN}(G,D_Y)
-&=\mathbb{E}_{y\sim p_Y}[\log D_Y(y)]
-+\mathbb{E}_{x\sim p_X}[\log(1-D_Y(G(x)))],\\
+&=\mathbb{E}_{y}[\log D_Y(y)] \nonumber\\
+&\quad+\mathbb{E}_{x}[\log(1-D_Y(G(x)))],\\
 \mathcal{L}_{GAN}(F,D_X)
-&=\mathbb{E}_{x\sim p_X}[\log D_X(x)]
-+\mathbb{E}_{y\sim p_Y}[\log(1-D_X(F(y)))].
+&=\mathbb{E}_{x}[\log D_X(x)] \nonumber\\
+&\quad+\mathbb{E}_{y}[\log(1-D_X(F(y)))].
 \end{align}
 Cycle term:
 \begin{equation}
