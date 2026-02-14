@@ -1,0 +1,46 @@
+{
+  "run_config": {
+    "epochs": 120,
+    "batch_size": 64,
+    "lr": 0.0005,
+    "beta": 1.0,
+    "seed": 42,
+    "device": "auto",
+    "num_workers": 0,
+    "image_size": 128,
+    "latent_dim": 32,
+    "dropout": 0.2,
+    "analysis_samples": 500
+  },
+  "dataset": {
+    "total": 1203,
+    "class_counts": {
+      "non_smile": 603,
+      "smile": 600
+    },
+    "train_samples": 963,
+    "val_samples": 240
+  },
+  "losses": {
+    "epoch_1_train": 7226.171476465148,
+    "epoch_1_val": 5639.5271484375,
+    "epoch_10_train": 1987.0037517290125,
+    "epoch_10_val": 1914.214501953125,
+    "epoch_30_train": 1285.5405235409364,
+    "epoch_30_val": 1470.5902587890625,
+    "final_train": 837.1808691609067,
+    "final_val": 1406.754239908854,
+    "final_train_recon": 742.289691041687,
+    "final_train_kl": 94.89117454615956,
+    "final_val_recon": 1314.5532145182292,
+    "final_val_kl": 92.20106353759766,
+    "final_gap_abs": -569.5733707479474,
+    "final_gap_pct": 68.03468542213845,
+    "best_val_loss": 1372.8778483072917,
+    "best_epoch": 60
+  },
+  "runtime": {
+    "elapsed_seconds": 4265.169024944305,
+    "elapsed_minutes": 71.08615041573843
+  }
+}

@@ -33,6 +33,7 @@
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\newcommand{\logvar}{\log \sigma^2}
 
 \begin{document}
 
@@ -50,7 +51,7 @@ Tehran, Iran}
 \maketitle
 
 \begin{abstract}
-This report presents a comprehensive implementation and analysis of Variational Autoencoders (VAEs) for learning compressed probabilistic representations of facial image data. We implement a convolutional VAE architecture that employs hierarchical feature extraction through convolutional layers and utilizes the reparameterization trick to enable gradient-based optimization of stochastic latent variables. Through training on a dataset of 1,203 facial images with binary classification (smile/non-smile), we demonstrate effective reconstruction capabilities with 1,536:1 compression ratio, generative image synthesis through sampling from the learned latent distribution, and interpretable latent space manipulation via interpolation experiments. Our experimental results show convergence to training and validation losses of 2807.38 and 2456.94 respectively, achieving high-quality reconstructions while maintaining a smooth, well-regularized latent manifold. Analysis of the latent space reveals class-separated clusters with continuous structure, enabling semantic attribute manipulation. The model successfully generates diverse facial images from random latent samples, validating the effectiveness of the probabilistic latent space formulation.
+This report presents a comprehensive implementation and analysis of Variational Autoencoders (VAEs) for learning compressed probabilistic representations of facial image data. We implement a convolutional VAE architecture that employs hierarchical feature extraction through convolutional layers and utilizes the reparameterization trick to enable gradient-based optimization of stochastic latent variables. Through training on a dataset of 1,203 facial images with binary classification (smile/non-smile), we demonstrate effective reconstruction capabilities with 1,536:1 compression ratio, generative image synthesis through sampling from the learned latent distribution, and interpretable latent space manipulation via interpolation experiments. In a 120-epoch run, training loss decreased from 7226.17 to 837.18, while the best validation loss reached 1372.88 at epoch 60 (final validation at epoch 120: 1406.75). Analysis of the latent space reveals class-separated clusters with continuous structure, enabling semantic attribute manipulation. The model successfully generates diverse facial images from random latent samples, validating the effectiveness of the probabilistic latent space formulation.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -264,7 +265,7 @@ The project utilizes a facial image dataset consisting of 1,203 images with bina
     \item \textbf{Non-smile}: 603 images without smiles
 \end{itemize}
 
-Images are preprocessed to 128×128 resolution with RGB channels and normalized to the range $[-1, 1]$ using mean=0.5 and standard deviation=0.5, matching the Tanh activation output range. The dataset is split into 80\% training (962 samples) and 20\% validation (241 samples).
+Images are preprocessed to 128×128 resolution with RGB channels and normalized to the range $[-1, 1]$ using mean=0.5 and standard deviation=0.5, matching the Tanh activation output range. The dataset is split into 80\% training (963 samples) and 20\% validation (240 samples).
 
 \subsection{Architecture Implementation}
 
@@ -283,7 +284,9 @@ The encoder progressively reduces spatial dimensions while increasing feature de
 \textbf{Layer Type} & \textbf{Configuration} & \textbf{Output Size} \\
 \midrule
 Conv2d & 3→32, kernel=4, stride=2, padding=1 & 64×64 \\
+BatchNorm2d & - & - \\
 LeakyReLU & negative\_slope=0.2 & - \\
+Dropout & p=0.2 & - \\
 Conv2d & 32→64, kernel=4, stride=2, padding=1 & 32×32 \\
 BatchNorm2d & - & - \\
 LeakyReLU & negative\_slope=0.2 & - \\
@@ -291,14 +294,12 @@ Dropout & p=0.2 & - \\
 Conv2d & 64→128, kernel=4, stride=2, padding=1 & 16×16 \\
 BatchNorm2d & - & - \\
 LeakyReLU & negative\_slope=0.2 & - \\
-Dropout & p=0.3 & - \\
+Dropout & p=0.2 & - \\
 Conv2d & 128→256, kernel=4, stride=2, padding=1 & 8×8 \\
 LeakyReLU & negative\_slope=0.2 & - \\
 Flatten & - & 16384 \\
-Linear & 16384→4096 & 4096 \\
-LeakyReLU & negative\_slope=0.2 & - \\
-Linear ($\mu$) & 4096→32 & 32 \\
-Linear ($\log \sigma^2$) & 4096→32 & 32 \\
+Linear ($\mu$) & 16384→32 & 32 \\
+Linear ($\log \sigma^2$) & 16384→32 & 32 \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -315,14 +316,13 @@ The decoder reconstructs images from latent vectors using transposed convolution
 \toprule
 \textbf{Layer Type} & \textbf{Configuration} & \textbf{Output Size} \\
 \midrule
-Linear & 32→4096 & 4096 \\
+Linear & 32→16384 & 16384 \\
 LeakyReLU & negative\_slope=0.2 & - \\
-Linear & 4096→16384 & 16384 \\
 Unflatten & - & 256×8×8 \\
 ConvTranspose2d & 256→128, kernel=4, stride=2, padding=1 & 16×16 \\
 BatchNorm2d & - & - \\
 LeakyReLU & negative\_slope=0.2 & - \\
-Dropout & p=0.3 & - \\
+Dropout & p=0.2 & - \\
 ConvTranspose2d & 128→64, kernel=4, stride=2, padding=1 & 32×32 \\
 BatchNorm2d & - & - \\
 LeakyReLU & negative\_slope=0.2 & - \\
@@ -347,12 +347,12 @@ Training hyperparameters are selected to balance convergence speed and stability
 \toprule
 \textbf{Parameter} & \textbf{Value} \\
 \midrule
-Epochs & 1000 \\
+Epochs & 120 \\
 Learning Rate & 0.0005 \\
 Optimizer & Adam \\
-Batch Size & 32 \\
+Batch Size & 64 \\
 Latent Dimension & 32 \\
-Hidden Dimension & 4096 \\
+Hidden Dimension & 16384 \\
 Train/Validation Split & 80\%/20\% \\
 \bottomrule
 \end{tabular}
@@ -380,7 +380,7 @@ The normalization formula is: $x_{\text{norm}} = \frac{x - 0.5}{0.5} = 2(x - 0.5
 \begin{itemize}
     \item \textbf{Tanh Activation}: The decoder's final layer uses Tanh activation, which outputs values in $[-1, 1]$. Normalizing inputs to the same range ensures consistency.
     \item \textbf{Gradient Flow}: Normalized inputs help with gradient flow during backpropagation, reducing the risk of vanishing/exploding gradients.
-    \item \textbf{Training Stability}: Centered inputs (mean \approx  0) help batch normalization and other normalization layers work more effectively.
+    \item \textbf{Training Stability}: Centered inputs (mean $\approx 0$) help batch normalization and other normalization layers work more effectively.
     \item \textbf{Convergence Speed}: Normalized data typically allows for faster and more stable convergence.
 \end{itemize}
 
@@ -394,8 +394,8 @@ The normalization formula is: $x_{\text{norm}} = \frac{x - 0.5}{0.5} = 2(x - 0.5
 \paragraph{Data Splitting:}
 The 80\%/20\% train/validation split provides:
 \begin{itemize}
-    \item Sufficient training data (962 samples) for learning the data distribution
-    \item Adequate validation data (241 samples) for monitoring generalization
+    \item Sufficient training data (963 samples) for learning the data distribution
+    \item Adequate validation data (240 samples) for monitoring generalization
     \item Prevents overfitting by regularly evaluating on unseen data
 \end{itemize}
 
@@ -403,8 +403,8 @@ The 80\%/20\% train/validation split provides:
 \begin{itemize}
     \item Total dataset size: 1,203 images
     \item Class distribution: 600 smile, 603 non-smile
-    \item Training samples: 962 (80\%)
-    \item Validation samples: 241 (20\%)
+    \item Training samples: 963 (80\%)
+    \item Validation samples: 240 (20\%)
 \end{itemize}
 
 \begin{figure}[t]
@@ -532,15 +532,11 @@ Implement the VAE loss function combining reconstruction and KL divergence terms
 
 \subsubsection{Implementation}
 \begin{lstlisting}[language=Python]
-def vae_loss_function(reconstructed_x, original_x, latent_mean, latent_logvar):
-    reconstruction_loss = nn.functional.mse_loss(
-        reconstructed_x, original_x, reduction='sum'
-    )
-    kl_divergence_loss = -0.5 * torch.sum(
-        1 + latent_logvar - latent_mean.pow(2) - latent_logvar.exp()
-    )
-    total_loss = reconstruction_loss + kl_divergence_loss
-    return total_loss, reconstruction_loss, kl_divergence_loss
+def elbo_loss(recon, x, mu, logvar, beta=1.0):
+    recon_loss = F.mse_loss(recon, x, reduction='sum') / x.size(0)
+    kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / x.size(0)
+    loss = recon_loss + beta * kl
+    return loss, recon_loss, kl
 \end{lstlisting}
 
 \subsubsection{Analysis}
@@ -575,7 +571,7 @@ The reconstruction loss measures the difference between original and reconstruct
     \item \textbf{Loss Interpretation}:
     \begin{itemize}
         \item Lower loss $\rightarrow$ Better reconstruction quality
-        \item Loss decreases from $\sim$6489 (initial) to $\sim$2807 (converged)
+        \item Training loss decreases from $\sim$7226 (epoch 1) to $\sim$837 (epoch 120), with best validation $\sim$1373 at epoch 60
         \item This represents per-sample averaged loss across all pixels
     \end{itemize}
 \end{itemize}
@@ -652,38 +648,44 @@ For each epoch:
 
 \paragraph{Training Convergence Analysis:}
 
-The training showed progressive improvement with good generalization:
+The training showed strong early improvement, followed by late-epoch overfitting:
 
 \begin{itemize}
-    \item \textbf{Initial Stage (Epoch 0)}:
+    \item \textbf{Initial Stage (Epoch 1)}:
     \begin{itemize}
-        \item Training Loss: 6489.75, Validation Loss: 5491.95
-        \item High loss expected: Randomly initialized model has poor reconstructions
-        \item Validation loss lower initially due to randomness in early batches
+        \item Training Loss: 7226.17, Validation Loss: 5639.53
+        \item High initial loss is expected for random initialization
+        \item The model quickly exits this regime in early epochs
     \end{itemize}
     
     \item \textbf{Rapid Learning Phase (Epochs 1-10)}:
     \begin{itemize}
-        \item Training: 6489.75 → 3236.25 (50.2\% reduction)
-        \item Validation: 5491.95 → 2895.76 (47.3\% reduction)
-        \item Model quickly learns basic structure and feature extraction
-        \item Both reconstruction and KL losses decrease rapidly
+        \item Training: 7226.17 → 1987.00 (72.5\% reduction)
+        \item Validation: 5639.53 → 1914.21 (66.1\% reduction)
+        \item Model quickly learns core facial structure and low-frequency details
+        \item Both reconstruction and KL terms improve substantially
     \end{itemize}
     
     \item \textbf{Refinement Phase (Epochs 10-30)}:
     \begin{itemize}
-        \item Training: 3236.25 → 2814.31 (12.9\% additional reduction)
-        \item Validation: 2895.76 → 2468.48 (14.8\% additional reduction)
-        \item Gradual improvement as model fine-tunes learned representations
-        \item Loss curves begin to plateau
+        \item Training: 1987.00 → 1285.54 (35.3\% additional reduction)
+        \item Validation: 1914.21 → 1470.59 (23.2\% additional reduction)
+        \item Improvements continue but with a slower slope
+        \item Curves begin to flatten relative to the initial phase
     \end{itemize}
     
-    \item \textbf{Convergence Phase (Epoch 33+)}:
+    \item \textbf{Best Validation Phase (around Epoch 60)}:
     \begin{itemize}
-        \item Training: Stabilized around 2807.38
-        \item Validation: Stabilized around 2456.94
-        \item Minimal further improvement indicates model convergence
-        \item Small gap (12.5\%) between train/val suggests good generalization
+        \item Training at epoch 60: 1049.79
+        \item Best validation: 1372.88 (epoch 60)
+        \item This checkpoint provides the strongest held-out performance in this run
+    \end{itemize}
+    
+    \item \textbf{Late Training Phase (Epochs 61-120)}:
+    \begin{itemize}
+        \item Final training loss: 837.18
+        \item Final validation loss: 1406.75
+        \item Continued optimization reduces training loss but does not improve validation beyond epoch 60
     \end{itemize}
 \end{itemize}
 
@@ -710,9 +712,9 @@ From the training loss curves (Figure 4):
     
     \item \textbf{Balance}:
     \begin{itemize}
-        \item Both losses decrease together, indicating healthy training
-        \item No indication of posterior collapse (KL wouldn't be decreasing)
-        \item No indication of overfitting (gap between train/val remains small)
+        \item Both losses decrease together in the early and mid training regime
+        \item No indication of posterior collapse (KL remains non-trivial throughout training)
+        \item Late epochs show train/val divergence, indicating overfitting after the best-validation point
     \end{itemize}
 \end{itemize}
 
@@ -721,30 +723,30 @@ From the training loss curves (Figure 4):
 \begin{itemize}
     \item \textbf{Train-Validation Gap}:
     \begin{itemize}
-        \item Final gap: 350.44 (12.5\% relative difference)
-        \item Small gap indicates good generalization
-        \item Model learns meaningful representations rather than memorizing
+        \item Final gap: 569.57 (validation higher than training; 68.0\% relative to training)
+        \item This indicates noticeable overfitting in late epochs
+        \item The best generalization checkpoint occurs before the end of training
     \end{itemize}
     
     \item \textbf{Validation Performance}:
     \begin{itemize}
-        \item Validation loss consistently tracks training loss
-        \item No divergence suggesting overfitting
-        \item Slight improvement (lower loss) on validation suggests well-balanced model
+        \item Validation improves strongly in early/mid training and reaches its minimum at epoch 60
+        \item After epoch 60, validation fluctuates upward while training continues to decrease
+        \item This train/val divergence motivates checkpoint-based model selection
     \end{itemize}
     
-    \item \textbf{Early Stopping}:
+    \item \textbf{Early Stopping Perspective}:
     \begin{itemize}
-        \item Loss plateaued around epoch 20-30
-        \item Continued training for 1000 epochs ensures full convergence
-        \item No overfitting observed despite extended training
+        \item A practical stopping region is near epoch 60 for this configuration
+        \item Extending to epoch 120 is still useful for full curve analysis in the report
+        \item The best-validation checkpoint (`best.pt`) is retained for deployment/evaluation
     \end{itemize}
 \end{itemize}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{../images/output_cell_21_img_0.png}
-\caption{Training loss curves showing reconstruction loss and KL divergence over 1000 epochs. The balance between reconstruction fidelity and latent space regularization is maintained throughout training.}
+\caption{Training loss curves showing reconstruction loss and KL divergence over 120 epochs. The run converges rapidly in early epochs and reaches best validation around epoch 60.}
 \label{fig:training_loss}
 \end{figure}
 
@@ -831,7 +833,7 @@ The model achieves impressive compression:
 
 \subsubsection{Quantitative Metrics}
 \begin{itemize}
-    \item Mean reconstruction error decreases from $\sim$6489 (epoch 0) to $\sim$2807 (converged)
+    \item Mean training reconstruction-related loss decreases from $\sim$7226 (epoch 1) to $\sim$837 (epoch 120), while best validation is $\sim$1373 at epoch 60
     \item Visual inspection confirms high perceptual similarity between originals and reconstructions
     \item Structural details maintained while high-frequency noise is suppressed
 \end{itemize}
@@ -1228,7 +1230,7 @@ The distribution of standard deviations across latent dimensions reveals how the
     \begin{itemize}
         \item Good reconstruction quality with 32 dimensions
         \item Successful generation from prior distribution
-        \item No indication of underfitting or overfitting
+        \item Capacity is sufficient for representation learning, while generalization still depends on training duration and checkpoint selection
     \end{itemize}
 \end{itemize}
 
@@ -1245,23 +1247,109 @@ Understanding dimension utilization can help with:
 
 \subsection{Reconstruction Quality Analysis}
 
-The VAE successfully reconstructs input images with high fidelity, achieving a compression ratio of 1,536:1 (49,152 pixels to 32 dimensions) while preserving essential visual information. Main facial features are accurately maintained, though fine details exhibit slight smoothing attributable to: (1) latent space regularization via KL divergence encouraging smooth distributions, (2) information bottleneck from extreme dimensionality reduction, and (3) inherent trade-off between reconstruction accuracy and generative capabilities.
+The VAE reconstructs input images with strong structural fidelity while compressing from 49,152 dimensions (128×128×3) to 32 latent variables (1,536:1). Across the three reconstruction grids (Figures~\ref{fig:recon1}--\ref{fig:recon3}), coarse identity cues and expression-related geometry are preserved. The dominant residual errors are in high-frequency textures (skin details, hair boundaries, subtle illumination transitions), which is expected for MSE-optimized VAEs under strong compression.
+
+From a training dynamics perspective, reconstruction quality improves sharply in the first 10 epochs and continues to improve more gradually afterward. The final training objective is substantially lower than the initial objective, confirming successful optimization of both reconstruction and KL terms. The model therefore learns a useful low-dimensional manifold, but with the known smoothness-vs-sharpness trade-off of standard VAEs.
 
 \subsection{Generative Performance Evaluation}
 
-Experimental results demonstrate effective generative capabilities, with the model producing diverse and realistic facial images when sampling from $\mathcal{N}(0, I)$. The generation quality validates successful learning of the underlying data manifold structure. Analysis reveals no evidence of mode collapse, with generated samples exhibiting variation across facial features, expressions, appearances, and orientations.
+Experimental results demonstrate effective generative capability: random samples from $z \sim \mathcal{N}(0, I)$ yield coherent facial images with visible diversity in pose, expression intensity, and appearance attributes (Figure~\ref{fig:generation}). While some samples remain slightly blurry, global facial topology is stable and realistic.
+
+Importantly, generated examples do not collapse to a small set of repeated templates. Diversity in generated grids, together with usable interpolation behavior, indicates that the decoder learned a broad region of the latent manifold rather than a narrow memorized subset.
 
 \subsection{Latent Space Structure}
 
-The learned latent space exhibits several desirable properties: (1) good class separation with distinct smile/non-smile clusters in t-SNE visualization, (2) continuous structure enabling smooth interpolations, (3) semantic organization where interpolation experiments reveal meaningful attribute directions, and (4) proper regularization ensuring compatibility with the standard normal prior for generation.
+The latent space exhibits semantically meaningful structure along three complementary views:
+\begin{itemize}
+    \item \textbf{Interpolation semantics}: The direction $\delta = \mu_{\text{smile}} - \mu_{\text{non-smile}}$ yields smooth and controllable expression transitions (Figure~\ref{fig:interpolation}), indicating usable attribute directionality.
+    \item \textbf{Class organization}: The t-SNE projection (Figure~\ref{fig:tsne}) shows partial smile/non-smile separation with continuity between groups, consistent with shared facial structure and expression overlap.
+    \item \textbf{Dimension utilization}: The latent-std profile (Figure~\ref{fig:dim_analysis}) indicates non-trivial activity across dimensions rather than complete collapse to a tiny subset.
+\end{itemize}
+
+Together, these observations support the claim that the model learned a structured and navigable representation, even though fully disentangled factors are not guaranteed in this baseline setup.
+
+\subsection{Quantitative Run Summary (120 Epochs)}
+
+Table~\ref{tab:runsummary} consolidates key checkpoints from the canonical script run used to regenerate all report figures.
+
+\begin{table}[t]
+\centering
+\caption{Key Metrics from Canonical 120-Epoch Run}
+\label{tab:runsummary}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Checkpoint} & \textbf{Train Loss} & \textbf{Val Loss} \\
+\midrule
+Epoch 1 & 7226.17 & 5639.53 \\
+Epoch 10 & 1987.00 & 1914.21 \\
+Epoch 30 & 1285.54 & 1470.59 \\
+Epoch 60 (best val) & 1049.79 & 1372.88 \\
+Epoch 120 (final) & 837.18 & 1406.75 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model Selection and Generalization Strategy}
+
+The run exhibits a common deep-learning pattern: continuous reduction in training loss with validation improvements peaking earlier (epoch 60). This implies:
+\begin{itemize}
+    \item For \textbf{best held-out quality}, use the best-validation checkpoint (`best.pt`, epoch 60).
+    \item For \textbf{full trajectory analysis}, retain the complete 120-epoch curve and final checkpoint (`last.pt`, epoch 120).
+\end{itemize}
+
+This separation between optimization progress and generalization peak is important for rigorous reporting and practical deployment.
+
+\subsection{Reproducibility and Artifact Traceability}
+
+The full pipeline is script-first and reproducible from the project root:
+\begin{lstlisting}[language=bash]
+source /Users/tahamajs/Documents/uni/venv/bin/activate
+python code/vae_training.py \
+  --data-root train \
+  --out-dir output \
+  --images-dir images \
+  --checkpoint-dir output/checkpoints \
+  --epochs 120 \
+  --batch-size 64 \
+  --lr 5e-4 \
+  --beta 1.0 \
+  --device auto \
+  --num-workers 0 \
+  --analysis-samples 500 \
+  --save-report-plots
+\end{lstlisting}
+
+Primary reproducibility artifacts generated by this run:
+\begin{itemize}
+    \item \texttt{output/train\_log.csv}: per-epoch train/validation ELBO, reconstruction, and KL.
+    \item \texttt{output/run\_summary.json}: normalized metrics summary used for report synchronization.
+    \item \texttt{output/checkpoints/best.pt} and \texttt{output/checkpoints/last.pt}: model selection and final-state checkpoints.
+    \item \texttt{images/output\_cell\_*.png}: report-bound figures referenced directly in this document.
+\end{itemize}
 
 \subsection{Limitations and Future Work}
 
-Current limitations include: fixed 128×128 resolution constraining fine detail preservation, 32 latent dimensions potentially insufficient for highly complex variations, challenging perfect attribute disentanglement without explicit constraints, and significant computational requirements for training. Future directions include exploring $\beta$-VAE for improved disentanglement \cite{higgs2017beta}, hierarchical architectures for higher-resolution generation, conditional VAEs for attribute-controlled generation, and VAE-GAN hybrids for enhanced image quality.
+Current limitations include:
+\begin{itemize}
+    \item \textbf{Resolution ceiling}: 128×128 inputs limit fine-grained detail fidelity.
+    \item \textbf{Late-epoch overfitting}: validation performance degrades after the best checkpoint region.
+    \item \textbf{Limited disentanglement control}: baseline ELBO does not explicitly enforce factor disentanglement.
+    \item \textbf{Compute constraints}: CPU-only training significantly increases iteration time and limits hyperparameter exploration.
+\end{itemize}
+
+High-value future extensions include:
+\begin{itemize}
+    \item $\beta$-VAE or KL annealing for improved latent factor structure \cite{higgs2017beta}.
+    \item Higher-capacity decoders or perceptual losses to reduce blur.
+    \item Conditional VAE variants for explicit attribute control.
+    \item Stronger model-selection protocol (early stopping on validation trend, multi-seed confidence intervals).
+\end{itemize}
 
 \section{Conclusion}
 
-This work successfully implements and evaluates a Variational Autoencoder for facial image generation and reconstruction. The model demonstrates effective compression (128×128×3 to 32 dimensions), high-quality reconstruction preserving essential features, generative capability producing diverse realistic samples, and interpretable latent space enabling semantic manipulation. Results validate VAEs' effectiveness for unsupervised representation learning and provide foundation for advanced generative modeling techniques. The probabilistic framework, enabled by the reparameterization trick and ELBO optimization, successfully bridges traditional autoencoders with generative modeling, demonstrating the power of variational inference in deep learning.
+This work delivers a complete, reproducible VAE pipeline for facial reconstruction and generation, together with synchronized report artifacts and metrics. The model achieves strong compression (1,536:1), stable generation from the prior, and interpretable latent manipulations. The 120-epoch experimental trace shows substantial optimization progress, with best held-out performance at epoch 60 and expected late-epoch overfitting behavior thereafter.
+
+From an engineering perspective, the project now includes end-to-end reproducibility (script-first execution, checkpointing, figure regeneration, and report synchronization). From a modeling perspective, results validate the utility of variational latent representations for unsupervised facial representation learning, while also highlighting practical opportunities for improved generalization and sharper reconstruction quality in future iterations.
 
 \section{Appendix: Figure Provenance}
 \begin{itemize}

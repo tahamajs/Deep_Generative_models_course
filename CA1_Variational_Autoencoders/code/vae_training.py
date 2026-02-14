@@ -651,6 +651,8 @@ def write_run_summary(
     history: List[Dict[str, float]],
     cfg: TrainConfig,
     class_counts: Dict[str, int],
+    train_size: int,
+    val_size: int,
     best_epoch: int,
     best_val_loss: float,
     elapsed_sec: float,
@@ -680,8 +682,8 @@ def write_run_summary(
         "dataset": {
             "total": int(sum(class_counts.values())),
             "class_counts": class_counts,
-            "train_samples": int((1.0 - cfg.val_split) * sum(class_counts.values())),
-            "val_samples": int(cfg.val_split * sum(class_counts.values())),
+            "train_samples": int(train_size),
+            "val_samples": int(val_size),
         },
         "losses": {
             "epoch_1_train": float(first["train_loss"]),
@@ -839,6 +841,8 @@ def train(cfg: TrainConfig) -> Dict[str, object]:
         history=history,
         cfg=cfg,
         class_counts=class_counts,
+        train_size=len(data.train_set),
+        val_size=len(data.val_set),
         best_epoch=best_epoch,
         best_val_loss=best_val_loss,
         elapsed_sec=elapsed,

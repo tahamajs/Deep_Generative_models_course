@@ -1,0 +1,6 @@
+epochs=120
+batch_size=64
+final_train_loss=837.1809
+final_val_loss=1406.7542
+best_val_loss=1372.8778
+best_epoch=60
