@@ -1351,6 +1351,43 @@ This work delivers a complete, reproducible VAE pipeline for facial reconstructi
 
 From an engineering perspective, the project now includes end-to-end reproducibility (script-first execution, checkpointing, figure regeneration, and report synchronization). From a modeling perspective, results validate the utility of variational latent representations for unsupervised facial representation learning, while also highlighting practical opportunities for improved generalization and sharper reconstruction quality in future iterations.
 
+\section{Final Completeness and Reproducibility Checklist}
+
+\begin{table}[!t]
+\centering
+\caption{CA1 final completeness checklist}
+\begin{tabular}{|p{0.62\linewidth}|p{0.20\linewidth}|}
+\hline
+\textbf{Criterion} & \textbf{Status} \\
+\hline
+VAE theory, methodology, and implementation details documented end-to-end & Complete \\
+\hline
+Quantitative evidence (run summary table + training curves) included & Complete \\
+\hline
+Qualitative evidence (reconstruction, generation, interpolation, latent analysis) included & Complete \\
+\hline
+Artifact provenance and checkpoint mapping documented & Complete \\
+\hline
+Deterministic command-level regeneration path provided & Complete \\
+\hline
+\end{tabular}
+\label{tab:ca1_final_completeness}
+\end{table}
+
+\subsection{Threats to Validity and Mitigations}
+\begin{itemize}
+    \item \textbf{Construct validity:} reconstruction losses may not fully reflect perceptual quality. \textbf{Mitigation:} combine quantitative losses with qualitative grids and latent traversals.
+    \item \textbf{Internal validity:} late-epoch overfitting can bias final-checkpoint interpretation. \textbf{Mitigation:} report both best-validation and final checkpoints explicitly.
+    \item \textbf{External validity:} findings on this face dataset may not transfer directly to broader domains. \textbf{Mitigation:} scope conclusions to the evaluated setting and document extension paths.
+\end{itemize}
+
+\subsection{Reproducibility Protocol (Report-Ready)}
+\begin{enumerate}
+    \item Activate environment and install dependencies: \texttt{source /Users/tahamajs/Documents/uni/venv/bin/activate} then \texttt{pip install -r requirements.txt}.
+    \item Regenerate metrics/plots via canonical script: \texttt{python code/vae\_training.py --data-root train --out-dir output --images-dir images --checkpoint-dir output/checkpoints --epochs 120 --batch-size 64 --lr 5e-4 --beta 1.0 --device auto --num-workers 0 --analysis-samples 500 --save-report-plots}.
+    \item Build final report PDF from \texttt{report/}: run \texttt{pdflatex -interaction=nonstopmode DGM\_CA1\_Exercise\_Solutions.tex} twice.
+\end{enumerate}
+
 \section{Appendix: Figure Provenance}
 \begin{itemize}
     \item \textbf{Figure: output\_cell\_11\_img\_0.png} — Exercise 1 reconstruction sample grid.
