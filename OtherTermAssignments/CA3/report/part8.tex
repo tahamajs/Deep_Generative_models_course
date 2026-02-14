@@ -185,6 +185,165 @@ imbalanced or prejudiced datasets, they may perpetuate or amplify those
 biases in the generated outputs.  While MNIST contains simple digits,
 future work with more complex datasets must address these concerns.
 
+\subsection{Assignment Coverage Matrix}
+
+To make this report submission-ready and auditable, we explicitly map each
+assignment requirement to the section(s), code path(s), and artifact(s) that
+implement it.
+
+\begin{table}[H]
+\centering
+\caption{Coverage matrix for Question 1 (EBM).}
+\label{tab:coverage-q1}
+\begin{tabular}{@{}p{0.18\linewidth}p{0.27\linewidth}p{0.47\linewidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Where Answered} & \textbf{Implementation Evidence} \\
+\midrule
+Q1 Theory-1/2/3 & Parts 2 and 3 & Derivations and explanations in
+\texttt{report/part2.tex} and \texttt{report/part3.tex}. \\
+Data preparation & Part 3 & MNIST loader and transforms in
+\texttt{codes/data.py}; example visual outputs in archived results. \\
+EBM architecture & Part 3 & Model definition in \texttt{codes/ebm\_model.py}
+matches assignment table. \\
+EBM training loop & Parts 3 and 4 & Contrastive objective and logging in
+\texttt{codes/ebm\_train.py}; curves/samples in
+\texttt{images/report/ebm\_loss\_curves.png} and
+\texttt{images/report/ebm\_progress.png}. \\
+Generation from noise & Part 4 & Langevin sampler in
+\texttt{codes/ebm\_sampling.py}; outputs in
+\texttt{images/report/ebm\_progress.png}. \\
+Denoising at $\sigma=\{0.2,0.4,0.6\}$ & Part 4 &
+\texttt{codes/ebm\_infer.py} and \texttt{codes/ebm\_sampling.py}; consolidated
+panel in \texttt{images/report/ebm\_denoise.png}. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Coverage matrix for Question 2 (NCSN).}
+\label{tab:coverage-q2}
+\begin{tabular}{@{}p{0.18\linewidth}p{0.27\linewidth}p{0.47\linewidth}@{}}
+\toprule
+\textbf{Requirement} & \textbf{Where Answered} & \textbf{Implementation Evidence} \\
+\midrule
+Q2 Theory-1/2/3/4 & Parts 5 and 6 & Score function, DSM, multimodal issues,
+and NCSN rationale documented in \texttt{report/part5.tex}. \\
+Base NCSN architecture & Part 6 & U-Net style model with FiLM in
+\texttt{codes/ncsn\_model.py}. \\
+Weighted DSM training & Parts 6 and 7 &
+\texttt{codes/ncsn\_loss.py} and \texttt{codes/ncsn\_train.py}; qualitative
+training discussion in \texttt{report/part7.tex}. \\
+Annealed Langevin sampling & Parts 6 and 7 &
+\texttt{codes/ncsn\_sampling.py}; outputs in
+\texttt{images/report/ncsn\_uncond.png} and
+\texttt{images/report/ncsn\_evolution.png}. \\
+Conditional generation & Part 7 & Label embedding path in
+\texttt{codes/ncsn\_model.py}; 10x10 grid in
+\texttt{images/report/ncsn\_cond\_grid.png}. \\
+Denoising at $\sigma=\{0.2,0.4,0.6\}$ & Part 7 &
+\texttt{codes/ncsn\_infer.py}; summary panel in
+\texttt{images/report/ncsn\_denoise.png}. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Reproducibility Runbook}
+
+The following runbook reproduces the exact report assets and PDF used in this
+submission. It is intentionally explicit to reduce ambiguity across machines.
+
+\begin{lstlisting}[language=bash, caption={Minimal runbook for regenerating report assets and PDF.}]
+cd /Users/tahamajs/Documents/uni/DGM/OtherTermAssignments/CA3
+source /Users/tahamajs/Documents/uni/venv/bin/activate
+export MPLCONFIGDIR=/tmp/matplotlib
+mkdir -p /tmp/matplotlib
+
+# Build report-ready figures from archived experiment outputs
+python codes/generate_report_assets.py \
+  --source-root codes/code_results/my_results_last \
+  --out-root images
+
+# Compile final report
+cd report
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+\end{lstlisting}
+
+\paragraph{Environment notes.}
+The code is designed to run on both CPU and GPU. In restricted environments
+without internet access, fresh MNIST downloads may fail; in that case this
+report remains reproducible by using archived outputs under
+\texttt{codes/code\_results/my\_results\_last}. The data loader surfaces an
+explicit error message for this condition.
+
+\subsection{Artifact Inventory and Traceability}
+
+Table~\ref{tab:artifact-inventory} lists the primary report artifacts that tie
+results discussion to concrete files. Unless otherwise stated, image files are
+located under \texttt{images/report/}.
+
+\begin{table}[H]
+\centering
+\caption{Primary artifacts used in the final report.}
+\label{tab:artifact-inventory}
+\begin{tabular}{@{}p{0.32\linewidth}p{0.60\linewidth}@{}}
+\toprule
+\textbf{Artifact File} & \textbf{Purpose in Report} \\
+\midrule
+\texttt{ebm\_loss\_curves.png} & Figure~\ref{fig:ebm-loss-curves},
+EBM optimization behavior and energy separation. \\
+\texttt{ebm\_progress.png} & Figure~\ref{fig:ebm-progress},
+sample quality evolution across epochs. \\
+\texttt{ebm\_denoise.png} & Figure~\ref{fig:ebm-denoise},
+EBM denoising comparison for three noise levels. \\
+\texttt{ncsn\_loss.png} & Figure~\ref{fig:ncsn-loss},
+NCSN training-loss panel (or explicit fallback status). \\
+\texttt{ncsn\_uncond.png} & Figure~\ref{fig:ncsn-uncond},
+unconditional NCSN generation quality. \\
+\texttt{ncsn\_evolution.png} & Figure~\ref{fig:ncsn-evolution},
+coarse-to-fine denoising trajectory visualization. \\
+\texttt{ncsn\_cond\_grid.png} & Figure~\ref{fig:ncsn-cond-grid},
+class-conditional controllability check. \\
+\texttt{ncsn\_denoise.png} & Figure~\ref{fig:ncsn-denoise},
+NCSN denoising robustness at increasing noise. \\
+\texttt{report/main.pdf} & Final compiled submission document. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Validation and Acceptance Criteria}
+
+Before finalizing the report, we require all checks below to pass:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Code import and syntax checks pass:} core scripts compile and
+  import without runtime import errors.
+  \item \textbf{Checkpoint compatibility holds:} inference can load archived
+  EBM/NCSN checkpoints without shape mismatches.
+  \item \textbf{Figure integration is complete:} no placeholder figure blocks
+  remain in Parts 4 and 7.
+  \item \textbf{LaTeX build succeeds:} \texttt{report/main.tex} compiles
+  cleanly with \texttt{pdflatex} (two runs for references).
+  \item \textbf{Visual inspection passes:} rendered PDF pages show embedded
+  figures, correct captions, and no broken glyphs or artifact tokens.
+\end{itemize}
+
+\subsection{Final Submission Checklist}
+
+To reduce last-minute errors, the final delivery should include:
+\begin{itemize}[leftmargin=*]
+  \item Executable Python code under \texttt{codes/} with fixed training and
+  inference pipelines for EBM and NCSN.
+  \item Report source files under \texttt{report/} and final PDF
+  \texttt{report/main.pdf}.
+  \item Report-ready figures under \texttt{images/report/}.
+  \item A reproducibility script/command path
+  (\texttt{codes/generate\_report\_assets.py}) for deterministic figure
+  assembly from archived outputs.
+  \item Submission packaging using the course naming convention with both code
+  and report included.
+\end{itemize}
+
 \subsection{Conclusions}
 
 This report provided a comprehensive exploration of energy–based and
