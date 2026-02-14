@@ -5,6 +5,7 @@ Generate report-ready figures from archived CA3 experiment outputs.
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -21,6 +22,10 @@ def ensure_dir(path: Path) -> None:
 
 def open_gray(path: Path) -> np.ndarray:
     return np.array(Image.open(path).convert("L"))
+
+
+def open_gray_float(path: Path) -> np.ndarray:
+    return open_gray(path).astype(np.float32) / 255.0
 
 
 def first_existing(paths: Iterable[Path]) -> Path | None:
@@ -124,6 +129,94 @@ def save_ncsn_evolution_panel(trajectory_dir: Path, out_path: Path) -> bool:
     fig.savefig(out_path, dpi=180)
     plt.close(fig)
     return True
+
+
+def laplacian_variance(x: np.ndarray) -> float:
+    c = x[1:-1, 1:-1]
+    lap = 4.0 * c - x[:-2, 1:-1] - x[2:, 1:-1] - x[1:-1, :-2] - x[1:-1, 2:]
+    return float(np.var(lap))
+
+
+def save_denoise_metrics(source_root: Path, out_path: Path, json_path: Path) -> None:
+    infer_dir = source_root / "inference_results"
+    ncsn_infer = source_root / "ncsn_infer"
+    sigmas = [0.2, 0.4, 0.6]
+
+    metrics: dict[str, dict[str, dict[str, float]]] = {"ebm": {}, "ncsn": {}}
+
+    for s in sigmas:
+        ebm_real = infer_dir / f"ebm_real_{s:.2f}.png"
+        ebm_noisy = infer_dir / f"ebm_noisy_{s:.2f}.png"
+        ebm_denoised = infer_dir / f"ebm_denoised_{s:.2f}.png"
+        if ebm_real.exists() and ebm_noisy.exists() and ebm_denoised.exists():
+            x_real = open_gray_float(ebm_real)
+            x_noisy = open_gray_float(ebm_noisy)
+            x_den = open_gray_float(ebm_denoised)
+            mae_noisy = float(np.mean(np.abs(x_noisy - x_real)))
+            mae_denoised = float(np.mean(np.abs(x_den - x_real)))
+            metrics["ebm"][f"{s:.2f}"] = {
+                "mae_noisy_to_clean": mae_noisy,
+                "mae_denoised_to_clean": mae_denoised,
+                "mae_improvement": mae_noisy - mae_denoised,
+                "mean_abs_update": float(np.mean(np.abs(x_den - x_noisy))),
+                "lap_var_noisy": laplacian_variance(x_noisy),
+                "lap_var_denoised": laplacian_variance(x_den),
+            }
+
+        ncsn_noisy = ncsn_infer / f"noisy_{s:.2f}.png"
+        ncsn_denoised = ncsn_infer / f"denoised_{s:.2f}.png"
+        if ncsn_noisy.exists() and ncsn_denoised.exists():
+            x_noisy = open_gray_float(ncsn_noisy)
+            x_den = open_gray_float(ncsn_denoised)
+            lv_noisy = laplacian_variance(x_noisy)
+            lv_den = laplacian_variance(x_den)
+            metrics["ncsn"][f"{s:.2f}"] = {
+                "mean_abs_update": float(np.mean(np.abs(x_den - x_noisy))),
+                "lap_var_noisy": lv_noisy,
+                "lap_var_denoised": lv_den,
+                "lap_var_ratio": (lv_den / lv_noisy) if lv_noisy > 0 else 0.0,
+            }
+
+    ensure_dir(json_path.parent)
+    json_path.write_text(json.dumps(metrics, indent=2))
+
+    # Plot summary figure used by the report.
+    ensure_dir(out_path.parent)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    sigma_vals = np.array(sigmas)
+
+    ebm_mae_noisy = np.array(
+        [metrics["ebm"].get(f"{s:.2f}", {}).get("mae_noisy_to_clean", np.nan) for s in sigmas]
+    )
+    ebm_mae_den = np.array(
+        [metrics["ebm"].get(f"{s:.2f}", {}).get("mae_denoised_to_clean", np.nan) for s in sigmas]
+    )
+    axes[0].plot(sigma_vals, ebm_mae_noisy, marker="o", label="Noisy vs Clean")
+    axes[0].plot(sigma_vals, ebm_mae_den, marker="o", label="Denoised vs Clean")
+    axes[0].set_title("EBM Denoising Error")
+    axes[0].set_xlabel("Noise level sigma")
+    axes[0].set_ylabel("MAE")
+    axes[0].grid(True, alpha=0.3)
+    axes[0].legend()
+
+    ebm_delta = np.array(
+        [metrics["ebm"].get(f"{s:.2f}", {}).get("mean_abs_update", np.nan) for s in sigmas]
+    )
+    ncsn_delta = np.array(
+        [metrics["ncsn"].get(f"{s:.2f}", {}).get("mean_abs_update", np.nan) for s in sigmas]
+    )
+    width = 0.16
+    axes[1].bar(sigma_vals - width / 2, ebm_delta, width=width, label="EBM update magnitude")
+    axes[1].bar(sigma_vals + width / 2, ncsn_delta, width=width, label="NCSN update magnitude")
+    axes[1].set_title("Mean Absolute Update |denoised - noisy|")
+    axes[1].set_xlabel("Noise level sigma")
+    axes[1].set_ylabel("Mean absolute update")
+    axes[1].grid(True, axis="y", alpha=0.3)
+    axes[1].legend()
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=180)
+    plt.close(fig)
 
 
 def generate(source_root: Path, out_root: Path) -> None:
@@ -238,6 +331,12 @@ def generate(source_root: Path, out_root: Path) -> None:
                 den_for_level,
                 ["Clean Reference", "Noisy", "Denoised"],
             )
+
+    save_denoise_metrics(
+        source_root,
+        report_dir / "denoise_metrics.png",
+        report_dir / "denoise_metrics.json",
+    )
 
     print(f"Saved report assets in: {report_dir}")
 
