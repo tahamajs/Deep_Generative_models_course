@@ -26,6 +26,9 @@ python run.py train --epochs 30 --beta 1.0 --batch-size 128
 
 # End-to-end report figure generation (PGM + beta-VAE plots)
 python run.py report --output-dir ../report/DGM_Report_Template/figures --epochs 30 --subset 30000 --betas 1,2,5
+
+# Generate extra report assets and numbered LaTeX aliases (1.png..13.png)
+python generate_report_assets.py --figures-dir ../report/DGM_Report_Template/figures --report-dir ../report --subset 5000 --betas 1,2,5 --mig-max-samples 1000
 ```
 
 Notes
