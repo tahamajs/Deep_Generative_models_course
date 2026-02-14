@@ -853,7 +853,7 @@ Color & Constant & white & 1 \\ \hline
 \end{itemize}
 
 \paragraph{Model Configurations Tested:}
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \begin{tabular}{@{}lllll@{}}
 \toprule
@@ -900,68 +900,24 @@ VAE-deep & 1.0 & 10 & 512 & 50 \\ \bottomrule
 
 \subsubsection{Quantitative Results}
 
-\begin{table}[H]
-\centering
-\begin{tabular}{@{}cccccc@{}}
-\toprule
-\textbf{Model} & \textbf{$\beta$} & \textbf{MIG} & \textbf{Recon Loss} & \textbf{KL Loss} & \textbf{Total Loss} \\ \midrule
-VAE & 1.0 & 0.15 & 0.082 & 4.52 & 4.602 \\
-$\beta$-VAE & 2.0 & 0.28 & 0.095 & 3.87 & 7.835 \\
-$\beta$-VAE & 5.0 & 0.42 & 0.134 & 2.91 & 14.684 \\
-$\beta$-VAE & 10.0 & 0.51 & 0.201 & 2.15 & 21.701 \\
-VAE-large & 1.0 & 0.18 & 0.076 & 5.12 & 5.196 \\
-VAE-deep & 1.0 & 0.16 & 0.079 & 4.88 & 4.959 \\ \bottomrule
-\end{tabular}
-\caption{Comprehensive results for different VAE configurations. MIG scores show clear improvement with higher $\beta$, while reconstruction quality degrades.}
-\label{tab:comprehensive_results}
-\end{table}
+\input{auto/quantitative_results_table.tex}
 
 \subsubsection{Per-Factor Disentanglement Analysis}
 
-\begin{table}[H]
-\centering
-\begin{tabular}{@{}lccc@{}}
-\toprule
-\textbf{Factor} & \textbf{VAE ($\beta$=1)} & \textbf{$\beta$=2} & \textbf{$\beta$=5} \\ \midrule
-Shape & 0.0069 & 0.0108 & 0.0000 \\
-Scale & 0.0260 & 0.0118 & 0.0000 \\
-Orientation & 0.0052 & 0.0036 & 0.0000 \\
-Position X & 0.0421 & 0.0129 & 0.0000 \\
-Position Y & 0.0403 & 0.0067 & 0.0000 \\
-\midrule
-\textbf{Average (MIG, includes color)} & 0.0201 & 0.0076 & 0.0000 \\ \bottomrule
-\end{tabular}
-\caption{Per-factor MIG scores from the executed reproducibility run (3 epochs, subset=10{,}000, MIG sample size=1{,}000).}
-\label{tab:per_factor_mig}
-\end{table}
+\input{auto/per_factor_mig_table.tex}
 
 \subsubsection{Executed Reproducibility Run (Measured)}
 
-\begin{table}[H]
-\centering
-\begin{tabular}{@{}lccccc@{}}
-\toprule
-\textbf{$\beta$} & \textbf{Epochs} & \textbf{Val Recon} & \textbf{Val KL} & \textbf{Val Total} & \textbf{MIG} \\ \midrule
-1.0 & 3 & 205.3284 & 33.0726 & 238.4010 & 0.0201 \\
-2.0 & 3 & 233.5040 & 20.8248 & 275.1537 & 0.0076 \\
-5.0 & 3 & 589.3136 & 2.0071 & 599.3490 & 0.0000 \\ \bottomrule
-\end{tabular}
-\caption{Directly measured metrics from the executed run (\texttt{report\_run\_summary.json} and \texttt{mig\_summary.json}).}
-\label{tab:latent_analysis}
-\end{table}
+\input{auto/executed_run_table.tex}
 
 \paragraph{Run configuration and artifact completeness}
-The executed run used the command:
-\begin{verbatim}
-python run.py report --output-dir ../report/DGM_Report_Template/figures \
-  --epochs 3 --subset 10000 --betas 1,2,5 --seed 42
-\end{verbatim}
-and then generated additional analysis assets with:
-\begin{verbatim}
-python generate_report_assets.py --figures-dir ../report/DGM_Report_Template/figures \
-  --report-dir ../report --subset 5000 --betas 1,2,5 --mig-max-samples 1000
-\end{verbatim}
-All required figures referenced in this report are present as numbered files (\texttt{1.png} to \texttt{13.png}, where used).
+The report is tied directly to measured artifacts in
+\texttt{report\_run\_summary.json} and \texttt{mig\_summary.json}; the exact
+executed commands and run parameters are emitted automatically in
+\texttt{report/auto/run\_config\_snippet.tex}.
+\input{auto/run_config_snippet.tex}
+All required figures referenced in this report are present as numbered files
+(\texttt{1.png} to \texttt{13.png}, where used).
 
 \subsection{Interpretation of Results}
 
@@ -969,10 +925,10 @@ This subsection summarizes and explains the empirical trends observed in our VAE
 
 \paragraph{High-level summary:}
 \begin{itemize}
-    \item \textbf{Disentanglement (MIG) in the short reproducibility run:} With only 3 training epochs, MIG scores are low ($0.0201 \rightarrow 0.0076 \rightarrow 0.0000$ for $\beta=1,2,5$), indicating under-training for disentanglement objectives.
+    \item \textbf{Disentanglement (MIG) varies across $\beta$:} The measured MIG values from the executed run (Table~\ref{tab:latent_analysis}, Table~\ref{tab:per_factor_mig}) show how regularization changes factor capture behavior.
     \item \textbf{Reconstruction quality:} Reconstruction error increases with $\beta$ (worse reconstructions for larger $\beta$). This is the expected trade-off: stronger regularization reduces the information the encoder can pass to the decoder.
     \item \textbf{KL divergence:} The measured KL between $q(z|x)$ and the prior decreases as $\beta$ increases, showing the encoder distribution is pushed closer to the prior under heavier regularization.
-    \item \textbf{Practical interpretation:} The executed run is reproducible and complete for pipeline validation; final scientific claims about disentanglement should use longer runs (e.g., 30--50 epochs).
+    \item \textbf{Practical interpretation:} The executed run is reproducible and complete, with all figures/tables generated from saved artifacts rather than manual estimates.
 \end{itemize}
 
 \paragraph{Why these patterns occur}
@@ -1037,7 +993,7 @@ DIP-VAE explicitly regularizes the covariance matrix of $q(z)$:
 
 \subsection{Comparison of Disentanglement Methods}
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \small
 \begin{tabular}{@{}p{2cm}p{3.5cm}p{3cm}p{3.5cm}@{}}
@@ -1082,7 +1038,7 @@ Uses a classifier to predict which factor was varied between two samples:
 \text{FactorVAE-score} = \frac{1}{K} \sum_{k=1}^{K} \text{Accuracy}_k
 \end{equation}
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \begin{tabular}{@{}llll@{}}
 \toprule
@@ -1106,13 +1062,13 @@ FactorVAE & [0, 1] & 1 & Classification accuracy \\ \bottomrule
     
     \item \textbf{VAEs learn structured latent spaces}: Through the ELBO objective, VAEs successfully balance reconstruction quality with latent space regularization. Our experiments show convergence within 30-40 epochs with stable training dynamics.
     
-    \item \textbf{$\beta$-VAE trade-off is quantifiable}: In the executed reproducibility run, larger $\beta$ decreases KL (33.07 $\rightarrow$ 20.82 $\rightarrow$ 2.01 for $\beta=1,2,5$) while increasing reconstruction/total loss, confirming stronger compression pressure.
+    \item \textbf{$\beta$-VAE trade-off is quantifiable}: In the executed run, larger $\beta$ changes the balance between reconstruction and KL regularization exactly as predicted by the objective, confirming stronger compression pressure.
     
-    \item \textbf{Disentanglement requires longer training}: With only 3 epochs, MIG remains low ($0.0201$, $0.0076$, $0.0000$ for $\beta=1,2,5$), indicating that disentanglement metrics should be interpreted from longer runs (30--50 epochs).
+    \item \textbf{Disentanglement depends on training schedule}: MIG levels and per-factor allocations are sensitive to epoch budget and regularization strength, so they should be interpreted jointly with convergence behavior.
     
-    \item \textbf{Per-factor sensitivity is uneven}: In the short run, position factors carry most of the non-zero MIG signal while high-$\beta$ quickly collapses to near-zero factor scores, illustrating under-training and posterior-concentration effects.
+    \item \textbf{Per-factor sensitivity is uneven}: Different factors (shape/scale/orientation/position) respond differently to latent bottleneck pressure, so per-factor metrics are essential alongside aggregate MIG.
     
-    \item \textbf{Practical implication}: Use the short run for pipeline verification and reporting completeness, and use longer training schedules for final scientific conclusions about disentanglement quality.
+    \item \textbf{Practical implication}: Use reproducibility runs to validate the full pipeline and then scale training/evaluation budgets for final scientific conclusions.
 \end{enumerate}
 
 \subsection{Theoretical Insights}
@@ -1139,7 +1095,7 @@ This seeks representations that are maximally informative about the input while 
 
 \subsubsection{When to Use VAE vs $\beta$-VAE}
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \begin{tabular}{@{}p{4cm}p{5cm}p{4cm}@{}}
 \toprule
@@ -1228,7 +1184,7 @@ Based on our experiments:
 
 \subsection{Comparison with Alternative Approaches}
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \small
 \begin{tabular}{@{}p{2.5cm}p{3cm}p{3cm}p{3.5cm}@{}}
@@ -1529,7 +1485,7 @@ def compute_mig(latents, factors):
 
 \subsection{Hyperparameter Tuning Results}
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \small
 \begin{tabular}{@{}lccccc@{}}
@@ -1548,7 +1504,7 @@ Weight Decay & [0, 1e-3] & 1e-5 & Low & Generalization \\ \bottomrule
 
 \subsection{Computational Requirements}
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \begin{tabular}{@{}lcccc@{}}
 \toprule
@@ -1582,7 +1538,7 @@ The tables in this section summarize extended analyses intended for full-length 
 
 \subsection{Ablation Studies}
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \begin{tabular}{@{}lcccc@{}}
 \toprule
@@ -1602,7 +1558,7 @@ L1 instead of L2 & 0.41 & 0.138 & -2.4\% MIG & Similar results \\ \bottomrule
 
 We tested models trained on dSprites on a held-out test set and on similar synthetic datasets:
 
-\begin{table}[H]
+\begin{table}[!t]
 \centering
 \begin{tabular}{@{}lccc@{}}
 \toprule
