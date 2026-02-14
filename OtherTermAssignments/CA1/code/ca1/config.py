@@ -19,7 +19,7 @@ CONFIG = {
     "latent_dim": 256,
     "betas": [1.0, 2.0, 5.0],
     "data_subset": 30000,
-    "num_workers": 2,
+    "num_workers": 0,
     "pin_memory": bool(torch.cuda.is_available()),
     "run_complete_analysis": False,
     "smoke_test": True,

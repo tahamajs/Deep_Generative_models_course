@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+os.environ.setdefault("MPLBACKEND", "Agg")
 Path(os.environ["MPLCONFIGDIR"]).mkdir(parents=True, exist_ok=True)
 
 from ca1.config import CONFIG, set_seed, device, save_run_info
