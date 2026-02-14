@@ -89,20 +89,15 @@
     \par
     \vspace{0.5em}
     \noindent
-    \colorbox{primary!10}{
-        \parbox{\dimexpr\textwidth-2\fboxsep\relax}{
-            \vspace{0.5em}
-            \textbf{\color{primary}Solution:}
-            \vspace{0.3em}
-            \par
-            \small
-        }
-    }
-    \vspace{0.5em}
-    \par
+    {\color{primary}\rule{\linewidth}{0.4pt}}
+    \par\smallskip
+    \noindent\textbf{\color{primary}Solution:}
+    \par\smallskip
+    \small
 }{
-    \endcolorbox
-    \vspace{0.5em}
+    \par\smallskip
+    {\color{primary}\rule{\linewidth}{0.4pt}}
+    \par\vspace{0.5em}
 }
 
 % =========================================
@@ -149,36 +144,6 @@
     pdftitle={Deep Generative Models - Homework 4},
     pdfauthor={Student Name},
     pdfsubject={Diffusion Models, Stable Diffusion, Flow Matching}
-}
-
-% =========================================
-% TITLE PAGE
-% =========================================
-\title{\vspace{-2cm}
-    \Huge\color{primary}\textbf{Deep Generative Models}\\
-    \vspace{0.5cm}
-    \Large\textbf{Homework Assignment 4}\\
-    \vspace{0.5cm}
-    \normalsize\textit{Diffusion Models, Stable Diffusion \& Flow Matching}
-}
-
-\author{\textbf{Student Name} \\ Student ID: XXXXXXXX}
-\date{\today}
-
-\begin{document}
-
-% Title page
-\maketitle
-\thispagestyle{empty}
-\newpage
-
-% Table of contents
-\tableofcontents
-\newpage
-    frame=single,
-    backgroundcolor=\color{gray!10},
-    % This prevents underscores in code from causing math errors
-    literate={_}{\underline{\space}}1 
 }
 
 % TITLE & ABSTRACT
