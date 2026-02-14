@@ -10,6 +10,8 @@
 \graphicspath{{../images/}}
 \usepackage{cite}
 \usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{enumitem}
@@ -69,8 +71,46 @@ The assignment objective is not only to implement score-based generation but als
     \item \textbf{Reproducibility:} report artifacts must be regenerable deterministically from tracked project assets.
 \end{itemize}
 
+\subsection{Executive Summary of Outcomes}
+
+The final evidence collected in this report supports four direct conclusions:
+\begin{itemize}
+    \item \textbf{DSM is effective in this setting:} learned score fields consistently point toward high-density Gaussian modes.
+    \item \textbf{Best fixed baseline:} fixed $\sigma = 3$ is the strongest single-scale model among $\sigma \in \{1,3,7\}$.
+    \item \textbf{Best overall generation quality:} varying-$\sigma$ training with annealed Langevin sampling gives the most reliable coverage and diversity.
+    \item \textbf{Reproducibility is verifiable:} report figures are reconstructed from notebook-embedded outputs with manifest-based traceability and no retraining.
+\end{itemize}
+
 \section{Theoretical Background}
 \IEEEPARstart{T}{his} section provides comprehensive theoretical foundations for score-based generative models and diffusion models, explaining the mathematical principles, motivations, and connections between different approaches.
+
+\subsection{Notation Used in This Report}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{0.15\linewidth}p{0.25\linewidth}p{0.50\linewidth}}
+\toprule
+Symbol & Meaning & Role in this report \\
+\midrule
+$x$ & Data sample in $\mathbb{R}^2$ & Point whose density and score are modeled \\
+\midrule
+$\sigma$ & Noise scale & Controls smoothing level in DSM and sampler behavior \\
+\midrule
+$s_\theta(x,\sigma)$ & Learned score function & Neural approximation to $\nabla_x \log p_\sigma(x)$ \\
+\midrule
+$\epsilon$ & Gaussian perturbation & Corruption noise used in DSM loss construction \\
+\midrule
+$L(\theta,\sigma)$ & DSM loss & Optimization target during model training \\
+\midrule
+$x_t$ & Sample at iteration $t$ & State updated at each sampling step \\
+\bottomrule
+\end{tabular}
+\normalsize
+\caption{Core notation used consistently across theory and experiments}
+\label{tab:notation}
+\end{table}
 
 \subsection{Score-Based Generative Models}
 
@@ -326,9 +366,11 @@ This section details our implementation approach, including data preparation, mo
 
 To make the study reproducible and easier to follow, the implementation is organized into three explicit phases, each with a clear objective and artifact set:
 
-\begin{table}[H]
+\begin{table*}[t]
 \centering
-\begin{tabular}{p{0.12\textwidth}p{0.30\textwidth}p{0.28\textwidth}p{0.20\textwidth}}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.14\textwidth}p{0.25\textwidth}p{0.25\textwidth}p{0.26\textwidth}}
 \toprule
 Phase & Objective & Main Outputs & Primary Criteria \\
 \midrule
@@ -348,11 +390,38 @@ Long-horizon training curve and epoch-wise sampling evolution &
 Cross-scale robustness and annealed-sampling compatibility \\
 \bottomrule
 \end{tabular}
+\normalsize
 \caption{Structured experiment roadmap used throughout this report}
 \label{tab:roadmap}
-\end{table}
+\end{table*}
 
 Evaluation combines quantitative signals (training loss trends and convergence behavior) with qualitative diagnostics (mode coverage, diversity, trajectory geometry, and alignment with the ground-truth density).
+
+\subsection{Experiment Configuration Snapshot}
+
+\begin{table*}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{0.19\textwidth}p{0.31\textwidth}p{0.44\textwidth}}
+\toprule
+Category & Configuration & Why it matters \\
+\midrule
+Dataset & 2D Gaussian mixture, 5000 samples (80/20 split) & Controlled multimodal target for direct visual and convergence validation \\
+\midrule
+Network & ScoreNet MLP, 4 hidden layers, 256 units each, LeakyReLU + BatchNorm & Balances expressive score estimation with stable optimization \\
+\midrule
+Fixed-$\sigma$ training & $\sigma \in \{1,3,7\}$, 100 epochs, batch size 256, Adam (lr 0.001) & Isolates per-noise behavior and builds single-scale baselines \\
+\midrule
+Varying-$\sigma$ training & $\sigma \in [1,20]$ per batch, 1000 epochs, batch size 256, Adam (lr 0.001, step decay) & Enables one model to support multi-scale and annealed sampling \\
+\midrule
+Samplers & Deterministic, Langevin (50 steps), Annealed Langevin (20 levels, 50 steps/level) & Reveals speed-quality-diversity trade-offs under one setup \\
+\bottomrule
+\end{tabular}
+\normalsize
+\caption{Compact view of the experimental configuration used throughout the study}
+\label{tab:config_snapshot}
+\end{table*}
 
 \subsection{Data Generation}
 
@@ -529,7 +598,7 @@ $\sigma$ & Initial Loss & Final Loss & Convergence & Notes \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{output_cell_25_img_3.png}
+    \includegraphics[width=0.8\linewidth]{output_cell_25_img_3.png}
     \caption{Loss curves for fixed sigma training at $\sigma = 1, 3$, and $7$}
     \label{fig:fixed_sigma_loss}
 \end{figure}
@@ -554,21 +623,21 @@ $\sigma$ & Initial Loss & Final Loss & Convergence & Notes \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{output_cell_25_img_6.png}
+    \includegraphics[width=0.6\linewidth]{output_cell_25_img_6.png}
     \caption{Score field visualization at $\sigma = 1$. The arrows show precise directions toward the modes.}
     \label{fig:score_field_sigma1}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{output_cell_25_img_10.png}
+    \includegraphics[width=0.6\linewidth]{output_cell_25_img_10.png}
     \caption{Score field visualization at $\sigma = 3$. Balanced coverage of both modes.}
     \label{fig:score_field_sigma3}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{output_cell_25_img_16.png}
+    \includegraphics[width=0.6\linewidth]{output_cell_25_img_16.png}
     \caption{Score field visualization at $\sigma = 7$. Smooth, broad arrows for exploration.}
     \label{fig:score_field_sigma7}
 \end{figure}
@@ -584,21 +653,21 @@ We compared three sampling methods for each $\sigma$ value:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{output_cell_25_img_8.png}
+    \includegraphics[width=0.8\linewidth]{output_cell_25_img_8.png}
     \caption{Sampling results comparison for $\sigma = 1$ model. Top row: Annealed (best quality), Middle: Langevin, Bottom: Deterministic.}
     \label{fig:sampling_sigma1}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{output_cell_25_img_12.png}
+    \includegraphics[width=0.8\linewidth]{output_cell_25_img_12.png}
     \caption{Sampling results comparison for $\sigma = 3$ model. Excellent mode coverage with annealed sampling.}
     \label{fig:sampling_sigma3}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{output_cell_25_img_19.png}
+    \includegraphics[width=0.8\linewidth]{output_cell_25_img_19.png}
     \caption{Sampling results comparison for $\sigma = 7$ model. High noise allows exploration but lower precision.}
     \label{fig:sampling_sigma7}
 \end{figure}
@@ -659,14 +728,14 @@ For each starting point, we visualize:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{output_cell_27_img_3.png}
+    \includegraphics[width=0.7\linewidth]{output_cell_27_img_3.png}
     \caption{Sampling trajectories starting from point $[10, 20]$. Both methods successfully reach the data modes.}
     \label{fig:traj_10_20}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{output_cell_27_img_6.png}
+    \includegraphics[width=0.7\linewidth]{output_cell_27_img_6.png}
     \caption{Sampling trajectories starting from point $[-10, -20]$. Deterministic path is direct, Langevin shows exploration.}
     \label{fig:traj_-10_-20}
 \end{figure}
@@ -675,14 +744,14 @@ For each starting point, we visualize:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{output_cell_27_img_9.png}
+    \includegraphics[width=0.7\linewidth]{output_cell_27_img_9.png}
     \caption{Sampling trajectories starting from point $[5, 5]$. Demonstrates mode selection behavior.}
     \label{fig:traj_5_5}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{output_cell_27_img_11.png}
+    \includegraphics[width=0.7\linewidth]{output_cell_27_img_11.png}
     \caption{Sampling trajectories starting from point $[-5, -5]$. Shows symmetric behavior.}
     \label{fig:traj_-5_-5}
 \end{figure}
@@ -691,7 +760,7 @@ For each starting point, we visualize:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{output_cell_27_img_13.png}
+    \includegraphics[width=0.7\linewidth]{output_cell_27_img_13.png}
     \caption{Sampling trajectories starting from origin $[0, 0]$. Demonstrates symmetry-breaking behavior.}
     \label{fig:traj_0_0}
 \end{figure}
@@ -816,7 +885,7 @@ Epoch & Loss \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{output_cell_29_img_2.png}
+    \includegraphics[width=0.8\linewidth]{output_cell_29_img_2.png}
     \caption{Training loss curve for varying sigma model over 1000 epochs}
     \label{fig:varying_sigma_loss}
 \end{figure}
@@ -855,23 +924,23 @@ We monitored sampling quality at various epochs to track model learning:
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_5.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_5.png}
         \caption{Epoch 1 - Initial training phase}
     \end{subfigure}
     \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_8.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_8.png}
         \caption{Epoch 100 - Early training}
     \end{subfigure}
     
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_11.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_11.png}
         \caption{Epoch 200 - Mid training}
     \end{subfigure}
     \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_14.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_14.png}
         \caption{Epoch 300 - Improving}
     \end{subfigure}
     
@@ -881,23 +950,23 @@ We monitored sampling quality at various epochs to track model learning:
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_17.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_17.png}
         \caption{Epoch 400 - Good progress}
     \end{subfigure}
     \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_20.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_20.png}
         \caption{Epoch 500 - Stable}
     \end{subfigure}
     
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_23.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_23.png}
         \caption{Epoch 600 - Refined}
     \end{subfigure}
     \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_26.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_26.png}
         \caption{Epoch 700 - Excellent quality}
     \end{subfigure}
     
@@ -907,13 +976,13 @@ We monitored sampling quality at various epochs to track model learning:
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_29.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_29.png}
         \caption{Epoch 800 - Maintained quality}
     \end{subfigure}
     \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \includegraphics[width=\textwidth]{output_cell_29_img_32.png}
+    \begin{subfigure}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{output_cell_29_img_32.png}
         \caption{Epoch 1000 - Near convergence}
     \end{subfigure}
     
@@ -923,9 +992,11 @@ We monitored sampling quality at various epochs to track model learning:
 
 \subsubsection{Comparison with Fixed Sigma Models}
 
-\begin{table}[H]
+\begin{table*}[t]
 \centering
-\begin{tabular}{lccc}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{0.18\textwidth}p{0.18\textwidth}p{0.18\textwidth}p{0.32\textwidth}}
 \toprule
 Aspect & Fixed $\sigma=1$ & Fixed $\sigma=3$ & Varying $\sigma$ [1,20] \\
 \midrule
@@ -940,9 +1011,10 @@ Annealed Sampling Compatibility & Limited & Limited & 5/5  \\
 Storage & 3 models & 3 models & 1 model \\
 \bottomrule
 \end{tabular}
+\normalsize
 \caption{Comprehensive comparison of training strategies}
 \label{tab:strategy_comparison}
-\end{table}
+\end{table*}
 
 \subsubsection{Analysis}
 
@@ -1001,9 +1073,11 @@ Storage & 3 models & 3 models & 1 model \\
 
 To provide a decision-oriented summary, Table~\ref{tab:decision_matrix} consolidates the strongest training and sampling choices for common usage scenarios.
 
-\begin{table}[H]
+\begin{table*}[t]
 \centering
-\begin{tabular}{p{0.25\textwidth}p{0.20\textwidth}p{0.20\textwidth}p{0.28\textwidth}}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.22\textwidth}p{0.16\textwidth}p{0.17\textwidth}p{0.38\textwidth}}
 \toprule
 Scenario & Training Strategy & Sampling Strategy & Rationale \\
 \midrule
@@ -1028,9 +1102,10 @@ Langevin at same $\sigma$ &
 Maximizes specialization at one operating noise level \\
 \bottomrule
 \end{tabular}
+\normalsize
 \caption{Decision matrix for selecting training and sampling configurations}
 \label{tab:decision_matrix}
-\end{table}
+\end{table*}
 
 Across all experiments, the central pattern is consistent: fixed-$\sigma$ models can be excellent specialists, while varying-$\sigma$ training is the most practical default for robust and reusable generation.
 
@@ -1038,9 +1113,11 @@ Across all experiments, the central pattern is consistent: fixed-$\sigma$ models
 
 Table~\ref{tab:rq_answers} summarizes the primary research questions and their outcomes based on the experiments in this report.
 
-\begin{table}[H]
+\begin{table*}[t]
 \centering
-\begin{tabular}{p{0.16\textwidth}p{0.46\textwidth}p{0.30\textwidth}}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.10\textwidth}p{0.35\textwidth}p{0.47\textwidth}}
 \toprule
 RQ ID & Question & Answer (from evidence) \\
 \midrule
@@ -1057,9 +1134,10 @@ RQ4 & Are results reproducible without retraining? &
 Yes. Figures are deterministically reconstructed from notebook-embedded outputs and validated against report references. \\
 \bottomrule
 \end{tabular}
+\normalsize
 \caption{Research questions and evidence-backed answers}
 \label{tab:rq_answers}
-\end{table}
+\end{table*}
 
 \subsection{Sampling Method Comparison}
 
@@ -1130,9 +1208,11 @@ Deterministic & 3/5  & 5/5  & 2/5  & 60-70\% \\
 
 \textbf{Summary Table:}
 
-\begin{table}[H]
+\begin{table*}[t]
 \centering
-\begin{tabular}{lcccc}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.18\textwidth}p{0.17\textwidth}p{0.17\textwidth}p{0.17\textwidth}p{0.17\textwidth}}
 \toprule
 Aspect & Fixed $\sigma=1$ & Fixed $\sigma=3$ & Fixed $\sigma=7$ & Varying $\sigma$ \\
 \midrule
@@ -1145,9 +1225,10 @@ Generalization & Low & Low & Low & High \\
 Use Case & High precision & Best single $\sigma$ & Exploration & Production \\
 \bottomrule
 \end{tabular}
+\normalsize
 \caption{Comparison of training strategies}
 \label{tab:training_comparison}
-\end{table}
+\end{table*}
 
 \subsection{Key Insights and Recommendations}
 
@@ -1197,29 +1278,29 @@ Use Case & High precision & Best single $\sigma$ & Exploration & Production \\
 To keep this report reproducible without rerunning expensive training, all report figures are reconstructed from notebook-embedded outputs. The workflow is deterministic and script-driven:
 
 \begin{enumerate}
-    \item Extract required \texttt{image/png} outputs from \texttt{codes/CA3\_Score\_Based\_Models.ipynb}.
-    \item Write canonical figure files (\texttt{output\_cell\_*}) under \texttt{images/}.
-    \item Generate \texttt{report/asset\_manifest.json} with per-asset SHA-256 hashes and provenance metadata.
-    \item Validate every \texttt{\textbackslash includegraphics} reference in \texttt{report/DGM\_CA3\_Complete\_Report.tex}.
+    \item Extract required \texttt{image/png} outputs from \path{codes/CA3_Score_Based_Models.ipynb}.
+    \item Write canonical figure files (\path{output_cell_*}) under \path{images/}.
+    \item Generate \path{report/asset_manifest.json} with per-asset SHA-256 hashes and provenance metadata.
+    \item Validate every \texttt{\textbackslash includegraphics} reference in \path{report/DGM_CA3_Complete_Report.tex}.
     \item Compile the PDF from LaTeX sources.
 \end{enumerate}
 
 This is implemented via:
 \begin{itemize}
-    \item \texttt{tools/export\_notebook\_results.py}
-    \item \texttt{tools/verify\_report\_assets.py}
-    \item \texttt{tools/build\_report\_from\_notebook\_outputs.sh}
+    \item \path{tools/export_notebook_results.py}
+    \item \path{tools/verify_report_assets.py}
+    \item \path{tools/build_report_from_notebook_outputs.sh}
 \end{itemize}
 
 \subsection{Artifact Contract}
 
 The report pipeline enforces the following file-level contract:
 \begin{itemize}
-    \item \textbf{Input notebook:} \texttt{codes/CA3\_Score\_Based\_Models.ipynb}
-    \item \textbf{Exported canonical figures:} 35 files matching \texttt{images/output\_cell\_*.png}
-    \item \textbf{Traceability manifest:} \texttt{report/asset\_manifest.json} with filename, source cell/index, SHA-256, and byte size
+    \item \textbf{Input notebook:} \path{codes/CA3_Score_Based_Models.ipynb}
+    \item \textbf{Exported canonical figures:} 35 files matching \path{images/output_cell_*.png}
+    \item \textbf{Traceability manifest:} \path{report/asset_manifest.json} with filename, source cell/index, SHA-256, and byte size
     \item \textbf{Reference validation:} every \texttt{\textbackslash includegraphics} in the report must resolve to a present image file
-    \item \textbf{Final deliverable:} \texttt{report/DGM\_CA3\_Complete\_Report.pdf}
+    \item \textbf{Final deliverable:} \path{report/DGM_CA3_Complete_Report.pdf}
 \end{itemize}
 
 \subsection{Limitations and Validity Considerations}
@@ -1325,8 +1406,8 @@ For practical use beyond this assignment, the following checklist captures the r
 
 \section{Appendix: Reproducibility Commands}
 \begin{itemize}
-    \item \texttt{source /Users/tahamajs/Documents/uni/venv/bin/activate}
-    \item \texttt{bash tools/build\_report\_from\_notebook\_outputs.sh}
+    \item \url{source /Users/tahamajs/Documents/uni/venv/bin/activate}
+    \item \url{bash tools/build_report_from_notebook_outputs.sh}
 \end{itemize}
 
 \section*{Acknowledgment}
