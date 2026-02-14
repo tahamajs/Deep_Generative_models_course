@@ -7,7 +7,11 @@ from typing import Tuple, Optional
 import torch
 from torch import nn
 import torch.nn.functional as F
-from config import NCSNConfig
+
+try:
+    from .config import NCSNConfig
+except ImportError:
+    from config import NCSNConfig
 
 
 class GaussianFourierProjection(nn.Module):

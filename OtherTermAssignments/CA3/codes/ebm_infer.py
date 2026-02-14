@@ -5,11 +5,18 @@ Inference helpers for the trained EBM: generation from noise and denoising.
 from pathlib import Path
 import torch
 
-from config import DataConfig, EBMConfig, RunPaths
-from data import mnist_dataloaders
-from ebm_model import ConvEnergyModel
-from ebm_sampling import sample_from_noise, LangevinSampler
-from utils import save_grid, set_seed, ensure_dir
+try:
+    from .config import DataConfig, EBMConfig, RunPaths
+    from .data import mnist_dataloaders
+    from .ebm_model import ConvEnergyModel
+    from .ebm_sampling import sample_from_noise, LangevinSampler
+    from .utils import save_grid, set_seed, ensure_dir
+except ImportError:
+    from config import DataConfig, EBMConfig, RunPaths
+    from data import mnist_dataloaders
+    from ebm_model import ConvEnergyModel
+    from ebm_sampling import sample_from_noise, LangevinSampler
+    from utils import save_grid, set_seed, ensure_dir
 
 
 def load_model(checkpoint: Path, device: torch.device) -> ConvEnergyModel:
@@ -73,7 +80,10 @@ def sample_and_save_trajectory(
     ensure_dir(output_dir)
     model = load_model(checkpoint, ebm_cfg.device)
     # Use the helper that records snapshots
-    from ebm_sampling import sample_with_trajectory
+    try:
+        from .ebm_sampling import sample_with_trajectory
+    except ImportError:
+        from ebm_sampling import sample_with_trajectory
 
     traj = sample_with_trajectory(model, ebm_cfg, (16, 1, 28, 28), record_every=record_every)
     # Save each snapshot as a grid

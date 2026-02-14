@@ -30,20 +30,20 @@ of a normalisation requirement confers great flexibility: probabilistic
 models must be properly normalised, which can require evaluating
 intractable integrals over all possible configurations, whereas EBMs have
 no such requirement and thus circumvent the problem of normalisation
-entirely【861141214805006†L26-L33】.  This property allows the design of
+entirely.  This property allows the design of
 loss functions that encourage the energy assigned to observed data to be
-smaller than that assigned to unobserved configurations【861141214805006†L46-L56】.
+smaller than that assigned to unobserved configurations.
 
 Equation~\eqref{eq:ebm-density} suggests that low–energy points have high
 probability under the model.  Learning and inference are therefore
 formulated in terms of minimising $E_\theta(\mathbf{x})$ with respect to
 \emph{unobserved} variables and adjusting $\theta$ so that observed
-configurations lie in low–energy regions【861141214805006†L46-L63】.  We
+configurations lie in low–energy regions.  We
 distinguish between two sets of variables: observed inputs $\mathbf{x}$ and
 variables to be predicted $\mathbf{y}$; the energy function $E(\mathbf{y},
 \mathbf{x})$ measures their compatibility, and inference corresponds to
 finding the value of $\mathbf{y}$ that minimises $E(\mathbf{y},\mathbf{x})$ at
-fixed $\mathbf{x}$【861141214805006†L261-L267】.
+fixed $\mathbf{x}$.
 
 \subsection{Partition Function and Log–Likelihood Gradient}
 

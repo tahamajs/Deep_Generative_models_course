@@ -11,13 +11,22 @@ import torch
 from torch import optim
 from tqdm import tqdm
 
-from config import NCSNConfig, DataConfig, RunPaths
-from data import mnist_dataloaders
-from ncsn_model import ScoreNet
-from ncsn_loss import dsm_loss
-from ncsn_sampling import sample
-from utils import save_grid, set_seed, ensure_dir, write_run_info
 from torchvision.utils import make_grid
+
+try:
+    from .config import NCSNConfig, DataConfig, RunPaths
+    from .data import mnist_dataloaders
+    from .ncsn_model import ScoreNet
+    from .ncsn_loss import dsm_loss
+    from .ncsn_sampling import sample
+    from .utils import save_grid, set_seed, ensure_dir, write_run_info
+except ImportError:
+    from config import NCSNConfig, DataConfig, RunPaths
+    from data import mnist_dataloaders
+    from ncsn_model import ScoreNet
+    from ncsn_loss import dsm_loss
+    from ncsn_sampling import sample
+    from utils import save_grid, set_seed, ensure_dir, write_run_info
 
 
 def train(
@@ -56,7 +65,6 @@ def train(
         )
         for x, labels in progress:
             x = x.to(device)
-            x = x * 2 - 1  # map to [-1, 1]
             y = labels.to(device) if conditional else None
 
             loss = dsm_loss(model, x, cfg, sigmas, y)
@@ -80,9 +88,23 @@ def train(
                 "model": model.state_dict(),
                 "optimizer": optimizer.state_dict(),
                 "epoch": epoch,
+                "config": asdict(cfg),
             },
             checkpoint_path,
         )
+
+    try:
+        plt.figure(figsize=(6, 4))
+        plt.plot(history["loss"], label="DSM loss")
+        plt.xlabel("Step")
+        plt.ylabel("Loss")
+        plt.title("NCSN DSM Loss")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(output_dir / "ncsn_loss.png")
+        plt.close()
+    except Exception:
+        pass
 
     return history
 
@@ -156,43 +178,46 @@ def train_interactive(
             progress = tqdm(
                 train_loader, desc=f"NCSN demo epoch {epoch}/{epochs}", leave=False
             )
-        for x, labels in progress:
-            x = x.to(device)
-            x = x * 2 - 1  # map to [-1, 1]
-            y = labels.to(device) if conditional else None
+            for x, labels in progress:
+                x = x.to(device)
+                y = labels.to(device) if conditional else None
 
-            loss = dsm_loss(model, x, cfg, sigmas, y)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                loss = dsm_loss(model, x, cfg, sigmas, y)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            history["loss"].append(loss.item())
-            progress.set_postfix(loss=f"{loss.item():.3f}")
+                history["loss"].append(loss.item())
+                progress.set_postfix(loss=f"{loss.item():.3f}")
 
-        y_samples: Optional[torch.Tensor] = None
-        if conditional:
-            y_samples = torch.arange(0, 16, device=device) % cfg.num_classes
-        samples = sample(model, cfg, num_samples=16, y=y_samples)
-        samples = (samples + 1) / 2.0
-        save_grid(samples.detach().cpu(), output_dir / f"samples_epoch{epoch}.png", nrow=4)
+            y_samples: Optional[torch.Tensor] = None
+            if conditional:
+                y_samples = torch.arange(0, 16, device=device) % cfg.num_classes
+            samples = sample(model, cfg, num_samples=16, y=y_samples)
+            samples = (samples + 1) / 2.0
+            save_grid(
+                samples.detach().cpu(), output_dir / f"samples_epoch{epoch}.png", nrow=4
+            )
 
-        if show:
-            try:
-                import matplotlib.pyplot as plt
-                grid = make_grid(samples, nrow=4, normalize=True, value_range=(0, 1))
-                img_arr = grid.permute(1, 2, 0).detach().cpu().numpy()
-                plt.figure(figsize=(4, 4))
-                plt.axis("off")
-                plt.imshow(img_arr)
-                plt.show()
-            except Exception:
-                pass
+            if show:
+                try:
+                    import matplotlib.pyplot as plt
+
+                    grid = make_grid(samples, nrow=4, normalize=True, value_range=(0, 1))
+                    img_arr = grid.permute(1, 2, 0).detach().cpu().numpy()
+                    plt.figure(figsize=(4, 4))
+                    plt.axis("off")
+                    plt.imshow(img_arr)
+                    plt.show()
+                except Exception:
+                    pass
 
             torch.save(
                 {
                     "model": model.state_dict(),
                     "optimizer": optimizer.state_dict(),
                     "epoch": epoch,
+                    "config": asdict(cfg),
                 },
                 checkpoint_path,
             )

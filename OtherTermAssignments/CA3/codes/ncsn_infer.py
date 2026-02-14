@@ -6,19 +6,44 @@ from pathlib import Path
 from typing import Optional, Sequence
 import torch
 
-from config import NCSNConfig, DataConfig, RunPaths
-from data import mnist_dataloaders
-from ncsn_model import ScoreNet
-from ncsn_sampling import sample, annealed_langevin_dynamics
-from utils import save_grid, ensure_dir
+try:
+    from .config import NCSNConfig, DataConfig, RunPaths
+    from .data import mnist_dataloaders
+    from .ncsn_model import ScoreNet
+    from .ncsn_sampling import sample, annealed_langevin_dynamics
+    from .utils import save_grid, ensure_dir
+except ImportError:
+    from config import NCSNConfig, DataConfig, RunPaths
+    from data import mnist_dataloaders
+    from ncsn_model import ScoreNet
+    from ncsn_sampling import sample, annealed_langevin_dynamics
+    from utils import save_grid, ensure_dir
 
 
 def load_ncsn_model(
     checkpoint: Path, cfg: NCSNConfig, conditional: bool = False
 ) -> ScoreNet:
+    state = torch.load(checkpoint, map_location=cfg.device)
+    ckpt_cfg = state.get("config") or {}
+    for key in (
+        "sigma_begin",
+        "sigma_end",
+        "num_levels",
+        "langevin_steps",
+        "step_lr",
+        "image_size",
+        "channels",
+        "embed_dim",
+        "num_classes",
+        "batch_size",
+        "num_workers",
+        "lr",
+        "epochs",
+    ):
+        if key in ckpt_cfg and hasattr(cfg, key):
+            setattr(cfg, key, ckpt_cfg[key])
     cfg.conditional = conditional
     model = ScoreNet(cfg).to(cfg.device)
-    state = torch.load(checkpoint, map_location=cfg.device)
     model.load_state_dict(state["model"])
     model.eval()
     return model
@@ -52,7 +77,7 @@ def ncsn_generate_and_denoise(
         save_grid((samples + 1) / 2.0, output_dir / "ncsn_samples.png", nrow=4)
 
     x_real, labels = next(iter(train_loader))
-    x_real = x_real.to(cfg.device)[:16] * 2 - 1
+    x_real = x_real.to(cfg.device)[:16]
     y = labels.to(cfg.device)[:16] if conditional else None
 
     for nl in noise_levels:

@@ -14,11 +14,18 @@ import torch
 from torch import optim
 from tqdm import tqdm
 
-from config import DataConfig, EBMConfig, RunPaths
-from data import mnist_dataloaders
-from ebm_model import ConvEnergyModel
-from ebm_sampling import LangevinSampler, sample_from_noise
-from utils import save_grid, set_seed, ensure_dir, write_run_info
+try:
+    from .config import DataConfig, EBMConfig, RunPaths
+    from .data import mnist_dataloaders
+    from .ebm_model import ConvEnergyModel
+    from .ebm_sampling import LangevinSampler, sample_from_noise
+    from .utils import save_grid, set_seed, ensure_dir, write_run_info
+except ImportError:
+    from config import DataConfig, EBMConfig, RunPaths
+    from data import mnist_dataloaders
+    from ebm_model import ConvEnergyModel
+    from ebm_sampling import LangevinSampler, sample_from_noise
+    from utils import save_grid, set_seed, ensure_dir, write_run_info
 
 
 def train(
@@ -53,9 +60,9 @@ def train(
             E_real = model(x_real)
             E_fake = model(x_fake)
 
-            data_term = E_real.mean() - E_fake.detach().mean()
+            data_term = E_real.mean() - E_fake.mean()
             reg_term = cfg_model.lambda_reg * (
-                E_real.pow(2).mean() + E_fake.detach().pow(2).mean()
+                E_real.pow(2).mean() + E_fake.pow(2).mean()
             )
             loss = data_term + reg_term
 
@@ -179,9 +186,9 @@ def train_interactive(
                 E_real = model(x_real)
                 E_fake = model(x_fake)
 
-                data_term = E_real.mean() - E_fake.detach().mean()
+                data_term = E_real.mean() - E_fake.mean()
                 reg_term = cfg_model.lambda_reg * (
-                    E_real.pow(2).mean() + E_fake.detach().pow(2).mean()
+                    E_real.pow(2).mean() + E_fake.pow(2).mean()
                 )
                 loss = data_term + reg_term
 
@@ -190,6 +197,30 @@ def train_interactive(
                 optimizer.step()
 
                 history["loss"].append(loss.item())
+
+            # Sampling uses input gradients; do not disable grads here
+            samples = sample_from_noise(
+                model, cfg_model, (cfg_model.sample_grid, 1, 28, 28)
+            )
+            save_grid(
+                samples.detach().cpu(),
+                output_dir / f"ebm_demo_samples_epoch{epoch}.png",
+                nrow=4,
+            )
+
+            if show:
+                try:
+                    import matplotlib.pyplot as plt
+
+                    grid = make_grid(samples, nrow=4, normalize=True)
+                    img_arr = grid.permute(1, 2, 0).detach().cpu().numpy()
+                    plt.figure(figsize=(4, 4))
+                    plt.axis("off")
+                    plt.imshow(img_arr)
+                    plt.show()
+                except Exception:
+                    # Best-effort display; continue even if matplotlib is unavailable.
+                    pass
     except RuntimeError as e:
         if "out of memory" in str(e).lower():
             print("CUDA out of memory during EBM demo training.\nSuggestions: reduce `ebm_cfg.langevin_steps` or reduce batch size via `DataConfig(batch_size=...)`, or run on CPU (set `device=torch.device('cpu')`).\nAborting demo run.")
@@ -199,24 +230,6 @@ def train_interactive(
             except Exception:
                 pass
         raise
-
-        # Sampling uses input gradients; do not disable grads here
-        samples = sample_from_noise(model, cfg_model, (cfg_model.sample_grid, 1, 28, 28))
-        save_grid(samples.detach().cpu(), output_dir / f"ebm_demo_samples_epoch{epoch}.png", nrow=4)
-
-        if show:
-            try:
-                import matplotlib.pyplot as plt
-
-                grid = make_grid(samples, nrow=4, normalize=True)
-                img_arr = grid.permute(1, 2, 0).detach().cpu().numpy()
-                plt.figure(figsize=(4, 4))
-                plt.axis("off")
-                plt.imshow(img_arr)
-                plt.show()
-            except Exception:
-                # Best-effort display; continue even if matplotlib is unavailable.
-                pass
 
     return model, history
 

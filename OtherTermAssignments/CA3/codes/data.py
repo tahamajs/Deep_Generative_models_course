@@ -6,8 +6,13 @@ from pathlib import Path
 from typing import Tuple
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from config import DataConfig
-from utils import set_seed
+
+try:
+    from .config import DataConfig
+    from .utils import set_seed
+except ImportError:
+    from config import DataConfig
+    from utils import set_seed
 
 
 def mnist_dataloaders(
@@ -19,12 +24,19 @@ def mnist_dataloaders(
         transform_list.append(transforms.Normalize((0.5,), (0.5,)))
     transform = transforms.Compose(transform_list)
     data_root = Path(__file__).resolve().parent.parent / "data" / "mnist"
-    train_ds = datasets.MNIST(
-        root=data_root, train=True, download=True, transform=transform
-    )
-    test_ds = datasets.MNIST(
-        root=data_root, train=False, download=True, transform=transform
-    )
+    try:
+        train_ds = datasets.MNIST(
+            root=data_root, train=True, download=True, transform=transform
+        )
+        test_ds = datasets.MNIST(
+            root=data_root, train=False, download=True, transform=transform
+        )
+    except RuntimeError as exc:
+        raise RuntimeError(
+            f"MNIST is unavailable at '{data_root}'. "
+            "Dataset download is blocked in this environment. "
+            "Place the MNIST files under this path and rerun."
+        ) from exc
 
     train_loader = DataLoader(
         train_ds,

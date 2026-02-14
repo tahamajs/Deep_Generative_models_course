@@ -5,9 +5,14 @@ Annealed Langevin Dynamics sampling and denoising for NCSN.
 from typing import Optional
 import torch
 from torch import nn
-from config import NCSNConfig
+
+try:
+    from .config import NCSNConfig
+except ImportError:
+    from config import NCSNConfig
 
 
+@torch.no_grad()
 def annealed_langevin_dynamics(
     model: nn.Module,
     cfg: NCSNConfig,
@@ -26,6 +31,7 @@ def annealed_langevin_dynamics(
     return x
 
 
+@torch.no_grad()
 def annealed_langevin_dynamics_with_trajectory(
     model: nn.Module,
     cfg: NCSNConfig,
@@ -52,6 +58,7 @@ def annealed_langevin_dynamics_with_trajectory(
     return traj
 
 
+@torch.no_grad()
 def sample(
     model: nn.Module,
     cfg: NCSNConfig,

@@ -4,7 +4,11 @@ Langevin dynamics utilities for Energy-Based Models.
 
 import torch
 from torch import nn
-from config import EBMConfig
+
+try:
+    from .config import EBMConfig
+except ImportError:
+    from config import EBMConfig
 
 
 class LangevinSampler:
