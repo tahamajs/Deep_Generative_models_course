@@ -1,0 +1,11 @@
+{
+  "mode": "train",
+  "device": "cpu",
+  "epochs": 1,
+  "batch_size": 3,
+  "dataset": "synthetic",
+  "train_seconds": 2.598609209060669,
+  "final_loss": 2372.832763671875,
+  "model_out": "../report/images/maf_final_quick.pth",
+  "loss_plot": "../report/images/maf_loss_quick.png"
+}

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# run_all.sh — convenience script to run all CA2 experiments
+# run_all.sh — convenience script to run CA2 experiments and save artifacts
 # Usage:
-#   ./run_all.sh quick   # run short smoke-tests for MAF and CycleGAN
-#   ./run_all.sh full    # run full experiments (longer)
-#   ./run_all.sh help
+#   ./run_all.sh quick
+#   ./run_all.sh full
+#   ./run_all.sh quick --save_dir ../report/images --tag quick
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,16 +11,12 @@ RUNPY="python3 ${SCRIPT_DIR}/run.py"
 
 function usage() {
   cat <<EOF
-Usage: $0 {quick|full|help}
+Usage: $0 {quick|full|help} [--save_dir DIR] [--tag TAG] [--show_plots]
 
 Modes:
-  quick    Run short smoke tests (single epoch / small batch sizes) for faster feedback.
-  full     Run longer experiments (increase epochs; may take hours).
+  quick    Run short smoke tests for MAF and CycleGAN and save report artifacts.
+  full     Run longer experiments (dataset/GPU recommended).
   help     Show this message.
-
-Examples:
-  $0 quick
-  $0 full
 EOF
 }
 
@@ -32,7 +28,42 @@ fi
 MODE="$1"
 shift || true
 
+SAVE_DIR="${SCRIPT_DIR}/../report/images"
+TAG="${MODE}"
+SHOW_PLOTS=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --save_dir)
+      SAVE_DIR="$2"
+      shift 2
+      ;;
+    --tag)
+      TAG="$2"
+      shift 2
+      ;;
+    --show_plots)
+      SHOW_PLOTS=1
+      shift 1
+      ;;
+    *)
+      echo "Unknown option: $1"
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+COMMON_ARGS=(--save_dir "$SAVE_DIR" --tag "$TAG")
+if [ "$SHOW_PLOTS" -eq 1 ]; then
+  COMMON_ARGS+=(--show_plots)
+fi
+
+mkdir -p "$SAVE_DIR"
+
 echo "Running mode: ${MODE}"
+echo "Artifacts directory: ${SAVE_DIR}"
+echo "Tag: ${TAG}"
 
 if [ "${MODE}" = "help" ]; then
   usage
@@ -40,42 +71,46 @@ if [ "${MODE}" = "help" ]; then
 fi
 
 if [ "${MODE}" = "quick" ]; then
-  echo "== MAF: quick train (1 epoch, small batch)"
-  ${RUNPY} maf --mode train --epochs 1 --batch_size 3 --quick
+  MAF_MODEL="${SAVE_DIR}/maf_final_${TAG}.pth"
 
-  echo "== MAF: quick generate (3 samples, uninitialized model if no checkpoint)"
-  ${RUNPY} maf --mode generate --num_samples 3 || true
+  echo "== MAF: quick train"
+  ${RUNPY} maf --mode train --epochs 1 --batch_size 3 --quick --out "$MAF_MODEL" "${COMMON_ARGS[@]}"
 
-  echo "== MAF: quick eval (synthetic fallback if datasets missing)"
-  ${RUNPY} maf --mode eval --model maf_final.pth --quick || ${RUNPY} maf --mode eval --quick || true
+  echo "== MAF: quick generate"
+  ${RUNPY} maf --mode generate --num_samples 5 --quick --model "$MAF_MODEL" "${COMMON_ARGS[@]}"
 
-  echo "== CycleGAN: quick train (1 epoch, small batch)"
-  ${RUNPY} cyclegan --mode train --epochs 1 --batch_size 2 --quick || true
+  echo "== MAF: quick eval"
+  ${RUNPY} maf --mode eval --model "$MAF_MODEL" --quick "${COMMON_ARGS[@]}"
 
-  echo "== CycleGAN: quick test (small sample set)"
-  ${RUNPY} cyclegan --mode test --num_samples 3 --quick || true
+  echo "== CycleGAN: quick train"
+  ${RUNPY} cyclegan --mode train --epochs 1 --batch_size 2 --quick "${COMMON_ARGS[@]}"
 
-  echo "Quick mode finished. Inspect outputs in the project folders or rerun with 'full' for longer runs."
+  echo "== CycleGAN: quick test"
+  ${RUNPY} cyclegan --mode test --num_samples 3 --quick "${COMMON_ARGS[@]}"
+
+  echo "Quick mode finished. Saved artifacts in: ${SAVE_DIR}"
   exit 0
 fi
 
 if [ "${MODE}" = "full" ]; then
-  echo "== MAF: full train (recommended to run on GPU)"
-  ${RUNPY} maf --mode train --epochs 100 --batch_size 8
+  MAF_MODEL="${SAVE_DIR}/maf_final_${TAG}.pth"
 
-  echo "== MAF: generate (5 samples)"
-  ${RUNPY} maf --mode generate --num_samples 5 --model maf_final.pth || true
+  echo "== MAF: full train"
+  ${RUNPY} maf --mode train --epochs 100 --batch_size 8 --out "$MAF_MODEL" "${COMMON_ARGS[@]}"
 
-  echo "== MAF: anomaly evaluation"
-  ${RUNPY} maf --mode eval --model maf_final.pth || true
+  echo "== MAF: generate"
+  ${RUNPY} maf --mode generate --num_samples 5 --model "$MAF_MODEL" "${COMMON_ARGS[@]}"
 
-  echo "== CycleGAN: full training"
-  ${RUNPY} cyclegan --mode train --epochs 20 --batch_size 16
+  echo "== MAF: anomaly eval"
+  ${RUNPY} maf --mode eval --model "$MAF_MODEL" "${COMMON_ARGS[@]}"
 
-  echo "== CycleGAN: test (use saved checkpoints if available)"
-  ${RUNPY} cyclegan --mode test --num_samples 5 --model cyclegan_models/G_AB_final.pth || true
+  echo "== CycleGAN: full train"
+  ${RUNPY} cyclegan --mode train --epochs 20 --batch_size 16 "${COMMON_ARGS[@]}"
 
-  echo "Full mode finished. Review checkpoints and logs in the output folders."
+  echo "== CycleGAN: full test"
+  ${RUNPY} cyclegan --mode test --num_samples 5 "${COMMON_ARGS[@]}"
+
+  echo "Full mode finished. Saved artifacts in: ${SAVE_DIR}"
   exit 0
 fi
 

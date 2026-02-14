@@ -1,0 +1,47 @@
+{
+  "cyclegan_test": {
+    "mode": "test",
+    "num_samples": 3,
+    "panel_a2b": "../report/images/cyclegan_panel_a2b_quick.png",
+    "panel_b2a": "../report/images/cyclegan_panel_b2a_quick.png"
+  },
+  "cyclegan_train": {
+    "mode": "train",
+    "device": "cpu",
+    "epochs": 1,
+    "batch_size": 2,
+    "dataset": "synthetic",
+    "train_seconds": 88.0082859992981,
+    "history_plot": "../report/images/cyclegan_loss_quick.png",
+    "final_model_ab": "checkpoints/G_AB_final_quick.pth",
+    "final_model_ba": "checkpoints/G_BA_final_quick.pth"
+  },
+  "maf_eval": {
+    "mode": "eval",
+    "source": "synthetic",
+    "auroc": 0.47734375000000007,
+    "normal_count": 80,
+    "anomaly_count": 80,
+    "roc_plot": "../report/images/maf_roc_quick.png",
+    "score_plot": "../report/images/maf_score_dist_quick.png"
+  },
+  "maf_generate": {
+    "mode": "generate",
+    "device": "cpu",
+    "num_samples": 5,
+    "generation_seconds": 26.390188932418823,
+    "seconds_per_image": 5.278037786483765,
+    "generated_plot": "../report/images/maf_generated_quick.png"
+  },
+  "maf_train": {
+    "mode": "train",
+    "device": "cpu",
+    "epochs": 1,
+    "batch_size": 3,
+    "dataset": "synthetic",
+    "train_seconds": 2.598609209060669,
+    "final_loss": 2372.832763671875,
+    "model_out": "../report/images/maf_final_quick.pth",
+    "loss_plot": "../report/images/maf_loss_quick.png"
+  }
+}

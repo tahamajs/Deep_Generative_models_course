@@ -191,6 +191,15 @@ def train_cyclegan(G_AB: nn.Module, G_BA: nn.Module, D_A: nn.Module, D_B: nn.Mod
         data_iter_B = iter(train_loader_B)
         num_batches = min(len(train_loader_A), len(train_loader_B))
 
+        if num_batches == 0:
+            print(f"Epoch {epoch+1}/{num_epochs} skipped: one of the dataloaders is empty.")
+            history['G_loss'].append(0.0)
+            history['D_A_loss'].append(0.0)
+            history['D_B_loss'].append(0.0)
+            history['cycle_loss'].append(0.0)
+            history['identity_loss'].append(0.0)
+            continue
+
         pbar = tqdm(range(num_batches), desc=f"Epoch {epoch+1}/{num_epochs}")
         for i in pbar:
             try:
@@ -248,11 +257,11 @@ def train_cyclegan(G_AB: nn.Module, G_BA: nn.Module, D_A: nn.Module, D_B: nn.Mod
             torch.save(G_AB.state_dict(), os.path.join(checkpoint_dir, f'G_AB_epoch_{epoch+1}.pth'))
             torch.save(G_BA.state_dict(), os.path.join(checkpoint_dir, f'G_BA_epoch_{epoch+1}.pth'))
 
-        history['G_loss'].append(epoch_G_loss / num_batches)
-        history['D_A_loss'].append(epoch_D_A_loss / num_batches)
-        history['D_B_loss'].append(epoch_D_B_loss / num_batches)
-        history['cycle_loss'].append(epoch_cycle_loss / num_batches)
-        history['identity_loss'].append(epoch_identity_loss / num_batches)
+        history['G_loss'].append(epoch_G_loss / max(1, num_batches))
+        history['D_A_loss'].append(epoch_D_A_loss / max(1, num_batches))
+        history['D_B_loss'].append(epoch_D_B_loss / max(1, num_batches))
+        history['cycle_loss'].append(epoch_cycle_loss / max(1, num_batches))
+        history['identity_loss'].append(epoch_identity_loss / max(1, num_batches))
 
         print(f"Epoch {epoch+1} - G: {history['G_loss'][-1]:.4f}, D_A: {history['D_A_loss'][-1]:.4f}, D_B: {history['D_B_loss'][-1]:.4f}")
 

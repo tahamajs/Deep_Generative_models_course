@@ -1,0 +1,8 @@
+{
+  "mode": "generate",
+  "device": "cpu",
+  "num_samples": 5,
+  "generation_seconds": 26.390188932418823,
+  "seconds_per_image": 5.278037786483765,
+  "generated_plot": "../report/images/maf_generated_quick.png"
+}

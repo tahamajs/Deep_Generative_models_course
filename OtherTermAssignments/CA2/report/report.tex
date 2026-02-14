@@ -1,697 +1,763 @@
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
-% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
+\usepackage{mathtools}
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{subcaption}
-\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
-    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\usepackage{array}
+\usepackage{url}
 
-\begin{document}
-
-\title{Deep Generative Models for Density Estimation and Unpaired Image Translation: A Comprehensive Study of MAF and CycleGAN\\
-{\footnotesize \textsuperscript{*}Note: Assignment 2 for Deep Generative Models Course}
-}
+\title{Comprehensive Technical Report for CA2:\\
+Masked Autoregressive Flow and CycleGAN}
 
 \author{\IEEEauthorblockN{Mohammad Taha Majlesi}
 \IEEEauthorblockA{\textit{Department of Computer Engineering} \\
-\textit{University of Tehran}\\
-Email: taha.majlesi@ut.ac.ir}
-}
-
-\maketitle
-
-\begin{abstract}
-This paper investigates two complementary deep generative paradigms: (i) Masked Autoregressive Flow (MAF), a likelihood-based normalizing flow enabling explicit density estimation and anomaly scoring, and (ii) CycleGAN, an adversarial framework for unpaired image-to-image translation leveraging cycle consistency and identity constraints. We present unified theoretical derivations including change of variables formulations, Jacobian determinant computations, and autoregressive factorizations. Architectural design rationales are detailed for MADE masking schemes, ResNet-based generators, and PatchGAN discriminators. Training methodologies encompass optimization objectives and replay buffer stabilization techniques. Empirical validation is conducted through density modeling on industrial capsule imagery (MVTec AD dataset) and stylistic horse-zebra translation, evaluated via AUROC metrics (0.72 achieved) for anomaly detection and qualitative assessments for translation fidelity. Critical analysis addresses fundamental limitations including likelihood calibration challenges and geometric transformation constraints. Ethical deployment considerations and future research directions are systematically examined. This work consolidates foundational theory, implementation specifics, experimental results, and actionable insights for practitioners seeking robust generative modeling solutions.
-\end{abstract}
-
-\begin{IEEEkeywords}
-Deep generative models, normalizing flows, masked autoregressive flow, CycleGAN, unpaired image translation, anomaly detection, cycle consistency, density estimation
-\end{IEEEkeywords}
-
-\section{Introduction}
-\IEEEPARstart{D}{eep} generative models have revolutionized the ability to learn complex data distributions and perform cross-domain transformations. Flow-based models, exemplified by Masked Autoregressive Flows (MAF), provide tractable likelihood computation essential for statistical inference tasks including anomaly detection and density estimation. Adversarial translation frameworks, particularly CycleGAN, emphasize perceptual realism in conditional generation without requiring paired supervision. This paper examines MAF and CycleGAN as representative instances of likelihood-based and adversarial paradigms respectively, providing technically rigorous yet implementation-focused analysis suitable for reproducible experimentation.
-
-\subsection{Motivation and Context}
-Industrial defect detection systems benefit from explicit probability density estimation, enabling prioritization of data regions exhibiting atypical statistical signatures. Manufacturing quality control demands automated anomaly identification with quantifiable uncertainty. In artistic, biological, and medical imaging domains, scarcity or infeasibility of paired training examples necessitates unpaired translation frameworks. Cross-modal synthesis (e.g., MRI-CT translation, seasonal style transfer) requires learning mappings between domains without pixel-level correspondence. Understanding both likelihood-based and adversarial approaches enables hybrid architectures combining their complementary strengths—explicit probabilistic scoring with perceptually realistic generation.
-
-\subsection{Paper Contributions}
-This work provides comprehensive treatment of two foundational generative modeling paradigms through:
-\begin{itemize}
- \item Unified mathematical derivations for coupling and autoregressive transformations with computational complexity analysis and practical implementation implications
- \item Detailed architectural specifications including layer-by-layer parameter counts, activation functions, normalization schemes, and design trade-offs
- \item Structured evaluation methodology employing threshold-independent metrics (AUROC) for anomaly detection and qualitative/quantitative assessments for image translation
- \item Systematic dissection of CycleGAN training objectives, stability mechanisms (replay buffers, learning rate scheduling), and inherent constraints on geometric transformations
- \item Critical examination of failure modes, likelihood calibration challenges, and ethical deployment considerations
- \item Reproducibility documentation with complete hyperparameter specifications, preprocessing pipelines, and computational resource requirements
-\end{itemize}
-
-\section{Background}
-\subsection{Normalizing Flows: Mathematical Foundation}
-Normalizing flows learn an invertible mapping $f_{\theta}: X \to Z$ pushing data $x$ to latent $z$ under a simple base density $p_Z$ (typically isotropic Gaussian). The log-likelihood decomposes across successive bijections:
-\begin{equation}
-\log p_{\theta}(x) = \log p_Z(f_{\theta}(x)) + \log \left| \det \frac{\partial f_{\theta}(x)}{\partial x} \right|.
-\end{equation}
-
-\paragraph{Composing Flows} Given sequence $f = f_K \circ \cdots \circ f_1$, Jacobians multiply yielding:
-\begin{equation}
-\log p_{\theta}(x) = \log p_Z(z_K) + \sum_{k=1}^{K} \log \left| \det \frac{\partial f_k}{\partial z_{k-1}} \right|, \quad z_k = f_k(z_{k-1}).
-\end{equation}
-Each bijection $f_k$ must have tractable Jacobian determinant computation (ideally $\mathcal{O}(D)$ rather than $\mathcal{O}(D^3)$ for full matrix determinant).
-
-\paragraph{Invertibility Requirements} Training via maximum likelihood requires forward pass (data$\to$latent) for density evaluation; sampling requires inverse (latent$\to$data). Coupling layers provide both directions efficiently; autoregressive flows favor one direction.
-
-\subsection{Autoregressive Modeling and MADE}
-Autoregressive factorization decomposes joint density:
-\begin{equation}
-p(x) = \prod_{d=1}^{D} p(x_d \mid x_{<d}),
-\end{equation}
-where each conditional $p(x_d \mid x_{1:d-1})$ may be parameterized by neural networks. MADE (Masked Autoencoder for Distribution Estimation) enforces this dependency structure via binary masks $M$ applied to weight matrices, zeroing connections from $x_j$ to $x_i$ whenever $j \geq i$ under the chosen ordering.
-
-\paragraph{Masking Strategy} Assign each hidden unit $h$ a random number $m(h) \in \{1, \dots, D-1\}$ representing maximum input dependency. Mask from input $x_d$ to hidden $h$ is 1 iff $d \leq m(h)$; mask from hidden $h$ to output parameter for $x_d$ is 1 iff $m(h) < d$. This guarantees autoregressive property.
-
-\paragraph{Connection to MAF} MAF stacks MADE blocks where each outputs transformation parameters $(\mu_d, \sigma_d)$ depending autoregressively on previous dimensions. Permuting dimension order between blocks increases expressiveness by varying dependency patterns.
-
-\subsection{Adversarial Image Translation}
-Generative adversarial networks pit generator $G_{\theta}$ against discriminator $D_{\phi}$ in a minimax game:
-\begin{equation}
-\min_{\theta} \max_{\phi} \mathbb{E}_{x \sim p_{\text{data}}}[\log D_{\phi}(x)] + \mathbb{E}_{z \sim p_Z}[\log(1 - D_{\phi}(G_{\theta}(z)))].
-\end{equation}
-
-\paragraph{Conditional GANs (cGANs)} Conditioned on input $x$, generator produces $G(x)$ targeting output domain; discriminator evaluates pairs $(x, y)$. Pix2pix exemplifies supervised paired translation with $\mathcal{L}_1$ reconstruction penalty.
-
-\paragraph{Unpaired Translation Challenge} CycleGAN addresses absence of paired $(x,y)$ by learning dual mappings $(G: X \to Y, F: Y \to X)$ with cycle consistency constraint $F(G(x)) \approx x$ and $G(F(y)) \approx y$, preventing mode collapse while avoiding explicit correspondence.
-
-\subsection{Instance Normalization vs Batch Normalization}
-Instance normalization (IN) normalizes each sample independently across spatial dimensions:
-\begin{equation}
-\text{IN}(x) = \gamma \frac{x - \mu(x)}{\sigma(x)} + \beta,
-\end{equation}
-where $\mu, \sigma$ computed per-instance per-channel. This contrasts with batch normalization (BN) using mini-batch statistics. IN better preserves individual image style statistics, critical for style transfer tasks.
-
-\subsection{Residual Learning}
-Residual blocks learn additive corrections $\mathcal{F}(x)$ to input:
-\begin{equation}
-y = x + \mathcal{F}(x),
-\end{equation}
-mitigating vanishing gradients in deep networks. For image translation, residuals encode localized texture modifications while identity path maintains structure.
-
-\section{Methodology: Detailed Implementation}
-\subsection{MAF Architecture Specification}
-\subsubsection{MADE Block Structure}
-Each MADE block consists of:
-\begin{itemize}
-\item \textbf{Input layer}: $D = 49{,}152$ dimensions (flattened $128 \times 128 \times 3$ RGB images).
-\item \textbf{Hidden layers}: Two fully-connected layers with 512 units each, masked weights enforcing autoregressive property.
-\item \textbf{Output layer}: $2D$ outputs encoding per-dimension mean $\mu_d(x_{<d})$ and log-scale $\log \sigma_d(x_{<d})$.
-\item \textbf{Activation}: ReLU for hidden layers; linear output.
-\end{itemize}
-
-\subsubsection{Transformation Equation}
-For dimension $d$ in block $k$:
-\begin{equation}
-z^{(k)}_d = \frac{x^{(k)}_d - \mu^{(k)}_d(x^{(k)}_{<d})}{\sigma^{(k)}_d(x^{(k)}_{<d})},
-\end{equation}
-where $\mu^{(k)}_d, \sigma^{(k)}_d$ are neural network outputs. Inverse for sampling:
-\begin{equation}
-x^{(k)}_d = \mu^{(k)}_d(x^{(k)}_{<d}) + \sigma^{(k)}_d(x^{(k)}_{<d}) \cdot z^{(k)}_d.
-\end{equation}
-
-\subsubsection{Multi-Block Composition}
-Seven MAF blocks stacked with dimension permutations (reversal or random shuffle) between blocks. Final latent $z^{(7)}$ compared against standard Gaussian base. Total trainable parameters: approximately 18M (dominated by $512 \times 49{,}152$ weight matrices).
-
-\subsubsection{Training Objective and Gradients}
-Minimize negative log-likelihood:
-\begin{equation}
-\mathcal{L}(\theta) = -\frac{1}{N} \sum_{i=1}^{N} \left[ \log p_Z(z_i^{(K)}) + \sum_{k=1}^{K} \sum_{d=1}^{D} \log \sigma^{(k)}_d \right],
-\end{equation}
-where $p_Z = \mathcal{N}(0, I)$. Gradients backpropagate through MADE networks updating $\mu, \log\sigma$ parameters.
-
-\subsection{CycleGAN Architectural Components}
-\subsubsection{Generator Architecture: ResNet-9}
-\paragraph{Downsampling Path:}
-\begin{enumerate}
-\item Initial convolution: $7 \times 7$ kernel, 64 filters, Instance Norm, ReLU.
-\item Downsample 1: $3 \times 3$ conv, stride 2, 128 filters, IN, ReLU.
-\item Downsample 2: $3 \times 3$ conv, stride 2, 256 filters, IN, ReLU.
-\end{enumerate}
-
-\paragraph{Transformation Path:}
-Nine residual blocks at resolution $64 \times 64$, each comprising:
-\begin{itemize}
-\item $3 \times 3$ conv, 256 filters, IN, ReLU
-\item $3 \times 3$ conv, 256 filters, IN
-\item Residual connection (sum with input)
-\end{itemize}
-
-\paragraph{Upsampling Path:}
-\begin{enumerate}
-\item Upsample 1: $3 \times 3$ transposed conv, stride 2, 128 filters, IN, ReLU.
-\item Upsample 2: $3 \times 3$ transposed conv, stride 2, 64 filters, IN, ReLU.
-\item Output convolution: $7 \times 7$ kernel, 3 filters (RGB), $\tanh$ activation $\to [-1,1]$.
-\end{enumerate}
-
-Total generator parameters: $\approx 11.4$M per generator ($G_{AB}, G_{BA}$).
-
-\subsubsection{Discriminator Architecture: PatchGAN-70}
-Five convolutional layers with progressively increasing channels:
-\begin{enumerate}
-\item Conv: $4 \times 4$, stride 2, 64 filters, LeakyReLU(0.2) — no normalization.
-\item Conv: $4 \times 4$, stride 2, 128 filters, IN, LeakyReLU.
-\item Conv: $4 \times 4$, stride 2, 256 filters, IN, LeakyReLU.
-\item Conv: $4 \times 4$, stride 1, 512 filters, IN, LeakyReLU.
-\item Conv: $4 \times 4$, stride 1, 1 filter (logit output) — no activation.
-\end{enumerate}
-Output: $30 \times 30$ grid for $256 \times 256$ input (effective receptive field $70 \times 70$ per patch).
-
-Total discriminator parameters: $\approx 2.8$M per discriminator ($D_A, D_B$).
-
-\subsubsection{Loss Functions: Complete Formulation}
-\paragraph{Adversarial Loss (LSGAN):}
-\begin{align}
-\mathcal{L}_{\text{GAN}}(G, D_Y, X, Y) &= \mathbb{E}_{y \sim p_Y}[(D_Y(y) - 1)^2] + \mathbb{E}_{x \sim p_X}[D_Y(G(x))^2], \\
-\mathcal{L}_{\text{GAN}}(F, D_X, Y, X) &= \mathbb{E}_{x \sim p_X}[(D_X(x) - 1)^2] + \mathbb{E}_{y \sim p_Y}[D_X(F(y))^2].
-\end{align}
-
-\paragraph{Cycle Consistency Loss:}
-\begin{equation}
-\mathcal{L}_{\text{cyc}}(G, F) = \mathbb{E}_{x \sim p_X}[\|F(G(x)) - x\|_1] + \mathbb{E}_{y \sim p_Y}[\|G(F(y)) - y\|_1].
-\end{equation}
-
-\paragraph{Identity Loss:}
-\begin{equation}
-\mathcal{L}_{\text{id}}(G, F) = \mathbb{E}_{y \sim p_Y}[\|G(y) - y\|_1] + \mathbb{E}_{x \sim p_X}[\|F(x) - x\|_1].
-\end{equation}
-
-\paragraph{Full Generator Objective:}
-\begin{equation}
-\mathcal{L}_G = \mathcal{L}_{\text{GAN}}(G, D_Y) + \mathcal{L}_{\text{GAN}}(F, D_X) + \lambda_{\text{cyc}} \mathcal{L}_{\text{cyc}} + \lambda_{\text{id}} \mathcal{L}_{\text{id}}.
-\end{equation}
-
-\paragraph{Discriminator Objectives:}
-\begin{align}
-\mathcal{L}_{D_Y} &= \mathbb{E}_{y}[(D_Y(y) - 1)^2] + \mathbb{E}_{x}[D_Y(G(x))^2], \\
-\mathcal{L}_{D_X} &= \mathbb{E}_{x}[(D_X(x) - 1)^2] + \mathbb{E}_{y}[D_X(F(y))^2].
-\end{align}
-
-\subsection{Optimization Protocol}
-\subsubsection{MAF Training}
-\begin{itemize}
-\item \textbf{Optimizer}: Adam with $\beta_1=0.9, \beta_2=0.999, \epsilon=10^{-8}$.
-\item \textbf{Learning rate}: $10^{-4}$ (constant).
-\item \textbf{Batch size}: 3 (GPU memory limitation with $128^2$ images).
-\item \textbf{Epochs}: 100.
-\item \textbf{Gradient clipping}: Norm threshold 5.0 to prevent NaN.
-\item \textbf{Early stopping}: Monitor validation NLL; halt if no improvement for 10 epochs.
-\end{itemize}
-
-\subsubsection{CycleGAN Training}
-\begin{itemize}
-\item \textbf{Optimizer}: Adam with $\beta_1=0.5, \beta_2=0.999$ (lower momentum for adversarial stability).
-\item \textbf{Learning rate schedule}: 
-  \begin{itemize}
-  \item Epochs 1–100: Constant $2 \times 10^{-4}$.
-  \item Epochs 101–200: Linear decay to 0.
-  \end{itemize}
-\item \textbf{Batch size}: 1 (standard for unpaired translation to preserve individual statistics).
-\item \textbf{Update rule}: Alternate — update $D_A, D_B$ then $G_{AB}, G_{BA}$ per iteration.
-\item \textbf{Replay buffer}: Size 50; sample with 50\% probability from buffer vs current fake.
-\item \textbf{Label smoothing}: Real labels sampled $\sim \mathcal{U}(0.9, 1.0)$; fake labels 0.
-\end{itemize}
-
-\subsection{Implementation Details}
-\paragraph{Frameworks:} PyTorch 2.0+, torchvision for data loading.
-\paragraph{Hardware:} Training conducted on NVIDIA GPU (CUDA-enabled); mixed precision (FP16) optional for memory efficiency.
-\paragraph{Data Augmentation:} CycleGAN applies random horizontal flip; MAF uses raw images to preserve likelihood semantics.
-\paragraph{Checkpointing:} Save model weights every 10 epochs; retain best based on validation metric (NLL for MAF, visual inspection for CycleGAN).
-
-\section{Hyperparameters}
-\begin{table}[h!]
- \centering
- \caption{Key Hyperparameters for MAF and CycleGAN Models}
- \label{tab:hyperparams}
- \begin{tabular}{@{}l l l l@{}}
- \toprule
- \textbf{Model} & \textbf{Parameter} & \textbf{Value} & \textbf{Rationale} \\
- \midrule
- MAF & Blocks & 7 & Expressiveness vs memory \\
- MAF & Hidden width & 512 & Capacity for high $D$ \\
- MAF & Learning rate & $1\times10^{-4}$ & Stable NLL descent \\
- MAF & Batch size & 3 & GPU memory constraints \\
- CycleGAN & ResNet blocks & 9 & Recommended for $256^2$ \\
- CycleGAN & Replay buffer size & 50 & Empirical stability \\
- CycleGAN & $\lambda_{\text{cyc}}$ & 10 & Balance realism/structure \\
- CycleGAN & $\lambda_{\text{id}}$ & 5 & Preserve coloration \\
- CycleGAN & Optimizer & Adam & Widely adopted baseline \\
- \bottomrule
- \end{tabular}
-\end{table}
-
-\section{Experimental Setup and Protocols}
-\subsection{Datasets}
-\subsubsection{MVTec Anomaly Detection (Capsule Class)}
-Industrial defect detection dataset containing:
-\begin{itemize}
-\item \textbf{Training}: 219 normal capsule images (defect-free).
-\item \textbf{Test}: 54 normal + 109 anomalous (various defect types: crack, poke, scratch, faulty imprint, squeeze).
-\item \textbf{Resolution}: Original high-resolution images.
-\item \textbf{Preprocessing}: Resize to $128 \times 128$, normalize to $[0,1]$, standardize per-channel (ImageNet statistics).
-\end{itemize}
-
-\subsubsection{Horse2Zebra}
-Unpaired image translation dataset:
-\begin{itemize}
-\item \textbf{Domain A (Horse)}: 1,067 training images of horses in natural settings.
-\item \textbf{Domain B (Zebra)}: 1,334 training images of zebras.
-\item \textbf{Test sets}: 120 horses, 140 zebras.
-\item \textbf{Resolution}: Variable; resized to $256 \times 256$ with aspect-ratio-preserving crop.
-\item \textbf{Normalization}: Scale to $[-1, 1]$ to match $\tanh$ generator output range.
-\end{itemize}
-
-\subsection{Data Preprocessing Pipeline}
-\subsubsection{MAF Preprocessing}
-\begin{enumerate}
-\item Resize to $128 \times 128$ using bilinear interpolation.
-\item Convert to tensor, scale pixel values $\in [0, 1]$.
-\item Apply per-channel standardization: $x' = (x - \mu_{\text{ImageNet}}) / \sigma_{\text{ImageNet}}$.
-\documentclass[conference]{IEEEtran}
-\IEEEoverridecommandlockouts
-\usepackage{cite}
-\usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
-\usepackage{graphicx}
-\usepackage{textcomp}
-\usepackage{xcolor}
-\usepackage{booktabs}
-\usepackage{subcaption}
-\usepackage{xepersian}
-\settextfont{XB Yas}
-\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
-    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\textit{University of Tehran} \\
+Email: taha.majlesi@ut.ac.ir}}
 
 \begin{document}
-
-	itle{مدل‌های مولد عمیق برای برآورد چگالی و ترجمه تصویر بدون جفت: مطالعهٔ تطبیقی MAF و CycleGAN\\
-{\footnotesize یادداشت: تکلیف دوم درس مدل‌های مولد عمیق}
-}
-
-\author{\IEEEauthorblockN{محمد طاها مجلسی}
-\IEEEauthorblockA{\textit{گروه مهندسی کامپیوتر} \\
-	extit{دانشگاه تهران}\\
-Email: taha.majlesi@ut.ac.ir}
-}
-
 \maketitle
 
 \begin{abstract}
-در این گزارش دو پارادایم مکمل در حوزهٔ مدل‌های مولد عمیق بررسی می‌شود: (١) \textbf{MAF} (Masked Autoregressive Flow)، یک جریان نرمال‌سازی‌شدهٔ مبتنی بر تابع احتمال که امکان برآورد صریح چگالی و امتیازدهی ناهنجاری را فراهم می‌آورد؛ و (٢) \textbf{CycleGAN}، چارچوبی مبتنی بر رقابت‌پذیری برای ترجمهٔ تصویر به تصویر در شرایط فاقد جفت که از سازگاری چرخه‌ای و محدودیت‌های هویتی استفاده می‌کند. ابتدا مبانی نظری شامل نگاشت تغییر متغیرها، محاسبهٔ محدب ژاکوبی، و فاکتورسازی اتورگرسیو تشریح می‌گردد. سپس طراحی‌های معماری (از جمله نقاب‌گذاری MADE، ساختارهای ResNet برای تولیدکننده و شبکه‌های PatchGAN برای افتراق‌دهنده) و معیارهای آموزش و پایدارسازی توضیح داده می‌شوند. در ارزیابی تجربی، مدل MAF برای مدل‌سازی چگالی تصاویر صنعتی (مجموعه‌دادهٔ MVTec AD) و CycleGAN برای ترجمهٔ سبک اسب-زِبرا استفاده شده‌اند؛ معیارهای کمی (AUROC ≈ 0.72 برای تشخیص ناهنجاری) و ارزیابی‌های کیفی گزارش شده‌اند. در پایان، محدودیت‌های اساسی، ملاحظات اخلاقی و پیشنهاداتی برای کارهای آینده مطرح می‌گردد.
+This report provides a complete and implementation-grounded treatment of CA2 in Deep Generative Models, covering both Masked Autoregressive Flow (MAF) and CycleGAN. For normalizing flows, we derive change-of-variables identities, Jacobian determinants for coupling-style transformations, and discuss autoregressive masking with MADE. We then present the implemented MAF pipeline, training objective, generation-time versus training-time behavior, anomaly detection methodology based on negative log-likelihood, and metric design with AUROC. For CycleGAN, we answer all theoretical prompts regarding unpaired translation, cycle consistency, objective formulation, identity loss, architectural choices, PatchGAN motivation, replay buffer dynamics, and geometric limitations. The practical section documents complete CLI workflows, artifact generation, and report integration. Current included results are reproducible quick-mode outputs generated from the project code path, while full-data procedures are specified to obtain final benchmark-grade quantitative claims.
 \end{abstract}
 
 \begin{IEEEkeywords}
-مدل‌های مولد عمیق، جریان‌های نرمال‌سازی‌شده، Masked Autoregressive Flow، CycleGAN، ترجمهٔ تصویر بدون جفت، تشخیص ناهنجاری
+Deep generative models, normalizing flows, MADE, MAF, anomaly detection, CycleGAN, PatchGAN, unpaired image translation
 \end{IEEEkeywords}
 
-\section{مقدمه}
-مسئلهٔ برآورد چگالی و ترجمهٔ تصویر بدون جفت دو حوزهٔ مهم در یادگیری ماشین هستند که کاربردهای گسترده‌ای در تشخیص ناهنجاری، تبدیل سبک، و تولید نمونه‌های واقع‌گرایانه دارند. در این گزارش، هدف ارائهٔ توضیحاتی منسجم و رسمی دربارهٔ اصول نظری، طراحی‌های مهندسی، و نتایج تجربی مربوط به \textbf{MAF} و \textbf{CycleGAN} است. بخش‌ها به ترتیب تئوری پایه، پیاده‌سازی و تنظیمات تجربی، نتایج و تحلیل، و مباحث نهایی و اخلاقی سازمان‌دهی شده‌اند.
-
-\section{پیش‌زمینه و مبانی نظری}
-در این بخش مفاهیم کلیدی که در ادامه مورد استفاده قرار می‌گیرند، معرفی می‌شوند.
-
-\subsection{جریان‌های نرمال‌سازی‌شده و MAF}
-جریان‌های نرمال‌سازی‌شده سازوکاری برای تبدیل یک توزیع سادهٔ اولیه (مثلاً گاوسی) به توزیع هدف از طریق نگاشت‌های معکوس‌پذیر و محاسبهٔ دقیق ژاکوبی هستند. در MAF با استفاده از فاکتورسازی اتورگرسیو توزیع مشترک به حاصل‌ضرب شرطی‌ها تبدیل می‌شود و با اعمال نگاشت‌های محاسبه‌پذیر و ماسک‌گذاری‌شده (MADE) می‌توان چگالی‌های پیچیده را مدل‌سازی کرد. مزیت اصلی این خانواده محاسبهٔ صریح لاگ‌احتمال نمونه‌هاست که برای تشخیص ناهنجاری و ارزیابی مدل ضروری است.
-
-\subsection{شبکه‌های متخاصم و CycleGAN}
-CycleGAN چارچوبی برای ترجمهٔ تصویر بدون نیاز به زوج‌های متناظر در مجموعهٔ آموزش است. دو نگاشت ژنراتور \(G: X\rightarrow Y\) و \(F: Y\rightarrow X\) به همراه دو افتراق‌دهنده آموزش داده می‌شوند. برای پایدارسازی آموزش و حفظ ساختاری از تصاویر، علاوه بر تابع هزینهٔ متعارف GAN، «ضرر سازگاری چرخه‌ای» و «ضرر هویتی» مورد استفاده قرار می‌گیرد تا نگاشت‌ها معنادار و بقای ویژگی‌های بصری حفظ شود.
-
-\section{معماری‌ها و جزئیات پیاده‌سازی}
-در این بخش معماری‌ها و نکات فنی هر مدل شرح داده می‌شود.
-
-\subsection{جزئیات MAF}
-MAF از ترکیب چندین لایهٔ اتورگرسیو تشکیل می‌شود؛ هر لایه شامل یک نگاشت از نوع مقیاس-افزایشی با وابستگی شرطی بر مولفه‌های قبلی است. برای حفظ بازگشت‌پذیری و محاسبهٔ سریع لاگ‌دترمینان ژاکوبی، از نقاب‌گذاری‌های ساخت‌یافته (MADE) استفاده می‌شود. در عمل، تعداد لایه‌ها و اندازهٔ آرشیتکتچر بسته به پیچیدگی داده تنظیم می‌شود و بهینه‌ساز Adam با نرخ یادگیری تنظیم‌شده معمولاً نتایج قابل قبولی می‌دهد.
-
-\subsection{جزئیات CycleGAN}
-ژنراتورها: معماری مبتنی بر ResNet با بلوک‌های باقیمانده برای حفظ جزئیات و تسهیل جریان گرادیان استفاده می‌شود.
-افتراق‌دهنده‌ها: از PatchGAN برای تمرکز بر ویژگی‌های محلی و بافتی بهره می‌گیریم.
-توابع هزینه: شامل ضررهای GAN، ضرر چرخه (\(\mathcal{L}_{cyc}\)) و ضرر هویتی (\(\mathcal{L}_{id}\)) است؛ وزن‌دهی این اجزا تأثیر زیادی بر کیفیت ترجمه دارد.
-
-\section{داده‌ها و تنظیمات تجربی}
-برای ارزیابی، دو آزمایش مستقل اجرا شد:
-- برآورد چگالی و تشخیص ناهنجاری با استفاده از مجموعه‌دادهٔ صنعتی MVTec AD: تصاویر کپسول و کالاهای صنعتی برای سنجش قابلیت مدل در شناسایی نمونه‌های معیوب.
-- ترجمهٔ تصویر سبک اسب به زِبرا با استفاده از مجموعه‌دادهٔ رایج اسب-زِبرا برای بررسی کیفیت بصری و حفظ ساختار.
-
-تنظیمات عمومی: شبکه‌ها با استفاده از کارت گرافیک و پیاده‌سازی در چارچوب PyTorch اجرا شدند؛ هایپرپارامترها (مانند نرخ یادگیری، اندازه بچ و تعداد اپک‌ها) برای هر آزمایش جداگانه تنظیم شد. برای ارزیابی تشخیص ناهنجاری از معیار AUROC استفاده شد.
-
-\section{نتایج}
-نتایج کمی و کیفی به‌صورت خلاصه در این‌جا آورده شده است.
-
-\subsection{تشخیص ناهنجاری با MAF}
-MAF توانست رفتار توزیع نرمال نمونه‌ها را مدل‌سازی کند و ناهنجاری‌ها را با استفاده از لاگ‌احتمال‌ها امتیازدهی کند. در آزمایش روی زیرمجموعه‌ای از MVTec AD، مقدار AUROC حدود 0.72 ثبت شد که نشان‌دهندهٔ عملکرد معقول مدل در تشخیص نمونه‌های معیوب می‌باشد. تحلیل دقیق‌تر نشان می‌دهد که مدل در تشخیص ناهنجاری‌های ظریف‌تر نیازمند شبکه‌های عمیق‌تر یا ترکیب با ویژگی‌های وابسته به بافت است.
-
-\subsection{ترجمهٔ تصویر با CycleGAN}
-در ترجمهٔ اسب به زِبرا، CycleGAN تصاویر هدف‌دار و بافت‌های کلی را به‌طور مناسبی بازیابی کرد؛ با این‌حال، در برخی نمونه‌ها دگرگونی‌های هندسی و تغییرات ساختاری نامطلوب مشاهده شد که نشان می‌دهد محدودیت‌های مدل در یادگیری نگاشت‌های پیچیدهٔ هندسی وجود دارد. ارزیابی کیفی نشان‌دهندهٔ حفظ رنگ و بافت در بسیاری از نمونه‌هاست، اما بهبود‌های بیشتر در معماری ژنراتور و تلفیق معیارهای برداشت ساختاری می‌تواند کیفیت را افزایش دهد.
-
-\section{بحث}
-تحلیل نتایج نشان می‌دهد:
-- مزایا: MAF امکان محاسبهٔ صریح و قابل‌تفسیر لاگ‌احتمال را فراهم می‌آورد که برای تشخیص ناهنجاری سودمند است. CycleGAN بدون نیاز به دادهٔ جفت‌شده توان ترجمهٔ سبک را به‌دست می‌دهد.
-- محدودیت‌ها: جریان‌های نرمال‌سازی‌شده ممکن است چالش‌هایی در مقیاس‌پذیری روی تصاویر با ابعاد بزرگ داشته باشند و همچنین احتمال دارد لاگ‌احتمال برای داده‌های واقعی کالیبره نباشد. CycleGAN در مواردی که نگاشت نیازمند تغییرات هندسی پیچیده است، محدودیت نشان می‌دهد.
-
-پیشنهادها: ترکیب جریان‌ها با مدل‌های ویژگی‌محور (مثلاً استخراج‌گرهای CNN پیش‌آموزش‌دیده) یا استفاده از معیارهای ساختاری و تلفیقی در تابع خطا می‌تواند به بهبود عملکرد کمک کند.
-
-\section{ملاحظات اخلاقی و کاربردی}
-استفادهٔ عملی از مدل‌های مولد و سیستم‌های تشخیص ناهنجاری مستلزم توجه به مسائل حریم خصوصی، تاثیرات اجتماعی و خطرات سوءاستفاده است. هنگام به‌کارگیری در محیط‌های حساس باید شفافیت مدل، ممیزی نتایج، و مکانیزم‌های بازبینی انسانی در نظر گرفته شود. همچنین در ترجمهٔ تصویر، تضمین عدم تولید محتواهای گمراه‌کننده یا نقض کپی‌رایت اهمیت دارد.
-
-\section{نتیجه‌گیری}
-در این گزارش، مبانی نظری و پیاده‌سازی‌های عملی دو رویکرد مکمل — MAF برای برآورد چگالی و CycleGAN برای ترجمهٔ تصویر بدون جفت — تشریح شد. نتایج تجربی نشان می‌دهد هر یک توانمندی‌ها و محدودیت‌های مشخصی دارند و انتخاب یا ترکیب آن‌ها باید متناسب با هدف کاربردی و طبیعت داده انجام شود. جهت تحقیقات آینده، پیشنهاد می‌شود روی تلفیق ویژگی‌های استخراج‌شده، بهبود کالیبراسیون احتمال در جریان‌ها، و توسعهٔ معیارهای ساختاری برای ترجمهٔ تصویر کار شود.
-
-\section*{سپاسگزاری}
-نویسنده از پشتیبانی علمی اساتید و دسترسی به منابع محاسباتی دانشگاه تشکر می‌کند.
-
-\begin{thebibliography}{9}
-
-@book{CLRS,
-    author = {Cormen, Thomas H. and Leiserson, Charles E. and Rivest, Ronald L. and Stein, Clifford},
-    title = {Introduction to Algorithms, Third Edition},
-    year = {2009},
-    isbn = {0262033844, 9780262033848},
-    edition = {3rd},
-    publisher = {The MIT Press},
-} 
-
-@misc{visualizationwebsite,
-    title = {Data Structure Visualizations},
-    author = {David Galles},
-    howpublished = {\url{https://www.cs.usfca.edu/~galles/visualization/StackArray.html}},
-    note = {Accessed: 2019-12-10}
-} 
-
-\end{thebibliography}
-
-\end{document}
-
-\subsubsection{Unified Frameworks}
+\section{Introduction and Scope}
+This assignment combines two complementary families of generative modeling:
 \begin{itemize}
-\item Likelihood-regularized GANs combining flow priors with adversarial training.
-\item Energy-based models bridging density estimation and implicit generation.
-\item Diffusion models for high-fidelity conditional and unconditional generation (alternative to flows and GANs).
+\item \textbf{Likelihood-based modeling} (MAF), where exact log-likelihood can be computed and used for density estimation and anomaly scoring.
+\item \textbf{Adversarial unpaired translation} (CycleGAN), where domain mappings are learned without paired supervision using adversarial and cycle constraints.
 \end{itemize}
 
-\section{Normalizing Flows: Theory and Practice}
-Normalizing flows construct complex, flexible densities by transforming a simple base distribution (typically isotropic Gaussian) through a sequence of invertible mappings whose Jacobian determinants are tractable. This section covers the mathematical foundations, specific coupling mechanisms, the Masked Autoregressive Flow (MAF) architecture, and its application to anomaly detection.
+This report is organized to directly match assignment requirements:
+\begin{enumerate}
+\item \textbf{Question 1 (Normalizing Flows):} theory, implementation, time-complexity analysis, and anomaly detection.
+\item \textbf{Question 2 (CycleGAN):} theory, architecture and optimization details, qualitative evaluation, and limitations.
+\item \textbf{Engineering completion:} reproducible pipeline, saved report figures, and compiled final PDF.
+\end{enumerate}
 
-\subsection{Theoretical Foundations}
+\section{Question 1: Normalizing Flows}
 
-\subsubsection{Change of Variables Principle}
-Let $z = f(x)$ be a smooth bijection between random variables $X$ and $Z$. Densities transform via:
+\subsection{Part 1 -- Theory}
+
+\subsubsection{Change of Variables: General Derivation}
+Let $x\in\mathbb{R}^D$, $z=f(x)$, where $f$ is bijective and differentiable. Densities satisfy
 \begin{equation}
- p_X(x) = p_Z(f(x)) \left| \det \frac{\partial f(x)}{\partial x} \right|.\label{eq:cov}
+ p_X(x)=p_Z(f(x))\left|\det\frac{\partial f(x)}{\partial x}\right|.
+\label{eq:cov_fwd}
 \end{equation}
-Equivalently, using the inverse $x = f^{-1}(z)$:
+Equivalently, using $x=f^{-1}(z)$:
 \begin{equation}
- p_X(x) = p_Z(z) \left| \det \frac{\partial f^{-1}(z)}{\partial z} \right|,\quad z = f(x).
+ p_X(x)=p_Z(z)\left|\det\frac{\partial f^{-1}(z)}{\partial z}\right|,\quad z=f(x).
+\label{eq:cov_inv}
 \end{equation}
-This enables likelihood evaluation when $f$ is invertible and the determinant (or its log) is tractable.
-
-\paragraph{Example 1: Linear Scaling of Uniform}
-Base $Z \sim \mathcal{U}(0,1)$, $X = 2Z + 1$. Inverse $Z = (X-1)/2$ has derivative $\frac{dZ}{dX}=1/2$. Support maps to $X \in [1,3]$. Thus
+For a sequence of flow blocks $f=f_K\circ\dots\circ f_1$, log-likelihood becomes
 \begin{equation}
- p_X(x) = \begin{cases}\frac{1}{2} & 1 \le x \le 3 \\ 0 & \text{otherwise}\end{cases}.
+\log p_X(x)=\log p_Z(z_K)+\sum_{k=1}^{K}\log\left|\det\frac{\partial f_k}{\partial z_{k-1}}\right|.
+\label{eq:chain_flow}
 \end{equation}
 
-\paragraph{Example 2: Exponential Transformation}
-Base $Z \sim \mathcal{U}(0,2)$, $X = e^{Z}$ with inverse $Z = \ln X$, Jacobian $\frac{dZ}{dX}=1/X$, support $X \in [1,e^{2}]$. Hence
+\subsubsection{Closed-Form Example 1}
+If $Z\sim\mathcal{U}(0,1)$ and $X=2Z+1$, then
 \begin{equation}
- p_X(x) = \begin{cases}\dfrac{1}{2x} & 1 \le x \le e^{2} \\ 0 & \text{otherwise}\end{cases}.
+ Z=\frac{X-1}{2},\quad \left|\frac{dZ}{dX}\right|=\frac{1}{2},\quad x\in[1,3].
 \end{equation}
-The integral $\int_{1}^{e^{2}} \frac{1}{2x} dx = 1$ validates normalization.
+Hence
+\begin{equation}
+ p_X(x)=\begin{cases}
+\frac{1}{2}, & 1\le x\le 3, \\
+0, & \text{otherwise}.
+\end{cases}
+\end{equation}
 
-\subsubsection{Autoregressive and Coupling Transformations}
-Designing $f$ such that $\log \left| \det \frac{\partial f}{\partial x} \right|$ is computationally efficient is central. Two families:
+\subsubsection{Closed-Form Example 2}
+If $Z\sim\mathcal{U}(0,2)$ and $X=e^Z$, then
+\begin{equation}
+ Z=\ln X,\quad \left|\frac{dZ}{dX}\right|=\frac{1}{X},\quad x\in[1,e^2].
+\end{equation}
+Thus
+\begin{equation}
+ p_X(x)=\begin{cases}
+\frac{1}{2x}, & 1\le x\le e^2,\\
+0, & \text{otherwise}.
+\end{cases}
+\end{equation}
+
+\subsubsection{Jacobian Determinants for Two Transform Families}
+
+\paragraph{(a) Additive coupling}
+For
+\begin{equation}
+ z_1=x_1,\qquad z_2=x_2+m(x_1),
+\end{equation}
+Jacobian is triangular:
+\begin{equation}
+J=
+\begin{bmatrix}
+1 & 0 \\
+\frac{\partial m(x_1)}{\partial x_1} & 1
+\end{bmatrix},
+\qquad \det J=1.
+\end{equation}
+This is volume-preserving.
+
+\paragraph{(b) Affine coupling}
+For
+\begin{equation}
+ z_1=x_1,\qquad z_2=s(x_1)\odot x_2+t(x_1),
+\end{equation}
+Jacobian remains triangular with diagonal containing scale terms:
+\begin{equation}
+ \det J=\prod_i s_i(x_1),\qquad
+ \log|\det J|=\sum_i \log|s_i(x_1)|.
+\end{equation}
+
+\subsection{Part 2 -- MAF Implementation}
+
+\subsubsection{Autoregressive Factorization and MADE}
+Autoregressive models use
+\begin{equation}
+ p(x)=\prod_{d=1}^{D}p(x_d\mid x_{<d}).
+\end{equation}
+In MADE, binary masks on dense layers enforce this dependency structure by design: output $d$ cannot depend on input dimensions $\ge d$.
+
+\subsubsection{MAF Block Used in This Project}
+Each block predicts shift and scale using a masked network:
+\begin{equation}
+[s(x),t(x)] = \text{MADE}(x).
+\end{equation}
+A stable positive scale is formed as
+\begin{equation}
+\sigma(x)=\text{sigmoid}(s(x)+2).
+\end{equation}
+Forward pass (used in likelihood computation):
+\begin{equation}
+z=\frac{x-t(x)}{\sigma(x)+\epsilon},
+\quad
+\log|\det J|=-\sum_i\log(\sigma_i(x)+\epsilon).
+\end{equation}
+
+Inverse pass (used in generation) is sequential:
+\begin{equation}
+x_i=\sigma_i(x_{<i})z_i+t_i(x_{<i}).
+\end{equation}
+
+\subsubsection{Training Objective}
+With standard normal base distribution and $K$ flow blocks,
+\begin{equation}
+\mathcal{L}_{NLL}(\theta)
+=-\frac{1}{N}\sum_{n=1}^{N}
+\left[\log p_Z(z_n^{(K)})+
+\sum_{k=1}^{K}\log\left|\det J_k\right|\right].
+\end{equation}
+Optimization uses Adam with configurable checkpointing, resume, and optional scheduler.
+
+\subsubsection{Implementation Details (Current Code)}
 \begin{itemize}
- \item \textbf{Autoregressive}: Each output depends only on previous inputs under a chosen ordering. Jacobian is triangular $\Rightarrow$ determinant is product of diagonal terms.
- \item \textbf{Coupling layers}: Partition input dimensions $(x_a, x_b)$; transform $x_b$ conditioned on $x_a$ while copying $x_a$. Determinant reduces to simple terms (e.g., product of scales).
+\item Full image mode: $128\times128\times3$, 7 blocks, hidden widths $[512,512]$.
+\item Quick mode: reduced internal image size for fast reproducibility.
+\item CLI supports train/generate/eval with deterministic artifact saving.
+\item Synthetic fallback runs when local datasets are missing.
 \end{itemize}
 
-\paragraph{Additive Coupling (NICE)} For $(x_1,x_2)$: $z_1 = x_1$, $z_2 = x_2 + m(x_1)$. Jacobian
-\begin{equation}
- J = \begin{pmatrix}1 & 0 \\ m'(x_1) & 1\end{pmatrix},\quad \det J = 1.
-\end{equation}
-Volume preserving, allowing arbitrarily complex $m$ without affecting determinant.
+\subsubsection{Training Time vs Generation Time and MAF vs IAF}
+Quick reproducible metrics from generated JSON files are summarized in Table~\ref{tab:maf_timing}.
 
-\paragraph{Affine Coupling (RealNVP/Glow)} $z_1 = x_1$, $z_2 = s(x_1)\, x_2 + t(x_1)$. Jacobian
-\begin{equation}
- J = \begin{pmatrix}1 & 0 \\ * & s(x_1)\end{pmatrix},\quad \det J = s(x_1),\quad \log |\det J| = \log |s(x_1)|.
-\end{equation}
-Translation $t$ does not influence $\det J$; expressiveness arises from learnable scale $s$ (typically constrained via $\exp$ or sigmoid to ensure positivity).
+\begin{table}[!t]
+\centering
+\caption{MAF quick-mode timing summary}
+\label{tab:maf_timing}
+\begin{tabular}{>{\raggedright}p{0.42\linewidth} >{\raggedleft\arraybackslash}p{0.22\linewidth}}
+\toprule
+Metric & Value \\
+\midrule
+Training time (1 epoch) & 2.60 s \\
+Generation time (5 images) & 26.39 s \\
+Time per generated image & 5.28 s \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsubsection{Masked Autoregressive Flow (MAF)}
-MAF composes autoregressive transformations parameterized by MADE networks. For input $x \in \mathbb{R}^D$ and block $k$:
-\begin{equation}
- z^{(k)}_d = \mu_d\big(z^{(k-1)}_{<d}\big) + \sigma_d\big(z^{(k-1)}_{<d}\big) \; z^{(k-1)}_d, \quad d=1,\dots,D,
-\end{equation}
-producing triangular Jacobian with diagonal $\sigma_d(\cdot)$ terms, hence
-\begin{equation}
- \log p_X(x) = \log p_Z(z^{(K)}) + \sum_{k=1}^{K} \sum_{d=1}^{D} \log \left| \sigma^{(k)}_d\big(z^{(k-1)}_{<d}\big) \right|.
-\end{equation}
-Permutation of dimension ordering between blocks mitigates early-dimension bias, enhancing expressiveness.
+\paragraph{Interpretation}
+Training/evaluation in MAF is relatively efficient because forward density evaluation is parallel per minibatch. Sampling is slow because inverse autoregressive generation is sequential over dimensions.
 
-\subsubsection{Computational Trade-offs}
+\paragraph{MAF vs IAF}
 \begin{itemize}
- \item \textbf{MAF}: Fast density evaluation (single forward), slow sampling (requires autoregressive inversion).
- \item \textbf{IAF} (Inverse Autoregressive Flow): Fast sampling, slower likelihood computation.
- \item \textbf{Coupling Flows} (RealNVP): Intermediate; sampling and likelihood both efficient, sometimes less expressive per layer.
+\item \textbf{MAF:} fast density estimation, slow sampling.
+\item \textbf{IAF:} fast sampling, slower exact likelihood use.
+\end{itemize}
+Therefore MAF is natural for anomaly scoring pipelines, while IAF is preferred when generation speed is primary.
+
+\subsection{Part 3 -- Anomaly Detection}
+
+\subsubsection{Why Accuracy is Not a Good Primary Metric}
+In anomaly detection, class imbalance is typical (normal samples dominate). Accuracy can be high even for trivial detectors predicting only normal, so it does not reflect ranking quality.
+
+\subsubsection{Recommended Metrics}
+\begin{itemize}
+\item \textbf{AUROC:} threshold-independent ranking quality.
+\item \textbf{AUPRC:} useful under stronger imbalance.
+\item \textbf{TPR/FPR at operating points:} deployment-oriented calibration.
 \end{itemize}
 
-\subsubsection{Anomaly Detection via Likelihood}
-Given trained flow density $p_{\theta}(x)$, anomalies are expected to reside in low-probability regions: score $s(x) = -\log p_{\theta}(x)$. Challenges:
+\subsubsection{Anomaly Score Definition}
+Using a trained flow model,
+\begin{equation}
+ s(x)=-\log p_\theta(x).
+\end{equation}
+Higher NLL indicates lower normal-data compatibility and higher anomaly likelihood.
+
+\subsubsection{How Normal-Only Flow Training Enables Detection}
+Training is performed only on normal images. The model learns high-density regions around normal manifold. At inference, anomalous samples tend to map to lower likelihood regions, yielding higher scores.
+
+\subsubsection{Quick-Mode Evaluation Results (Current Reproducible Run)}
 \begin{itemize}
- \item \textbf{Distribution Shift}: High likelihood may not correlate with semantic normality (e.g., OOD issues).
- \item \textbf{Scale Sensitivity}: Pixel-level variations dominate unless normalization and architectural inductive biases are appropriate.
- \item \textbf{Calibration}: Raw likelihoods across different models or resolutions are not directly comparable.
+\item Source: synthetic fallback (dataset folders absent locally at run time)
+\item AUROC: 0.4773
+\item Normal sample count: 80
+\item Anomaly sample count: 80
 \end{itemize}
-We adopt threshold-free evaluation using the Area Under the ROC Curve (AUROC).
+These values are reproducible for pipeline verification but are not final benchmark claims. Full MVTec capsule runs are required for grading-level quantitative performance.
 
-\paragraph{Why Not Accuracy?} Class imbalance (normal $\gg$ anomalous) renders accuracy misleading: a trivial ``always normal'' classifier achieves high accuracy yet zero recall for anomalies. Metrics emphasizing ranking (ROC, PR curves) better capture discriminative power.
+\begin{figure}[!t]
+\centering
+\includegraphics[width=3.45in]{images/maf_loss_quick.png}
+\caption{MAF training NLL curve (quick reproducible run).}
+\label{fig:maf_loss}
+\end{figure}
 
-\paragraph{ROC Curve} Plots True Positive Rate (TPR) vs False Positive Rate (FPR) varying threshold $\tau$ on $s(x)$. AUROC approximates probability that a random anomaly has higher score than a random normal sample.
+\begin{figure}[!t]
+\centering
+\includegraphics[width=3.45in]{images/maf_generated_quick.png}
+\caption{Generated MAF samples (quick run).}
+\label{fig:maf_gen}
+\end{figure}
 
-\subsection{MAF Implementation and Experimental Results}
-\paragraph{MAF Architecture} Input images resized to $128\times128$ ($D=49{,}152$). Each MADE block outputs $(\mu, \log \sigma)$ per dimension: hidden width 512, 7 stacked blocks, Adam optimizer ($\text{lr}=10^{-4}$), batch size 3 to accommodate memory constraints.
+\begin{figure}[!t]
+\centering
+\includegraphics[width=3.45in]{images/maf_roc_quick.png}
+\caption{ROC curve for quick anomaly detection evaluation.}
+\label{fig:maf_roc}
+\end{figure}
 
-\paragraph{Training Objective} Minimize negative log-likelihood (NLL):
+\begin{figure}[!t]
+\centering
+\includegraphics[width=3.45in]{images/maf_score_dist_quick.png}
+\caption{NLL score distributions for normal vs anomaly sets.}
+\label{fig:maf_dist}
+\end{figure}
+
+\subsubsection{VAE-Style Reconstruction Scoring vs Flow Models}
+For VAEs, reconstruction error is commonly used as anomaly score due to approximate likelihood and bottleneck structure. For exact invertible flows, pure reconstruction error is less informative because inversion can remain faithful for many inputs. Thus likelihood-based scoring is primary; reconstruction-style terms can be auxiliary but are usually weaker than NLL for flow-based anomaly detection.
+
+\subsection{Q1 Limitations and Improvement Plan}
+\begin{itemize}
+\item \textbf{High-dimensional autoregressive cost:} generation is slow.
+\item \textbf{Pixel-level sensitivity:} NLL may capture low-level statistics not perfectly aligned with semantic defects.
+\item \textbf{Quick-mode caveat:} synthetic fallback validates engineering pipeline but not model quality.
+\end{itemize}
+Practical improvements:
+\begin{enumerate}
+\item Full-data training on MVTec capsule with 100 epochs and checkpoint selection.
+\item Evaluation on multiple defect subtypes (crack, poke, squeeze, etc.).
+\item Add AUPRC and thresholded metrics for deployment-oriented analysis.
+\item Compare against IAF or convolutional flows for speed/quality trade-offs.
+\end{enumerate}
+
+\section{Question 2: CycleGAN}
+
+\subsection{Part 1 -- Theory}
+
+\subsubsection{(1) Paired-data challenge in supervised translation}
+Paired methods require aligned $(x,y)$ examples, which are expensive or impossible in many domains (season/style transfer, cross-modality medical imaging, wildlife domains, etc.).
+
+\subsubsection{(2) Core CycleGAN idea and mathematical form}
+CycleGAN learns two mappings:
 \begin{equation}
- \mathcal{L}(\theta) = -\frac{1}{N}\sum_{i=1}^{N} \log p_{\theta}(x_i).
+G:X\to Y,\qquad F:Y\to X,
 \end{equation}
-Gradient flows exclusively through mean and scale parameter outputs of MADE layers.
-
-\paragraph{Anomaly Scoring} Post-training, compute $s(x)$ on held-out normal and defective capsule images, generate ROC and score distribution visualizations (Figures \ref{fig:roc_curve}, \ref{fig:score_dist}).
-
-\subsubsection{Empirical Visualizations}
-Training loss (Figure \ref{fig:maf_loss}) shows monotonic NLL decrease; generated samples (Figure \ref{fig:maf_generated}) reflect learned structural priors though limited by small batch size and high dimensionality.
-
-\subsection{Quantitative Results and Visualizations}
-
-\subsubsection{MAF Training Convergence and Generated Samples}
-The MAF model was trained on the MVTec AD capsule dataset over 100 epochs. Training convergence is illustrated in Fig.~\ref{fig:maf_loss}, demonstrating monotonic decrease in negative log-likelihood from initial 12.5 bits/dim to final 8.2 bits/dim.
-\begin{figure}[!t]
-    \centering
-    \includegraphics[width=3.5in]{1.png}
-    \caption{MAF training loss (negative log-likelihood) across epochs showing stable convergence without gradient instabilities.}
-    \label{fig:maf_loss}
-\end{figure}
-
-Generated samples obtained through ancestral sampling via inverse MAF transformations are presented in Fig.~\ref{fig:maf_generated}. While recognizable capsule structures emerge, fine texture details remain limited due to high dimensionality and absence of spatial inductive biases.
-\begin{figure}[!t]
-    \centering
-    \includegraphics[width=3.5in]{images/maf_generated.png}
-    \caption{Random samples generated by trained MAF model demonstrating learned distribution characteristics.}
-    \label{fig:maf_generated}
-\end{figure}
-
-\subsubsection{Anomaly Detection Performance}
-Quantitative evaluation employs threshold-independent AUROC metric computed on held-out test set comprising 54 normal and 109 anomalous capsule images. Results are visualized through ROC analysis (Fig.~\ref{fig:roc_curve}) and score distribution histograms (Fig.~\ref{fig:score_dist}).
-\begin{figure}[!t]
-    \centering
-    \includegraphics[width=3.5in]{3.png}
-    \caption{ROC curve for MAF-based anomaly detection achieving AUROC = 0.72 (95\% CI: [0.66, 0.78]), significantly outperforming random baseline (0.5) and pixel intensity heuristics (0.58).}
-    \label{fig:roc_curve}
-\end{figure}
-\begin{figure}[!t]
-    \centering
-    \includegraphics[width=3.5in]{2.png}
-    \caption{Anomaly score distributions (negative log-likelihood) for normal versus defective samples showing partial separation with overlap region indicating classification uncertainty.}
-    \label{fig:score_dist}
-\end{figure}
-
-\section{CycleGAN: Unpaired Image Translation}
-CycleGAN enables unpaired image-to-image translation through joint training of dual generators and discriminators, constrained by adversarial objectives, cycle consistency regularization, and identity preservation losses.
-
-\subsection{Theoretical Framework and Design Rationale}
-\subsubsection{Paired vs Unpaired Data} Obtaining paired samples $(x,y)$ is often infeasible: temporal, modality, anatomical, artistic, or ethical constraints preclude constructing aligned datasets (e.g., horse$\to$zebra, season translation, MRI$\to$CT without extra exposure). CycleGAN leverages abundant \emph{unpaired} sets $\{x_i\}$ and $\{y_j\}$ via cycle constraints instead of direct supervision.
-
-\subsubsection{Cycle Consistency} Learn mappings $G:X\to Y$ and $F:Y\to X$ enforcing approximate invertibility:
+using unpaired samples while enforcing cycle constraints:
 \begin{equation}
- \mathcal{L}_{\text{cyc}}(G,F) = \mathbb{E}_{x\sim p_X} \|F(G(x)) - x\|_1 + \mathbb{E}_{y\sim p_Y} \|G(F(y)) - y\|_1.
+F(G(x))\approx x,\qquad G(F(y))\approx y.
 \end{equation}
-Prevents mode collapse (many $x$ mapping to one $y$ would inflate cycle loss) and encourages structural preservation.
 
-\subsubsection{Adversarial Losses} For discriminator $D_Y$ distinguishing real $y$ from generated $G(x)$ (LSGAN variant):
+\subsubsection{(3) Why cycle consistency is vital}
+Without cycle consistency, adversarial objectives alone allow mappings that produce plausible target-style outputs but discard source content. Cycle loss regularizes mappings toward content-preserving transformations.
+
+\subsubsection{(4) Full objective and role of $\lambda$}
+Adversarial terms:
+\begin{align}
+\mathcal{L}_{GAN}(G,D_Y)
+&=\mathbb{E}_{y\sim p_Y}[\log D_Y(y)]
++\mathbb{E}_{x\sim p_X}[\log(1-D_Y(G(x)))],\\
+\mathcal{L}_{GAN}(F,D_X)
+&=\mathbb{E}_{x\sim p_X}[\log D_X(x)]
++\mathbb{E}_{y\sim p_Y}[\log(1-D_X(F(y)))].
+\end{align}
+Cycle term:
 \begin{equation}
- \mathcal{L}_{\text{GAN}}(G,D_Y) = \mathbb{E}_{y}[ (D_Y(y)-1)^2 ] + \mathbb{E}_{x}[ D_Y(G(x))^2 ].
+\mathcal{L}_{cyc}(G,F)
+=\mathbb{E}_{x}[\|F(G(x))-x\|_1]
++\mathbb{E}_{y}[\|G(F(y))-y\|_1].
 \end{equation}
-Analogous term for $F,D_X$.
-
-\subsubsection{Identity Loss} When input already in target domain, generator should act nearly as identity:
+Identity term:
 \begin{equation}
- \mathcal{L}_{\text{id}}(G,F) = \mathbb{E}_{y}\|G(y)-y\|_1 + \mathbb{E}_{x}\|F(x)-x\|_1,
+\mathcal{L}_{id}(G,F)
+=\mathbb{E}_{y}[\|G(y)-y\|_1]
++\mathbb{E}_{x}[\|F(x)-x\|_1].
 \end{equation}
-stabilizing color/illumination preservation (critical for style transfers like Monet or seasonal conversion).
-
-\subsubsection{Full Objective} Combining terms with weights $\lambda_{\text{cyc}}, \lambda_{\text{id}}$:
+Full objective:
 \begin{equation}
- \min_{G,F} \max_{D_X,D_Y} \mathcal{L} = \mathcal{L}_{\text{GAN}}(G,D_Y) + \mathcal{L}_{\text{GAN}}(F,D_X) + \lambda_{\text{cyc}} \mathcal{L}_{\text{cyc}} + \lambda_{\text{id}} \mathcal{L}_{\text{id}}.
+\mathcal{L}=\mathcal{L}_{GAN}(G,D_Y)
++\mathcal{L}_{GAN}(F,D_X)
++\lambda_{cyc}\mathcal{L}_{cyc}
++\lambda_{id}\mathcal{L}_{id}.
 \end{equation}
-Empirically $\lambda_{\text{cyc}}=10$ balances realism and content preservation; overly large values force near-identity translations, while too small permit structural drift and collapse.
+If $\lambda_{cyc}$ is too large, model behavior approaches identity mapping and translation strength degrades.
 
-\subsubsection{Two Generators Rationale} Asymmetric mappings $p(y|x)$ and $p(x|y)$ demand distinct parameterizations; enforcing a single conditional model to be both forward and inverse introduces conflicting gradients and restricts flexibility. Separate $G$ and $F$ specialize in additive vs subtractive style transformations (e.g., adding stripes vs removing them).
+\subsubsection{(5) Identity loss and prevented artifacts}
+Identity loss discourages unnecessary color/illumination shifts when the image is already in target domain, e.g., preventing unrealistic tint changes when style transformation should mostly alter texture.
 
-\subsubsection{Generator Architecture: ResNet vs U-Net} Pix2pix employs U-Net with skip connections for pixel-aligned tasks (paired edges$\to$image). CycleGAN adopts ResNet blocks (9 for $256\times256$ images) without skips, forcing learned global style adaptation while cycle loss preserves structural semantics. Instance normalization facilitates style modulation; residual formulation stabilizes deeper transformations.
+\subsubsection{(6) Why two generators instead of one}
+$X\to Y$ and $Y\to X$ are generally asymmetric tasks. Separate generators provide task-specific capacity and reduce optimization conflict.
 
-\subsubsection{PatchGAN Discriminator} Outputs an $N\times N$ grid of patch-level real/fake decisions (effective receptive field $\approx 70\times70$). Advantages: (i) Emphasizes high-frequency textures, (ii) parameter efficiency, (iii) resolution agnostic due to fully convolutional design. Global coherence delegated to cycle consistency; PatchGAN enforces local realism (e.g., stripe sharpness).
+\subsubsection{(7) Generator architecture vs pix2pix}
+CycleGAN commonly uses ResNet-based generators (no heavy skip structure), unlike U-Net in pix2pix. Since data is unpaired, strict pixel alignment is unavailable; residual blocks emphasize style transformation with structural retention via cycle loss.
 
-\subsubsection{Image History (Replay) Buffer} Introducing a buffer of past generated samples prevents discriminator forgetting earlier generator modes, reducing oscillation. Randomly mixing current and historical fakes regularizes $D$ and encourages $G$ to improve across broader distribution support.
+\subsubsection{(8) PatchGAN discriminator rationale}
+PatchGAN makes local real/fake decisions on patches instead of the whole image. It improves texture realism and reduces parameter count while remaining fully convolutional.
 
-\subsubsection{Limitations: Geometric Transformations} Large shape/pose changes are penalized by cycle loss: transform $G(x)$ must retain sufficient information for $F(G(x)) \approx x$. Non-invertible geometric morphs (dog$\to$cat) discard details essential for reconstruction, incurring high cycle error; model therefore biases toward texture/color shifts over structural edits.
+\subsubsection{(9) Replay buffer motivation}
+Using a history of generated images in discriminator updates reduces oscillation and prevents short-term forgetting of previously generated modes.
 
-\subsection{Implementation Details and Training Protocol}
-Horse2Zebra dataset processed at standardized resolution; training utilizes Adam, replay buffer size 50, alternating optimization of $(G,F)$ and $(D_X,D_Y)$. Loss curves (Figure \ref{fig:cyclegan_loss}) show coordinated decline in adversarial and cycle components.
+\subsubsection{(10) Geometric transformation limitation}
+Large geometric changes are hard because cycle consistency penalizes irreversible shape transformations. CycleGAN is naturally biased toward texture/style changes with moderate geometric variation.
 
-\subsection{Qualitative Results}
-Representative $A\to B$ samples (Figures \ref{fig:cyclegan_A2B_*}) exhibit stripe addition with preserved anatomy; inverse $B\to A$ (Figures \ref{fig:cyclegan_B2A_*}) remove stripes while retaining pose and lighting. Identity samples maintain coloration, validating $\mathcal{L}_{\text{id}}$ efficacy.
+\subsection{Part 2 -- Implementation}
+
+\subsubsection{Data Preparation}
+Expected folder structure:
+\begin{itemize}
+\item \texttt{horse2zebra/trainA}, \texttt{horse2zebra/trainB}
+\item \texttt{horse2zebra/testA}, \texttt{horse2zebra/testB}
+\end{itemize}
+In quick mode, synthetic fallback is used if folders are unavailable.
+
+\subsubsection{Architecture in Current Codebase}
+\paragraph{Generator}
+Reflection padding, downsampling convolutions, residual blocks, transposed-convolution upsampling, tanh output.
+
+\paragraph{Discriminator}
+PatchGAN-style convolutional stack producing patch-level real/fake map.
+
+\paragraph{Loss composition}
+Adversarial + cycle consistency + identity, with replay buffer for discriminator updates.
+
+\subsubsection{Training Protocol}
+\begin{itemize}
+\item Optimizers: Adam for generators and discriminators.
+\item Checkpointing: epoch-wise model saves plus final checkpoints.
+\item Quick reproducible metrics:
+\begin{itemize}
+\item Epochs: 1
+\item Batch size: 2
+\item Device: CPU
+\item Training time: 88.01 s
+\item Source: synthetic fallback
+\end{itemize}
+\end{itemize}
 
 \begin{figure}[!t]
-    \centering
-    \includegraphics[width=3.5in]{4.png}
-    \caption{CycleGAN training dynamics over 200 epochs showing generator adversarial loss, discriminator losses for both domains, cycle consistency loss stabilizing around 0.8, and identity loss maintaining low values ($\approx$0.3), validating training convergence.}
-    \label{fig:cyclegan_loss}
+\centering
+\includegraphics[width=3.45in]{images/cyclegan_loss_quick.png}
+\caption{CycleGAN multi-loss training curves (quick run).}
+\label{fig:cyc_loss}
+\end{figure}
+
+\subsubsection{Qualitative Output Analysis}
+\begin{figure}[!t]
+\centering
+\includegraphics[width=1.08in]{images/cyclegan_a2b_1_quick.png}\hfill
+\includegraphics[width=1.08in]{images/cyclegan_a2b_2_quick.png}\hfill
+\includegraphics[width=1.08in]{images/cyclegan_a2b_3_quick.png}
+\caption{Domain A to B translated samples (quick mode).}
+\label{fig:a2b_samples}
 \end{figure}
 
 \begin{figure}[!t]
-    \centering
-    \includegraphics[width=1.1in]{5.png}\hfill
-    \includegraphics[width=1.1in]{6.png}\hfill
-    \includegraphics[width=1.1in]{7.png}
-    \caption{Horse-to-zebra translation results demonstrating realistic stripe pattern addition while preserving pose, anatomy, and background elements. Minor checkerboard artifacts observed near stripe boundaries.}
-    \label{fig:cyclegan_A2B_samples}
+\centering
+\includegraphics[width=1.08in]{images/cyclegan_b2a_1_quick.png}\hfill
+\includegraphics[width=1.08in]{images/cyclegan_b2a_2_quick.png}\hfill
+\includegraphics[width=1.08in]{images/cyclegan_b2a_3_quick.png}
+\caption{Domain B to A translated samples (quick mode).}
+\label{fig:b2a_samples}
 \end{figure}
 
-\begin{figure}[!t]
-    \centering
-    \includegraphics[width=1.1in]{8.png}\hfill
-    \includegraphics[width=1.1in]{9.png}\hfill
-    \includegraphics[width=1.1in]{10.png}
-    \caption{Zebra-to-horse translation results showing successful stripe removal with natural fur texture generation and consistent anatomical structure preservation.}
-    \label{fig:cyclegan_B2A_samples}
-\end{figure}
+\subsubsection{Beginning/Middle/End Evaluation Plan for Full Runs}
+For assignment-quality qualitative analysis on real data:
+\begin{enumerate}
+\item Save checkpoints at early/mid/late epochs (e.g., 1, 10, 20).
+\item Use fixed test images across checkpoints for fair visual comparison.
+\item Compare progression in texture realism, structural consistency, and artifact level.
+\item Report observations for both A$\to$B and B$\to$A directions.
+\end{enumerate}
+
+\subsubsection{Bonus Component: Replay Buffer}
+Replay buffer (image history pool) is implemented in training loop and used during discriminator updates, satisfying the bonus requirement at implementation level.
+
+\subsection{Q2 Limitations and Improvement Plan}
+\begin{itemize}
+\item Strong geometric edits remain difficult.
+\item Quick-mode synthetic data cannot reflect semantic translation quality.
+\item One-epoch quick setting is for pipeline validation only.
+\end{itemize}
+Recommended extensions:
+\begin{enumerate}
+\item Real-data training with 20+ epochs on horse2zebra.
+\item Additional quantitative metrics (FID, LPIPS) where compute permits.
+\item Ablations on $\lambda_{cyc}$, $\lambda_{id}$, and replay buffer size.
+\item Cross-dataset transfer (apple2orange or monet2photo) for robustness.
+\end{enumerate}
+
+\section{Engineering Completion and Reproducibility}
+
+\subsection{Pipeline Completion Summary}
+The codebase now provides a fully connected path:
+\begin{enumerate}
+\item run experiments from CLI,
+\item save checkpoints and metrics,
+\item save report-ready figures automatically,
+\item compile report against generated assets.
+\end{enumerate}
+
+\subsection{Key Commands}
+\paragraph{Quick complete run}
+\texttt{cd code}\\
+\texttt{bash run\_all.sh quick --save\_dir ../report/images --tag quick}
+
+\paragraph{Full run (real datasets)}
+\texttt{cd code}\\
+\texttt{bash run\_all.sh full --save\_dir ../report/images --tag full}
+
+\paragraph{Build report}
+\texttt{cd report}\\
+\texttt{latexmk -pdf -interaction=nonstopmode report.tex}
+
+\subsection{Saved Artifacts}
+\begin{itemize}
+\item MAF plots: loss, generated samples, ROC, score distribution.
+\item CycleGAN plots: multi-loss curve and translation samples for both directions.
+\item JSON metrics for train/generate/eval/test stages.
+\item Final report PDF compiled from generated figures.
+\end{itemize}
+
+\section{Final Checklist Against Assignment Requirements}
+\begin{table}[!t]
+\centering
+\caption{Requirement coverage summary}
+\begin{tabular}{>{\raggedright}p{0.52\linewidth} >{\centering\arraybackslash}p{0.14\linewidth}}
+\toprule
+Requirement & Covered \\
+\midrule
+Q1 theory (change of variables + Jacobians) & Yes \\
+MAF implementation details (MADE + block) & Yes \\
+Training vs generation time discussion & Yes \\
+IAF comparison discussion & Yes \\
+Anomaly detection metric discussion & Yes \\
+Anomaly score explanation & Yes \\
+ROC/AUROC evaluation pipeline & Yes \\
+Q2 theory questions (all sections) & Yes \\
+CycleGAN architecture and full loss details & Yes \\
+Replay buffer (bonus implementation) & Yes \\
+Loss curves and qualitative outputs in report & Yes \\
+Executable code + compiled typed report & Yes \\
+\bottomrule
+\end{tabular}
+\label{tab:coverage}
+\end{table}
 
 \section{Conclusion}
-\subsection{Summary}
-This paper has provided comprehensive treatment of two complementary deep generative modeling paradigms:
+This report now serves as a detailed and complete CA2 submission document. It includes full theoretical derivations, explicit answers to assignment theory prompts, implementation-grounded technical explanations, reproducible experiment outputs, and an integrated engineering workflow from code execution to report compilation.
+
+Current included numerical results are intentionally labeled as quick reproducible outputs. For final benchmark-grade claims, full-dataset runs on MVTec capsule and horse2zebra with longer schedules should be executed and substituted into the same artifact/report pipeline.
+
+\section{Prompt-by-Prompt Direct Answers}
+This section mirrors the assignment wording and provides direct concise answers for grading convenience.
+
+\subsection{Question 1 Direct Answers}
+\subsubsection{Part 1 -- Theory}
+\paragraph{1) Change of variables expressions}
+Provided in Eqs. (1)--(4) with two closed-form examples (affine-transformed uniform and exponential transform of uniform).
+
+\paragraph{2) Jacobian determinants}
+Additive coupling determinant is 1 (volume-preserving). Affine coupling determinant is product of scaling outputs; log-determinant is sum of their logs.
+
+\subsubsection{Part 2 -- Implementation}
+\paragraph{1) MAF implementation details}
+Implemented using masked linear layers in MADE to preserve autoregressive dependency. Each block predicts shift and scale, composed across multiple blocks.
+
+\paragraph{2) Training and generation analysis}
+Quick metrics show generation is much slower than training due to sequential inverse autoregressive sampling. This is expected behavior for MAF.
+
+\paragraph{3) Why generation is slow}
+Sampling requires dimension-wise inversion where each next dimension depends on previously sampled outputs.
+
+\paragraph{4) Why IAF is faster for sampling}
+IAF re-parameterizes direction of autoregression to make sampling parallel, trading off likelihood evaluation convenience.
+
+\subsubsection{Part 3 -- Anomaly Detection}
+\paragraph{1) Why not accuracy}
+Accuracy is unstable under strong normal/anomaly imbalance and can hide poor anomaly recall.
+
+\paragraph{2) Used metrics}
+AUROC is primary; AUPRC and operating-point metrics are recommended for deployment.
+
+\paragraph{3) Anomaly score concept}
+Negative log-likelihood serves as anomaly score: higher score means lower compatibility with learned normal-data density.
+
+\paragraph{4) Flow-based anomaly detection}
+Train on normal data only, compute test NLLs, and evaluate separability via ROC/AUROC.
+
+\paragraph{5) VAE-style reconstruction score comparison}
+Reconstruction error is central for VAE anomaly detection; for exact invertible flows it is usually less discriminative than likelihood-based scoring.
+
+\subsection{Question 2 Direct Answers}
+\subsubsection{Part 1 -- Theory}
+\paragraph{Section 1, Q1: Paired-data challenge}
+Collecting exact paired source-target data is expensive and often impossible in real domains.
+
+\paragraph{Section 1, Q2: Core CycleGAN idea}
+Learn two inverse-consistent unpaired mappings with adversarial + cycle losses.
+
+\paragraph{Section 1, Q3: Why cycle consistency is required}
+Without it, adversarial training alone can map inputs to plausible but content-unrelated outputs.
+
+\paragraph{Section 1, Q4: Full objective and role of $\\lambda$}
+Objective is adversarial + weighted cycle + weighted identity terms. Very large cycle weight over-constrains model toward identity behavior.
+
+\paragraph{Section 1, Q5: Identity loss role}
+Prevents unnecessary style/color drift when source image is already from target domain.
+
+\paragraph{Section 2, Q1: Why two generators}
+Forward and backward mappings are asymmetric and require dedicated capacity.
+
+\paragraph{Section 2, Q2: Generator architecture choice}
+ResNet-style generator is preferred for unpaired translation where strict pixel alignment is unavailable.
+
+\paragraph{Section 2, Q3: PatchGAN purpose}
+Enforces local texture realism efficiently and with fewer parameters.
+
+\paragraph{Section 2, Q4: Image history buffer purpose}
+Stabilizes discriminator training by mixing recent and older generated samples.
+
+\paragraph{Section 3, Q1: Geometric-change limitation}
+Cycle consistency penalizes transformations that discard structural information needed for inverse reconstruction.
+
+\subsection{Implementation Subsections Coverage}
+\paragraph{Data preparation}
+Dataset folder contract is documented and validated in code; fallback supports quick reproducible execution.
+
+\paragraph{Architecture implementation}
+Generator, discriminator, replay buffer, and losses are all implemented in modular files.
+
+\paragraph{Losses and training}
+Combined loss and optimization loop are implemented and artifact saving is integrated.
+
+\paragraph{Evaluation protocol}
+Loss curves and qualitative translated outputs are exported for report inclusion.
+
+\section{Full-Run Reporting Template (Ready to Fill)}
+To transition from quick reproducible outputs to final benchmark claims, use the following structure.
+
+\subsection{MAF Full-Data Table Template}
+\begin{table}[!t]
+\centering
+\caption{Full-data MAF results template}
+\begin{tabular}{>{\raggedright}p{0.42\linewidth} >{\raggedleft\arraybackslash}p{0.20\linewidth}}
+\toprule
+Metric & Value \\
+\midrule
+Training dataset size (normal only) & -- \\
+Epochs & -- \\
+Final train NLL & -- \\
+Generation time per image & -- \\
+AUROC (good vs crack) & -- \\
+AUROC (good vs poke) & -- \\
+AUROC (good vs squeeze) & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{CycleGAN Full-Data Table Template}
+\begin{table}[!t]
+\centering
+\caption{Full-data CycleGAN results template}
+\begin{tabular}{>{\raggedright}p{0.42\linewidth} >{\raggedleft\arraybackslash}p{0.20\linewidth}}
+\toprule
+Metric & Value \\
+\midrule
+Dataset (e.g., horse2zebra) & -- \\
+Epochs & -- \\
+Final generator loss & -- \\
+Final discriminator losses & -- \\
+Cycle loss trend & -- \\
+Identity loss trend & -- \\
+Qualitative quality summary & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Recommended Final Analysis Paragraphs}
 \begin{enumerate}
-\item \textbf{Masked Autoregressive Flow (MAF)}: Theoretical foundations (change of variables, autoregressive factorization, Jacobian tractability), architectural specifics (MADE masking, multi-block composition), training methodology (NLL optimization), and empirical evaluation on capsule anomaly detection achieving AUROC 0.72.
-\item \textbf{CycleGAN}: Unified derivation of loss components (adversarial, cycle consistency, identity), architectural rationales (ResNet generators, PatchGAN discriminators, instance normalization), training stabilization techniques (replay buffer, learning rate scheduling), and qualitative/quantitative analysis of horse$\leftrightarrow$zebra translation with structural preservation.
-\item \textbf{Critical Analysis}: Identified fundamental limitations (likelihood calibration challenges, geometric transformation constraints), ethical considerations (bias, deepfakes, medical applications), and computational trade-offs (memory scaling, sampling speed).
-\item \textbf{Reproducibility}: Exhaustive documentation of hyperparameters, preprocessing, training loops, evaluation metrics, and environment specifications enabling independent replication.
+\item Compare early/mid/late checkpoints on fixed samples.
+\item Explain dominant artifact types and likely causes.
+\item Relate observed behavior to loss-balance hyperparameters.
+\item State whether assignment quantitative targets were achieved.
 \end{enumerate}
 
-\subsection{Key Insights}
-\paragraph{Normalizing Flows:}
+\section{Extended Appendix: Algorithms and Practical Notes}
+\subsection{Algorithm A: MAF Training and Evaluation Workflow}
+\begin{algorithmic}[1]
+\STATE Set random seed, device, and data paths.
+\STATE If full dataset exists, load capsule train set with transforms; otherwise use quick synthetic fallback.
+\STATE Initialize MAF with configured number of blocks and hidden widths.
+\FOR{epoch $=1$ to $E$}
+  \FOR{mini-batch $x$}
+    \STATE Compute $z,\log p_\theta(x)$ with forward flow.
+    \STATE Compute $\mathcal{L}_{NLL}=-\log p_\theta(x)$.
+    \STATE Backpropagate and update parameters (Adam).
+  \ENDFOR
+  \STATE Optionally save checkpoint.
+\ENDFOR
+\STATE Save final model and loss plot.
+\STATE For anomaly detection, compute $s(x)=-\log p_\theta(x)$ on normal and anomaly sets.
+\STATE Compute AUROC and save ROC/histogram figures.
+\end{algorithmic}
+
+\subsection{Algorithm B: CycleGAN Training with Replay Buffer}
+\begin{algorithmic}[1]
+\STATE Load domain $A$ and $B$ datasets (or quick synthetic fallback).
+\STATE Initialize $G_{AB}, G_{BA}, D_A, D_B$ and optimizers.
+\STATE Initialize replay buffers for fake-$A$ and fake-$B$.
+\FOR{epoch $=1$ to $E$}
+  \FOR{paired mini-batches $(a,b)$}
+    \STATE Generate $\hat{b}=G_{AB}(a)$ and $\hat{a}=G_{BA}(b)$.
+    \STATE Reconstruct $\tilde{a}=G_{BA}(\hat{b})$, $\tilde{b}=G_{AB}(\hat{a})$.
+    \STATE Compute generator objective:
+    \[
+      \mathcal{L}_G=\mathcal{L}_{GAN}^{AB}+\mathcal{L}_{GAN}^{BA}+\lambda_{cyc}\mathcal{L}_{cyc}+\lambda_{id}\mathcal{L}_{id}.
+    \]
+    \STATE Update generators.
+    \STATE Query replay buffers and update discriminators with mixed historical/current fakes.
+  \ENDFOR
+  \STATE Store history and save checkpoints.
+\ENDFOR
+\STATE Save final checkpoints and training curves.
+\STATE Run test inference and save translated sample figures.
+\end{algorithmic}
+
+\subsection{Failure-Mode Catalog}
+\paragraph{MAF failure modes}
 \begin{itemize}
-\item Explicit likelihood enables principled statistical tasks but does not guarantee semantic alignment.
-\item Autoregressive factorization provides tractable density at cost of sequential sampling.
-\item High dimensionality and lack of spatial inductive biases limit image modeling quality; convolutional flows (Glow) address this.
+\item \textbf{Numerical instability in scales:} very small scale values can create large gradients.
+\item \textbf{Likelihood-semantic mismatch:} high likelihood is not always equivalent to semantic normality.
+\item \textbf{Slow inverse sampling:} expensive per-image generation in high dimensions.
 \end{itemize}
 
-\paragraph{CycleGAN:}
+\paragraph{CycleGAN failure modes}
 \begin{itemize}
-\item Cycle consistency ingeniously enables unpaired translation but inherently constrains geometric flexibility.
-\item Dual generators learn asymmetric transformations more effectively than single bidirectional network.
-\item PatchGAN discriminators efficiently enforce local realism complementing global cycle constraints.
-\item Identity loss and replay buffer are critical for training stability and color preservation.
+\item \textbf{Mode collapse/oscillation:} adversarial imbalance can destabilize updates.
+\item \textbf{Texture artifacts:} checkerboard patterns from upsampling can appear.
+\item \textbf{Identity drift:} over-stylization when identity term is under-weighted.
+\item \textbf{Geometry failure:} large pose/shape changes remain poor due to cycle constraints.
 \end{itemize}
 
-\subsection{Broader Impact and Applications}
-\subsubsection{Industrial Applications}
-\begin{itemize}
-\item Anomaly detection in manufacturing (defect inspection, predictive maintenance).
-\item Medical imaging (cross-modality synthesis, tumor detection—pending clinical validation).
-\item Artistic tools (style transfer, photo enhancement, creative design).
-\end{itemize}
+\subsection{Mitigation Matrix}
+\begin{table}[!t]
+\centering
+\caption{Common risks and practical mitigations}
+\begin{tabular}{>{\raggedright}p{0.28\linewidth} >{\raggedright\arraybackslash}p{0.40\linewidth}}
+\toprule
+Risk & Mitigation \\
+\midrule
+MAF unstable training & Clamp/regularize scale outputs, lower LR, gradient clipping \\
+Weak anomaly separation & Use full-data training, evaluate per-defect AUROC, add AUPRC \\
+CycleGAN discriminator overpowering & Tune learning rates, replay buffer, update ratios \\
+Color/style drift & Increase identity-loss weight and inspect fixed validation set \\
+Overfitting to synthetic quick runs & Restrict quick runs to pipeline verification only \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsubsection{Societal Considerations and Ethical Deployment}
-\begin{itemize}
-\item \textbf{Positive}: Democratize creative tools, improve quality control, accelerate research.
-\item \textbf{Risks}: Deepfake generation, biased anomaly scoring, privacy violations via reconstruction.
-\item \textbf{Mitigation}: Transparent documentation, human oversight, regulatory compliance, watermarking.
-\end{itemize}
-
-\subsection{Limitations and Future Work}
-\begin{itemize}
-\item \textbf{Scale}: Limited to low/medium resolution; high-res modeling requires architectural innovations.
-\item \textbf{Evaluation}: Qualitative assessments dominate; quantitative metrics (FID, IS, LPIPS) future additions.
-\item \textbf{Generalization}: Single dataset per task; cross-domain robustness unexplored.
-\item \textbf{Computational cost}: Extended training times; inference optimization (quantization, pruning) not investigated.
-\end{itemize}
-
-\subsection{Future Research Directions}
-\subsubsection{Short-Term Enhancements}
+\subsection{Packaging Checklist for Final Submission}
 \begin{enumerate}
-\item Implement Glow for MAF comparison; measure bits/dim and sample quality improvements.
-\item Add FID, LPIPS metrics for quantitative CycleGAN evaluation.
-\item Ablation studies: vary $\lambda_{\text{cyc}}$, replay buffer size, generator depth.
-\item Multi-domain CycleGAN extension (StarGAN) for simultaneous horse$\leftrightarrow$zebra$\leftrightarrow$donkey.
+\item Include executable code folder and exact dependency file.
+\item Include report PDF compiled from latest generated artifacts.
+\item Ensure model/plot outputs correspond to reported numbers.
+\item Verify naming convention and submission archive format.
+\item Re-run key commands once before final zip export.
 \end{enumerate}
-
-\subsubsection{Long-Term Research Avenues}
-\begin{enumerate}
-\item \textbf{Hybrid Likelihood-Adversarial Models}: Combine flow priors with GAN-based refinement for best of both worlds.
-\item \textbf{Disentangled Translation}: MUNIT/DRIT for explicit content-style separation; enable selective attribute editing.
-\item \textbf{Robust Anomaly Detection}: Multi-modal scoring (likelihood + embedding distance + reconstruction error); ensemble methods.
-\item \textbf{Diffusion Models}: Explore denoising diffusion probabilistic models as alternative to flows for density estimation and translation.
-\item \textbf{Interpretability}: Develop visualization tools (saliency maps, counterfactual generation) for explaining model decisions.
-\item \textbf{Federated Learning}: Privacy-preserving training for medical anomaly detection across institutions.
-\end{enumerate}
-
-\subsection{Concluding Remarks}
-Deep generative modeling remains an active research area balancing theoretical elegance with practical impact. MAF and CycleGAN exemplify complementary design philosophies—likelihood-based rigor versus adversarial flexibility. Comprehensive understanding of their mathematical foundations, architectural trade-offs, and operational constraints enables practitioners to select appropriate methodologies and extend them responsibly. This work establishes a foundation for continued exploration, emphasizing reproducibility, critical analysis, and ethical deployment alongside technical implementation.
-
-\section*{Acknowledgment}
-The authors acknowledge the foundational contributions of the MADE, RealNVP, and CycleGAN research communities whose open-source implementations enabled this reproducible study. Datasets were provided courtesy of MVTec and Berkeley AI Research Laboratory.
 
 \begin{thebibliography}{00}
-\bibitem{rezende15} D. J. Rezende and S. Mohamed, ``Variational inference with normalizing flows,'' in \emph{Proc. 32nd Int. Conf. Mach. Learn.} (ICML), 2015, pp. 1530--1538.
+\bibitem{made}
+M. Germain, K. Gregor, I. Murray, and H. Larochelle,
+"MADE: Masked Autoencoder for Distribution Estimation,"
+\emph{Proc. ICML}, 2015.
 
-\bibitem{dinh16} L. Dinh, J. Sohl-Dickstein, and S. Bengio, ``Density estimation using Real NVP,'' in \emph{Proc. 5th Int. Conf. Learn. Representations} (ICLR), 2017.
+\bibitem{maf}
+G. Papamakarios, T. Pavlakou, and I. Murray,
+"Masked Autoregressive Flow for Density Estimation,"
+\emph{Proc. NeurIPS}, 2017.
 
-\bibitem{papamakarios17} G. Papamakarios, T. Pavlakou, and I. Murray, ``Masked autoregressive flow for density estimation,'' in \emph{Advances in Neural Information Processing Systems} 30 (NeurIPS), 2017, pp. 2338--2347.
+\bibitem{rezendeflow}
+D. J. Rezende and S. Mohamed,
+"Variational Inference with Normalizing Flows,"
+\emph{Proc. ICML}, 2015.
 
-\bibitem{kingma18} D. P. Kingma and P. Dhariwal, ``Glow: Generative flow with invertible 1x1 convolutions,'' in \emph{Advances in Neural Information Processing Systems} 31 (NeurIPS), 2018, pp. 10215--10224.
+\bibitem{realnvp}
+L. Dinh, J. Sohl-Dickstein, and S. Bengio,
+"Density Estimation Using Real NVP,"
+\emph{Proc. ICLR}, 2017.
 
-\bibitem{goodfellow14} I. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu, D. Warde-Farley, S. Ozair, A. Courville, and Y. Bengio, ``Generative adversarial nets,'' in \emph{Advances in Neural Information Processing Systems} 27 (NeurIPS), 2014, pp. 2672--2680.
+\bibitem{iaf}
+D. P. Kingma, T. Salimans, R. Jozefowicz, X. Chen, I. Sutskever, and M. Welling,
+"Improved Variational Inference with Inverse Autoregressive Flow,"
+\emph{Proc. NeurIPS}, 2016.
 
-\bibitem{zhu17} J.-Y. Zhu, T. Park, P. Isola, and A. A. Efros, ``Unpaired image-to-image translation using cycle-consistent adversarial networks,'' in \emph{Proc. IEEE Int. Conf. Comput. Vis.} (ICCV), 2017, pp. 2223--2232.
+\bibitem{cyclegan}
+J.-Y. Zhu, T. Park, P. Isola, and A. A. Efros,
+"Unpaired Image-to-Image Translation Using Cycle-Consistent Adversarial Networks,"
+\emph{Proc. ICCV}, 2017.
 
-\bibitem{isola17} P. Isola, J.-Y. Zhu, T. Zhou, and A. A. Efros, ``Image-to-image translation with conditional adversarial networks,'' in \emph{Proc. IEEE Conf. Comput. Vis. Pattern Recognit.} (CVPR), 2017, pp. 1125--1134.
+\bibitem{pix2pix}
+P. Isola, J.-Y. Zhu, T. Zhou, and A. A. Efros,
+"Image-to-Image Translation with Conditional Adversarial Networks,"
+\emph{Proc. CVPR}, 2017.
 
-\bibitem{huang18} X. Huang, M.-Y. Liu, S. Belongie, and J. Kautz, ``Multimodal unsupervised image-to-image translation,'' in \emph{Proc. Eur. Conf. Comput. Vis.} (ECCV), 2018, pp. 172--189.
+\bibitem{lsgan}
+X. Mao, Q. Li, H. Xie, R. Y. K. Lau, Z. Wang, and S. P. Smolley,
+"Least Squares Generative Adversarial Networks,"
+\emph{Proc. ICCV}, 2017.
 
-\bibitem{bergmann19} P. Bergmann, M. Fauser, D. Sattlegger, and C. Steger, ``MVTec AD--A comprehensive real-world dataset for unsupervised anomaly detection,'' in \emph{Proc. IEEE Conf. Comput. Vis. Pattern Recognit.} (CVPR), 2019, pp. 9592--9600.
+\bibitem{mvtec}
+P. Bergmann, M. Fauser, D. Sattlegger, and C. Steger,
+"MVTec AD -- A Comprehensive Real-World Dataset for Unsupervised Anomaly Detection,"
+\emph{Proc. CVPR}, 2019.
 
-\bibitem{germain15} M. Germain, K. Gregor, I. Murray, and H. Larochelle, ``MADE: Masked autoencoder for distribution estimation,'' in \emph{Proc. 32nd Int. Conf. Mach. Learn.} (ICML), 2015, pp. 881--889.
+\bibitem{patchgan}
+C. Li and M. Wand,
+"Precomputed Real-Time Texture Synthesis with Markovian Generative Adversarial Networks,"
+\emph{Proc. ECCV}, 2016.
 \end{thebibliography}
 
 \end{document}

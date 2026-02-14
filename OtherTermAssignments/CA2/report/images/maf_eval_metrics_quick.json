@@ -1,0 +1,9 @@
+{
+  "mode": "eval",
+  "source": "synthetic",
+  "auroc": 0.47734375000000007,
+  "normal_count": 80,
+  "anomaly_count": 80,
+  "roc_plot": "../report/images/maf_roc_quick.png",
+  "score_plot": "../report/images/maf_score_dist_quick.png"
+}

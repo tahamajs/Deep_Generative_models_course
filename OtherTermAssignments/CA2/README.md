@@ -1,28 +1,48 @@
-# CA2 Code (Refactored)
+# CA2 (MAF + CycleGAN)
 
-Files:
-- `maf.py` — MADE / MAF implementation and training/generation helpers.
-- `cyclegan.py` — Generator / Discriminator and CycleGAN training/testing helpers.
-- `datasets.py` — `CapsuleDataset`, `ImageDataset`, and standard transforms.
-- `utils.py` — Visualization and evaluation helpers.
-- `run.py` — CLI entry point to run MAF and CycleGAN experiments.
+## Project layout
+- `code/maf.py`: MADE/MAF model and training helpers.
+- `code/cyclegan.py`: CycleGAN models and training loop.
+- `code/datasets.py`: dataset loaders and transforms.
+- `code/utils.py`: plotting/evaluation helpers with save support.
+- `code/run.py`: main CLI for train/generate/eval/test.
+- `code/run_all.sh`: convenience wrapper for quick/full runs.
+- `report/report.tex`: report source.
+- `report/images/`: generated report figures.
 
-Quick examples:
-- Train MAF (quick smoke):
-  `python run.py maf --mode train --epochs 2 --quick`
+## Environment
+Example (existing local venv):
+```bash
+source /Users/tahamajs/Documents/uni/venv/bin/activate
+pip install -r requirements.txt
+```
 
-- Generate with MAF:
-  `python run.py maf --mode generate --model maf_final.pth --num_samples 4`
+## Quick reproducible run (saves report plots)
+From project root:
+```bash
+cd code
+bash run_all.sh quick --save_dir ../report/images --tag quick
+```
 
-- Evaluate MAF for anomaly detection (requires `capsule/test`):
-  `python run.py maf --mode eval --model maf_final.pth`
+This produces files such as:
+- `report/images/maf_loss_quick.png`
+- `report/images/maf_generated_quick.png`
+- `report/images/maf_roc_quick.png`
+- `report/images/maf_score_dist_quick.png`
+- `report/images/cyclegan_loss_quick.png`
+- `report/images/cyclegan_a2b_1_quick.png` .. `report/images/cyclegan_a2b_3_quick.png`
+- `report/images/cyclegan_b2a_1_quick.png` .. `report/images/cyclegan_b2a_3_quick.png`
 
-- Train CycleGAN (quick smoke):
-  `python run.py cyclegan --mode train --epochs 2 --quick`
+If datasets are not available locally, quick mode falls back to synthetic data and still saves figures.
 
-- Test CycleGAN (requires dataset):
-  `python run.py cyclegan --mode test --dataset horse2zebra --model G_AB_final.pth`
+## Full run (real dataset expected)
+```bash
+cd code
+bash run_all.sh full --save_dir ../report/images --tag full
+```
 
-Notes:
-- Use `--quick` to run small smoke tests on machines without datasets or GPUs.
-- Long training should be run on a GPU-enabled machine with full datasets.
+## Report build
+```bash
+cd report
+latexmk -pdf -interaction=nonstopmode report.tex
+```

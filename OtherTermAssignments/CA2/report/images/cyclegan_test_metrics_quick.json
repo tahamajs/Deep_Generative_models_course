@@ -1,0 +1,6 @@
+{
+  "mode": "test",
+  "num_samples": 3,
+  "panel_a2b": "../report/images/cyclegan_panel_a2b_quick.png",
+  "panel_b2a": "../report/images/cyclegan_panel_b2a_quick.png"
+}

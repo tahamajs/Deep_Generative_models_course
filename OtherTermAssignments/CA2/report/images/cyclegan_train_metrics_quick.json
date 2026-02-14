@@ -1,0 +1,11 @@
+{
+  "mode": "train",
+  "device": "cpu",
+  "epochs": 1,
+  "batch_size": 2,
+  "dataset": "synthetic",
+  "train_seconds": 88.0082859992981,
+  "history_plot": "../report/images/cyclegan_loss_quick.png",
+  "final_model_ab": "checkpoints/G_AB_final_quick.pth",
+  "final_model_ba": "checkpoints/G_BA_final_quick.pth"
+}
