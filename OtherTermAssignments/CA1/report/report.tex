@@ -20,7 +20,11 @@
   inputencoding=utf8,
   extendedchars=true,
   columns=fullflexible,
-  keepspaces=true
+  keepspaces=true,
+  breaklines=true,
+  breakatwhitespace=false,
+  postbreak=\mbox{\textcolor{gray}{$\hookrightarrow$}\space},
+  showstringspaces=false
 }
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -996,6 +1000,7 @@ DIP-VAE explicitly regularizes the covariance matrix of $q(z)$:
 \begin{table}[!t]
 \centering
 \small
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{@{}p{2cm}p{3.5cm}p{3cm}p{3.5cm}@{}}
 \toprule
 \textbf{Method} & \textbf{Key Idea} & \textbf{Pros} & \textbf{Cons} \\ \midrule
@@ -1006,6 +1011,7 @@ TC-VAE & Decompose KL term & Principled approach & Complex implementation \\
 DIP-VAE & Regularize covariance & Explicit control & Sensitive to $\lambda$ \\
 Annealed-VAE & Gradually increase $\beta$ & Avoids collapse & Slow convergence \\ \bottomrule
 \end{tabular}
+}
 \caption{Comparison of VAE variants for disentanglement}
 \label{tab:vae_variants}
 \end{table}
@@ -1097,6 +1103,8 @@ This seeks representations that are maximally informative about the input while 
 
 \begin{table}[!t]
 \centering
+\small
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{@{}p{4cm}p{5cm}p{4cm}@{}}
 \toprule
 \textbf{Application} & \textbf{Recommended Model} & \textbf{Reasoning} \\ \midrule
@@ -1107,6 +1115,7 @@ Causal Discovery & $\beta$-VAE ($\beta$=5-10) & Maximum disentanglement \\
 Anomaly Detection & VAE ($\beta$=1) & Sensitive reconstruction \\
 Transfer Learning & $\beta$-VAE ($\beta$=3-5) & Generalizable features \\ \bottomrule
 \end{tabular}
+}
 \caption{Recommended VAE configurations for different applications}
 \label{tab:applications}
 \end{table}
@@ -1187,6 +1196,7 @@ Based on our experiments:
 \begin{table}[!t]
 \centering
 \small
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{@{}p{2.5cm}p{3cm}p{3cm}p{3.5cm}@{}}
 \toprule
 \textbf{Approach} & \textbf{Strengths} & \textbf{Weaknesses} & \textbf{Use Case} \\ \midrule
@@ -1197,6 +1207,7 @@ Diffusion Models & SOTA quality & Slow sampling & Image synthesis \\
 Autoregressive & Exact likelihood & Sequential generation & Text/audio \\
 VQ-VAE & Discrete latents & Codebook collapse & Compression \\ \bottomrule
 \end{tabular}
+}
 \caption{Comparison of VAE with other generative modeling approaches}
 \label{tab:generative_comparison}
 \end{table}
@@ -1315,6 +1326,7 @@ This assignment successfully bridged theory and practice, demonstrating how math
 \end{enumerate}
 
 \appendix
+\onecolumn
 
 \section{Code Implementation Details}
 
